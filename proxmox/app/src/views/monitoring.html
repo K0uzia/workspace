@@ -161,6 +161,7 @@
         <div class="sub-tab" data-sub="marques">Marques & Modèles</div>
         <div class="sub-tab" data-sub="commandes">Commandes</div>
         <div class="sub-tab" data-sub="dons">Dons</div>
+        <div class="sub-tab" data-sub="prets">Prêts matériel</div>
       </div>
 
       <div class="sub-panel active" id="sub-lots">
@@ -274,6 +275,19 @@
           <div class="table-wrap">
             <table><thead><tr><th>#</th><th>Nom lot</th><th>Date</th><th>PDF</th><th class="th-actions">Actions</th></tr></thead>
               <tbody id="dons-table"><tr class="empty-row"><td colspan="5">Chargement…</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="sub-prets">
+        <div class="card">
+          <div class="card-header">
+            <h2>Prêts matériel en base</h2>
+            <button class="btn btn-secondary btn-sm" onclick="loadPrets()"><i class="fa-solid fa-rotate-right"></i> Actualiser</button>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>#</th><th>Référence</th><th>Emprunteur</th><th>Période</th><th>Lignes</th><th>PDF</th><th class="th-actions">Actions</th></tr></thead>
+              <tbody id="prets-table"><tr class="empty-row"><td colspan="7">Chargement…</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -838,6 +852,38 @@
   </div>
 </div>
 
+<!-- Pret detail modal -->
+<div class="modal-overlay" id="pret-detail-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>Détail prêt matériel</h3><button class="modal-close" onclick="closeModal('pret-detail-modal')">×</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div class="text-muted">ID</div><div id="pret-detail-id">—</div></div>
+        <div><div class="text-muted">PDF</div><div id="pret-detail-pdf" class="pdf-path-readonly">—</div></div>
+      </div>
+      <div id="pret-detail-edit-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div class="form-group"><label>Référence</label><input id="pret-edit-reference" type="text"></div>
+        <div class="form-group"><label>Type emprunteur</label>
+          <select id="pret-edit-borrower-type">
+            <option value="personne">Personne</option>
+            <option value="societe">Société</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Emprunteur</label><input id="pret-edit-borrower-name" type="text"></div>
+        <div class="form-group"><label>Contact</label><input id="pret-edit-borrower-contact" type="text"></div>
+        <div class="form-group"><label>Date début</label><input id="pret-edit-date-debut" type="date"></div>
+        <div class="form-group"><label>Date fin</label><input id="pret-edit-date-fin" type="date"></div>
+        <div class="form-group" style="grid-column:1 / -1"><label>Lignes (JSON)</label><textarea id="pret-edit-lines" rows="8" style="width:100%"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('pret-detail-modal')">Fermer</button>
+        <a class="btn btn-secondary btn-sm" id="pret-detail-pdf-link" href="#" target="_blank" rel="noopener">PDF</a>
+        <button class="btn btn-primary" id="pret-detail-save-btn" onclick="savePretDetail()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PDF preview modal (affiche le PDF ou "Fichier introuvable" + chemin) -->
 <div class="modal-overlay" id="pdf-preview-modal">
   <div class="modal" style="max-width:90vw;width:800px;max-height:90vh;display:flex;flex-direction:column">
@@ -1163,6 +1209,7 @@ document.querySelectorAll('.sub-tab').forEach(el => {
     if (sub === 'disques') loadDisquesSessions();
     if (sub === 'commandes') { loadCommandes(); loadCommandeProducts(); }
     if (sub === 'dons') loadDons();
+    if (sub === 'prets') loadPrets();
     if (sub === 'sc-cats') loadCategories();
     if (sub === 'sc-links') loadShortcutLinks();
   });
@@ -1480,7 +1527,7 @@ async function deleteAgenda(id) {
 }
 
 // ── Réception ───────────────────────────────────────────────────────────────
-function loadReception() { loadLots(); loadCommandes(); loadCommandeProducts(); loadDons(); }
+function loadReception() { loadLots(); loadCommandes(); loadCommandeProducts(); loadDons(); loadPrets(); }
 
 async function loadLots() {
   const search = document.getElementById('lots-search').value;
@@ -1704,6 +1751,98 @@ async function loadDons() {
     }).join('');
   } catch (e) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Erreur de chargement</td></tr>';
+  }
+}
+
+// ── Prêts matériel ──────────────────────────────────────────────────────────
+async function loadPrets() {
+  const tbody = document.getElementById('prets-table');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Chargement…</td></tr>';
+  try {
+    const data = await api('GET', '/api/prets-materiel/tracabilite');
+    const prets = (data && (data.data || data.prets || data.items)) || [];
+    const list = Array.isArray(prets) ? prets : [];
+    if (!list.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Aucun prêt</td></tr>'; return; }
+    tbody.innerHTML = list.map(p => {
+      const base = BASE;
+      const ref = escHtml(p.reference || '—');
+      const borrower = escHtml(p.borrower_name || '—');
+      const d0 = escHtml(String(p.date_debut || p.date || '').slice(0, 10) || '—');
+      const d1 = escHtml(String(p.date_fin || '').slice(0, 10) || '—');
+      let linesCount = 0;
+      if (Array.isArray(p.lines)) linesCount = p.lines.length;
+      else if (typeof p.lines === 'string') { try { const arr = JSON.parse(p.lines); if (Array.isArray(arr)) linesCount = arr.length; } catch(_) {} }
+      const pdf = p.pdf_path
+        ? `<a href="${base}/api/prets-materiel/${p.id}/pdf" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" title="${escHtml(p.pdf_path)}">PDF</a>`
+        : '<span class="text-muted">—</span>';
+      return `<tr>
+        <td>${escHtml(p.id)}</td>
+        <td class="table-cell-ellipsis" title="${ref}">${ref}</td>
+        <td class="table-cell-ellipsis" title="${borrower}">${borrower}</td>
+        <td>${d0} → ${d1}</td>
+        <td>${escHtml(String(linesCount))}</td>
+        <td>${pdf}</td>
+        <td class="actions"><button class="btn btn-secondary btn-sm" onclick="openPretModal(${p.id})">Détails</button></td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Erreur chargement (${escHtml(e?.message || 'erreur')})</td></tr>`;
+  }
+}
+
+let currentPretDetail = null;
+async function openPretModal(id) {
+  try {
+    const data = await api('GET', '/api/prets-materiel/' + id);
+    const p = data?.pret || data?.data || data?.item || null;
+    if (!p) throw new Error('Prêt matériel introuvable');
+    currentPretDetail = p;
+    document.getElementById('pret-detail-id').textContent = String(p.id || '—');
+    document.getElementById('pret-detail-pdf').textContent = String(p.pdf_path || '—');
+    const link = document.getElementById('pret-detail-pdf-link');
+    if (link) {
+      link.href = p.pdf_path ? `${BASE}/api/prets-materiel/${p.id}/pdf` : '#';
+      link.style.display = p.pdf_path ? '' : 'none';
+    }
+    document.getElementById('pret-edit-reference').value = p.reference || '';
+    document.getElementById('pret-edit-borrower-type').value = String(p.borrower_type || 'personne');
+    document.getElementById('pret-edit-borrower-name').value = p.borrower_name || '';
+    document.getElementById('pret-edit-borrower-contact').value = p.borrower_contact || '';
+    document.getElementById('pret-edit-date-debut').value = String(p.date_debut || p.date || '').slice(0, 10) || '';
+    document.getElementById('pret-edit-date-fin').value = String(p.date_fin || '').slice(0, 10) || '';
+    let lines = p.lines;
+    if (typeof lines === 'string') { try { lines = JSON.parse(lines); } catch(_) {} }
+    document.getElementById('pret-edit-lines').value = JSON.stringify(lines || [], null, 2);
+    openModal('pret-detail-modal');
+  } catch (e) {
+    toast(e?.message || 'Erreur', 'danger');
+  }
+}
+
+async function savePretDetail() {
+  if (!currentPretDetail?.id) return;
+  try {
+    const id = currentPretDetail.id;
+    let lines = [];
+    const rawLines = document.getElementById('pret-edit-lines')?.value || '[]';
+    try { lines = JSON.parse(rawLines); } catch (_) { throw new Error('JSON lignes invalide'); }
+    const body = {
+      reference: (document.getElementById('pret-edit-reference').value || '').trim() || null,
+      borrower_type: document.getElementById('pret-edit-borrower-type').value || 'personne',
+      borrower_name: (document.getElementById('pret-edit-borrower-name').value || '').trim(),
+      borrower_contact: (document.getElementById('pret-edit-borrower-contact').value || '').trim() || null,
+      date_debut: document.getElementById('pret-edit-date-debut').value || null,
+      date_fin: document.getElementById('pret-edit-date-fin').value || null,
+      lines
+    };
+    const data = await api('PUT', '/api/prets-materiel/' + id, body);
+    if (data?.error) throw new Error(data.error);
+    toast('Prêt enregistré');
+    closeModal('pret-detail-modal');
+    loadPrets();
+  } catch (e) {
+    toast(e?.message || 'Erreur', 'danger');
   }
 }
 
