@@ -1,6 +1,6 @@
 {
   "name": "workspace",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "main": "main.js",
   "homepage": "https://github.com/SandersonnDev/workspace#readme",
   "description": "Workspace - Interface utilisateur collaborative",
