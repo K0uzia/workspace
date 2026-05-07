@@ -20,9 +20,36 @@ CYAN="\033[0;36m"; BLUE="\033[0;34m"; GREEN="\033[0;32m"; YELLOW="\033[1;33m"; R
 # =============== Paths ===============
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+find_repo_root() {
+  # 1) override explicite
+  if [[ -n "${WORKSPACE_REPO_ROOT:-}" && -d "${WORKSPACE_REPO_ROOT}/proxmox/app" && -d "${WORKSPACE_REPO_ROOT}/proxmox/docker" ]]; then
+    echo "${WORKSPACE_REPO_ROOT}"
+    return 0
+  fi
+
+  # 2) déterministe: uniquement relatif au script (évite de pointer vers un autre checkout → DB "vide")
+  local candidate
+  candidate="$(cd "$SCRIPT_DIR/../.." && pwd)"
+  if [[ -d "$candidate/proxmox/app" && -d "$candidate/proxmox/docker" ]]; then
+    echo "$candidate"
+    return 0
+  fi
+
+  # Pas de fallback "magique" : on préfère échouer plutôt que de déployer sur un autre répertoire.
+  err "Impossible de déterminer REPO_ROOT depuis le script ($candidate). Fix: export WORKSPACE_REPO_ROOT=/chemin/vers/workspace (doit contenir proxmox/app et proxmox/docker)."
+}
+
+REPO_ROOT="$(find_repo_root)"
 DOCKER_DIR="$REPO_ROOT/proxmox/docker"
 APP_SRC_DIR="$REPO_ROOT/proxmox/app"
+
+# Compat si le repo est posé directement sous /usr/proxmox (sans sous-dossier proxmox/)
+if [[ ! -d "$APP_SRC_DIR" && -d "$REPO_ROOT/app" && -d "$REPO_ROOT/docker" ]]; then
+  DOCKER_DIR="$REPO_ROOT/docker"
+  APP_SRC_DIR="$REPO_ROOT/app"
+fi
+
 SERVICE_NAME="proxmox-backend"
 GLOBAL_CLI="/usr/local/bin/proxmox"
 CLI_SOURCE="/usr/local/lib/proxmox-cli.sh"
@@ -62,16 +89,17 @@ stop_and_clean() {
     docker volume rm proxmox_postgres_data 2>/dev/null || true
   fi
 
-  info "Nettoyage des images Docker inutilisées..."
-  docker image prune -a -f 2>/dev/null || true
-  docker builder prune -a -f 2>/dev/null || true
-  docker container prune -f 2>/dev/null || true
-
-  # Volumes non utilisés — exclure explicitement le volume de la DB
+  # IMPORTANT: ne jamais pruner automatiquement les volumes en install standard.
+  # Ça peut donner l'impression que la DB est "vidée" (nouveau volume / volume supprimé).
   if [[ "$reset_db" == "true" ]]; then
+    info "Nettoyage Docker (--reset-db) : prune des images/containers/volumes..."
+    docker image prune -a -f 2>/dev/null || true
+    docker builder prune -a -f 2>/dev/null || true
+    docker container prune -f 2>/dev/null || true
     docker volume prune -f 2>/dev/null || true
   else
-    docker volume prune -f --filter "label!=com.docker.compose.volume=postgres_data" 2>/dev/null || true
+    info "Nettoyage Docker (sans reset-db) : arrêt uniquement, pas de prune de volumes."
+    docker container prune -f 2>/dev/null || true
   fi
 
   info "Nettoyage des logs Docker..."
@@ -88,7 +116,9 @@ stop_and_clean() {
 }
 
 ensure_paths() {
-  if [[ ! -d "$APP_SRC_DIR" ]]; then err "Répertoire source introuvable: $APP_SRC_DIR"; fi
+  if [[ ! -d "$APP_SRC_DIR" ]]; then
+    err "Répertoire source introuvable: $APP_SRC_DIR (REPO_ROOT=$REPO_ROOT). Astuce: export WORKSPACE_REPO_ROOT=/chemin/vers/workspace"
+  fi
   mkdir -p "$DOCKER_DIR"
   mkdir -p "$(dirname "$CLI_SOURCE")"
   mkdir -p "$DOCKER_DIR/logs"
