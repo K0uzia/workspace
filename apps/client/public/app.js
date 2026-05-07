@@ -13,6 +13,8 @@ class PageManager {
         this.authManager = null;
         this.serverUrl = null;
         this.serverConnected = false;
+        this._updateInfo = null;
+        this._updateDownloaded = false;
         
         // Pages et leur configuration de layout (sous-pages réception = même layout que reception)
         const receptionLayout = { showHeader: true, showFooter: false, showChat: false };
@@ -514,6 +516,7 @@ class PageManager {
             const container = document.getElementById('settingsModalContainer');
             if (container) container.innerHTML = html;
             this.attachSettingsModalListeners();
+            this.refreshUpdateUI();
         } catch (error) {
             this.logger.error('Erreur chargement settings modal', error);
         }
@@ -542,6 +545,9 @@ class PageManager {
             themeInput.value = localStorage.getItem(this.themeStorageKey) === '1' ? '1' : '0';
             this.syncThemeToggleUI();
         }
+        // Ne jamais afficher le hint tant qu'aucune MAJ n'a été téléchargée avec succès.
+        this._updateDownloaded = false;
+        this.refreshUpdateUI();
         modal.classList.remove('hidden');
     }
 
@@ -558,6 +564,8 @@ class PageManager {
         const deleteCancelBtn = document.getElementById('settingsDeleteCancelBtn');
         const themeToggleBtn = document.getElementById('settingsThemeDarkToggle');
         const themeInput = document.getElementById('settingsThemeDark');
+        const btnCheckUpdate = document.getElementById('settingsBtnCheckUpdate');
+        const btnDownloadUpdate = document.getElementById('settingsBtnDownloadUpdate');
 
         if (!modal) return;
 
@@ -578,6 +586,122 @@ class PageManager {
                 this.syncThemeToggleUI();
             });
         }
+
+        const doCheckUpdate = async () => {
+            const status = document.getElementById('settingsUpdateStatus');
+            const errEl = document.getElementById('settingsUpdateError');
+            const hint = document.getElementById('settingsUpdateHint');
+            const progressWrap = document.getElementById('settingsUpdateProgress');
+            const progressFill = document.getElementById('settingsUpdateProgressFill');
+            const progressText = document.getElementById('settingsUpdateProgressText');
+            if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
+            this._updateDownloaded = false;
+            if (hint) hint.classList.add('hidden');
+            if (progressWrap) progressWrap.classList.add('hidden');
+            if (progressFill) progressFill.style.width = '0%';
+            if (progressText) progressText.textContent = '0%';
+            if (status) status.textContent = 'Vérification…';
+            try {
+                if (!window.electron?.invoke) {
+                    if (status) status.textContent = 'Disponible uniquement dans l’application desktop';
+                    this._updateInfo = null;
+                    this.refreshUpdateUI();
+                    return;
+                }
+                const res = await window.electron.invoke('check-app-update', {});
+                this._updateInfo = res;
+                this.refreshUpdateUI();
+            } catch (e) {
+                if (status) status.textContent = 'Erreur de vérification';
+                if (errEl) {
+                    errEl.textContent = e?.message || String(e);
+                    errEl.classList.remove('hidden');
+                }
+            }
+        };
+
+        if (btnCheckUpdate) btnCheckUpdate.addEventListener('click', () => doCheckUpdate());
+        if (btnDownloadUpdate) {
+            btnDownloadUpdate.addEventListener('click', async () => {
+                const status = document.getElementById('settingsUpdateStatus');
+                const errEl = document.getElementById('settingsUpdateError');
+                const hint = document.getElementById('settingsUpdateHint');
+                const progressWrap = document.getElementById('settingsUpdateProgress');
+                const progressFill = document.getElementById('settingsUpdateProgressFill');
+                const progressText = document.getElementById('settingsUpdateProgressText');
+                if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
+                this._updateDownloaded = false;
+                if (hint) hint.classList.add('hidden');
+                try {
+                    if (!window.electron?.invoke) throw new Error('Disponible uniquement dans l’application desktop');
+                    btnDownloadUpdate.disabled = true;
+                    if (status) status.textContent = 'Téléchargement…';
+                    if (progressWrap) progressWrap.classList.remove('hidden');
+                    if (progressFill) progressFill.style.width = '0%';
+                    if (progressText) progressText.textContent = '0%';
+                    const res = await window.electron.invoke('download-app-update', {});
+                    if (!res?.success) throw new Error(res?.error || 'Téléchargement impossible');
+                    if (status) status.textContent = res?.latestVersion ? `Téléchargé (v${res.latestVersion})` : 'Téléchargé';
+                    // Le hint sera affiché via l'événement "done" pour éviter tout faux positif.
+                } catch (e) {
+                    if (status) status.textContent = 'Erreur téléchargement';
+                    if (errEl) {
+                        errEl.textContent = e?.message || String(e);
+                        errEl.classList.remove('hidden');
+                    }
+                } finally {
+                    this.refreshUpdateUI();
+                }
+            });
+        }
+
+        // Progression du téléchargement (événements envoyés par le main process)
+        if (window.electron?.on && !this._updateDownloadListenersAttached) {
+            this._updateDownloadListenersAttached = true;
+            window.electron.on('app-update-download-progress', (p) => {
+                const progressWrap = document.getElementById('settingsUpdateProgress');
+                const progressFill = document.getElementById('settingsUpdateProgressFill');
+                const progressText = document.getElementById('settingsUpdateProgressText');
+                const status = document.getElementById('settingsUpdateStatus');
+                if (progressWrap) progressWrap.classList.remove('hidden');
+                const percent = typeof p?.percent === 'number' ? p.percent : null;
+                if (percent != null) {
+                    if (progressFill) progressFill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+                    if (progressText) progressText.textContent = `${Math.max(0, Math.min(100, percent))}%`;
+                    if (status) status.textContent = `Téléchargement… ${Math.max(0, Math.min(100, percent))}%`;
+                } else {
+                    if (progressFill) progressFill.style.width = '100%';
+                    if (progressText) progressText.textContent = '…';
+                    if (status) status.textContent = 'Téléchargement…';
+                }
+            });
+            window.electron.on('app-update-download-done', (payload) => {
+                const hint = document.getElementById('settingsUpdateHint');
+                const errEl = document.getElementById('settingsUpdateError');
+                const status = document.getElementById('settingsUpdateStatus');
+                const progressWrap = document.getElementById('settingsUpdateProgress');
+                const btnDownload = document.getElementById('settingsBtnDownloadUpdate');
+                if (payload?.success) {
+                    if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
+                    if (status) status.textContent = payload?.latestVersion ? `Téléchargé (v${payload.latestVersion})` : 'Téléchargé';
+                    this._updateDownloaded = true;
+                    if (hint) hint.classList.remove('hidden');
+                } else {
+                    this._updateDownloaded = false;
+                    if (status) status.textContent = 'Erreur téléchargement';
+                    if (errEl) {
+                        errEl.textContent = payload?.error || 'Téléchargement impossible';
+                        errEl.classList.remove('hidden');
+                    }
+                }
+                if (progressWrap) progressWrap.classList.add('hidden');
+                if (btnDownload) btnDownload.disabled = true;
+                this.refreshUpdateUI();
+            });
+        }
+
+        // Check automatique (non bloquant) quand la modale est chargée
+        setTimeout(() => { doCheckUpdate(); }, 200);
 
         if (formUsername) {
             formUsername.addEventListener('submit', async (e) => {
@@ -653,6 +777,39 @@ class PageManager {
                     if (errEl) { errEl.textContent = result.message || 'Erreur'; errEl.classList.remove('hidden'); }
                 }
             });
+        }
+    }
+
+    refreshUpdateUI() {
+        const info = this._updateInfo;
+        const status = document.getElementById('settingsUpdateStatus');
+        const btnDownload = document.getElementById('settingsBtnDownloadUpdate');
+        const hint = document.getElementById('settingsUpdateHint');
+        const badgeUser = document.getElementById('profileUpdateBadge');
+        const badgeGuest = document.getElementById('profileUpdateBadgeGuest');
+
+        const available = !!(info && info.success && info.available);
+
+        if (badgeUser) badgeUser.classList.toggle('hidden', !available);
+        if (badgeGuest) badgeGuest.classList.toggle('hidden', !available);
+
+        if (status) {
+            if (!window.electron?.invoke) status.textContent = 'Disponible uniquement dans l’application desktop';
+            else if (!info) status.textContent = 'Vérification…';
+            else if (!info.success) status.textContent = info.error ? `Vérification impossible (${info.error})` : 'Vérification impossible';
+            else if (available) status.textContent = `Mise à jour disponible : v${info.latestVersion} (actuelle v${info.currentVersion})`;
+            else status.textContent = `À jour (v${info.currentVersion})`;
+        }
+
+        if (btnDownload) {
+            // Le bouton n'apparaît qu'après vérification (info != null) et uniquement si une MAJ est disponible.
+            btnDownload.classList.toggle('hidden', !(info && info.success && available));
+            btnDownload.disabled = !(window.electron?.invoke && available);
+        }
+
+        // Le hint ne doit apparaître qu'après un téléchargement réel et réussi.
+        if (hint) {
+            hint.classList.toggle('hidden', !this._updateDownloaded);
         }
     }
 

@@ -684,10 +684,24 @@ function broadcastUserCount() {
         return { error: 'Category name is required' };
       }
       try {
-        const result = await query(
-          'UPDATE shortcut_categories SET name = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 RETURNING id, name, order_index, created_at',
-          [name.trim(), id, userId]
-        );
+        let result;
+        try {
+          // Schéma récent
+          result = await query(
+            'UPDATE shortcut_categories SET name = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 RETURNING id, name, order_index, created_at',
+            [name.trim(), id, userId]
+          );
+        } catch (e: any) {
+          // Compat schéma legacy: pas de colonne updated_at
+          if (e?.code === '42703') {
+            result = await query(
+              'UPDATE shortcut_categories SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING id, name, order_index, created_at',
+              [name.trim(), id, userId]
+            );
+          } else {
+            throw e;
+          }
+        }
         if (result.rowCount === 0) {
           reply.statusCode = 404;
           return { error: 'Catégorie introuvable' };
@@ -2555,8 +2569,10 @@ function broadcastUserCount() {
         return sendAuthRequired(reply);
       }
       const { id } = request.params as { id: string };
-      const { title, description, url, category_id, categoryId } = request.body as any;
+      // Le front envoie parfois { name, url } : on supporte aussi "name" en alias de "title".
+      const { title, name, description, url, category_id, categoryId } = request.body as any;
       const finalCategoryId = category_id ?? categoryId;
+      const finalTitle = title !== undefined ? title : name;
 
       try {
         const ownership = await query(
@@ -2581,7 +2597,7 @@ function broadcastUserCount() {
         const updates: string[] = [];
         const values: any[] = [];
         let paramIndex = 1;
-        if (title !== undefined) { updates.push(`name = $${paramIndex++}`); values.push(title != null ? String(title).trim() : null); }
+        if (finalTitle !== undefined) { updates.push(`name = $${paramIndex++}`); values.push(finalTitle != null ? String(finalTitle).trim() : null); }
         if (description !== undefined) { updates.push(`description = $${paramIndex++}`); values.push(description != null ? String(description).trim() : null); }
         if (url !== undefined) { updates.push(`url = $${paramIndex++}`); values.push(url != null ? String(url).trim() : null); }
         if (finalCategoryId !== undefined) { updates.push(`category_id = $${paramIndex++}`); values.push(finalCategoryId || null); }
@@ -2589,14 +2605,29 @@ function broadcastUserCount() {
           reply.statusCode = 400;
           return { error: 'No fields to update' };
         }
+        // Compat: certains déploiements n'ont pas updated_at sur shortcuts.
         updates.push('updated_at = NOW()');
         values.push(id, userId);
         const whereIdParam = values.length - 1;
         const whereUserIdParam = values.length;
-        const result = await query(
-          `UPDATE shortcuts SET ${updates.join(', ')} WHERE id = $${whereIdParam} AND user_id = $${whereUserIdParam} RETURNING id, name AS title, description, url, category_id, order_index, created_at`,
-          values
-        );
+        let result;
+        try {
+          result = await query(
+            `UPDATE shortcuts SET ${updates.join(', ')} WHERE id = $${whereIdParam} AND user_id = $${whereUserIdParam} RETURNING id, name AS title, description, url, category_id, order_index, created_at`,
+            values
+          );
+        } catch (e: any) {
+          // Compat: absence de updated_at (ou autres colonnes) dans certains schémas
+          if (e?.code === '42703') {
+            const updatesNoUpdatedAt = updates.filter(x => x !== 'updated_at = NOW()');
+            result = await query(
+              `UPDATE shortcuts SET ${updatesNoUpdatedAt.join(', ')} WHERE id = $${whereIdParam} AND user_id = $${whereUserIdParam} RETURNING id, name AS title, description, url, category_id, order_index, created_at`,
+              values
+            );
+          } else {
+            throw e;
+          }
+        }
         if (result.rowCount === 0) {
           reply.statusCode = 404;
           return { error: 'Raccourci introuvable' };
@@ -2610,7 +2641,7 @@ function broadcastUserCount() {
             const updates: string[] = [];
             const values: any[] = [];
             let paramIndex = 1;
-            if (title !== undefined) { updates.push(`title = $${paramIndex++}`); values.push(title != null ? String(title).trim() : null); }
+            if (finalTitle !== undefined) { updates.push(`title = $${paramIndex++}`); values.push(finalTitle != null ? String(finalTitle).trim() : null); }
             if (description !== undefined) { updates.push(`description = $${paramIndex++}`); values.push(description != null ? String(description).trim() : null); }
             if (url !== undefined) { updates.push(`url = $${paramIndex++}`); values.push(url != null ? String(url).trim() : null); }
             if (finalCategoryId !== undefined) { updates.push(`category_id = $${paramIndex++}`); values.push(finalCategoryId || null); }
@@ -2618,14 +2649,28 @@ function broadcastUserCount() {
               reply.statusCode = 400;
               return { error: 'No fields to update' };
             }
+            // Compat: certains schémas legacy n'ont pas updated_at
             updates.push('updated_at = NOW()');
             values.push(id, userId);
             const whereIdParam = values.length - 1;
             const whereUserIdParam = values.length;
-            const fallback = await query(
-              `UPDATE shortcuts SET ${updates.join(', ')} WHERE id = $${whereIdParam} AND user_id = $${whereUserIdParam} RETURNING id, title, description, url, category_id, order_index, created_at`,
-              values
-            );
+            let fallback;
+            try {
+              fallback = await query(
+                `UPDATE shortcuts SET ${updates.join(', ')} WHERE id = $${whereIdParam} AND user_id = $${whereUserIdParam} RETURNING id, title, description, url, category_id, order_index, created_at`,
+                values
+              );
+            } catch (e: any) {
+              if (e?.code === '42703') {
+                const updatesNoUpdatedAt = updates.filter(x => x !== 'updated_at = NOW()');
+                fallback = await query(
+                  `UPDATE shortcuts SET ${updatesNoUpdatedAt.join(', ')} WHERE id = $${whereIdParam} AND user_id = $${whereUserIdParam} RETURNING id, title, description, url, category_id, order_index, created_at`,
+                  values
+                );
+              } else {
+                throw e;
+              }
+            }
             if (fallback.rowCount === 0) {
               reply.statusCode = 404;
               return { error: 'Raccourci introuvable' };

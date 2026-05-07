@@ -15,13 +15,17 @@
             <button class="nav-btn nav-profile" id="navProfile"><i class="fa-solid fa-user"></i><span class="profile-text">Profil</span></button>
             <div class="profile-dropdown hidden" id="profileDropdown">
                 <div class="profile-auth" id="profileAuth">
-                    <button class="profile-btn" id="btnSettingsGuest" title="Config (ex. clé Giphy)">Paramètres</button>
+                    <button class="profile-btn" id="btnSettingsGuest" title="Config (ex. clé Giphy)">
+                        Paramètres <span class="profile-badge hidden" id="profileUpdateBadgeGuest"></span>
+                    </button>
                     <button class="profile-btn" id="btnLogin">Se connecter</button>
                     <button class="profile-btn" id="btnRegister">Créer un compte</button>
                 </div>
                 <div class="profile-user hidden" id="profileUser">
                     <div class="profile-username" id="profileUsername"></div>
-                    <button class="profile-btn" id="btnSettings">Paramètres</button>
+                    <button class="profile-btn" id="btnSettings">
+                        Paramètres <span class="profile-badge hidden" id="profileUpdateBadge">MAJ</span>
+                    </button>
                     <button class="profile-btn" id="btnLogout">Déconnexion</button>
                 </div>
             </div>

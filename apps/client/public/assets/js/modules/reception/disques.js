@@ -535,6 +535,13 @@ export default class DisquesManager {
             const onChange = e => this.handleTableChange(e);
             table.addEventListener('change', onChange);
             this.listeners.push({ element: table, event: 'change', handler: onChange });
+            // Activer/désactiver "Enregistrer" dès la saisie (le bouton est disabled par défaut dans le HTML).
+            const onInput = () => {
+                this.syncAllFromDom();
+                this.updateSaveButtonState();
+            };
+            table.addEventListener('input', onInput);
+            this.listeners.push({ element: table, event: 'input', handler: onInput });
             const onClick = e => {
                 const btn = e.target.closest('.btn-delete-row');
                 if (!btn || !table.contains(btn)) return;

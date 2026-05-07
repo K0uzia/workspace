@@ -93,7 +93,7 @@ function sessionLog(payload) {
 }
 // #endregion
 
-// Import ClientDiscovery et module de mise à jour
+// Import ClientDiscovery et module de mise à jour (désactivé au démarrage : MAJ manuelle)
 const ClientDiscovery = require('./lib/ClientDiscovery.js');
 const { runAutoUpdate } = require('./lib/update.js');
 
@@ -309,9 +309,6 @@ function linuxAppImageBackup(currentAppPath) {
     }
 }
 
-/** Nom final de l'AppImage (raccourci). */
-const LINUX_APPIMAGE_NAME = 'workspace.AppImage';
-
 /**
  * Sous Linux AppImage : la nouvelle AppImage a déjà été téléchargée dans un dossier temporaire
  * (ex. app.getPath('temp')/workspace-update/). Un script attend la fermeture de l'app,
@@ -322,7 +319,8 @@ function tryLinuxAppImageUpdateHelper(currentAppPath, newAppPath) {
     if (!fs.existsSync(newAppPath)) return false;
     try {
         const dir = path.dirname(currentAppPath);
-        const finalPath = path.join(dir, LINUX_APPIMAGE_NAME);
+        // Remplacer exactement l'AppImage en cours (même nom/chemin).
+        const finalPath = currentAppPath;
         const scriptPath = path.join(app.getPath('userData'), 'workspace-update-helper.sh');
         const script = `#!/bin/sh
 # downloaded = AppImage téléchargée (dossier temporaire), dest = chemin final (workspace.AppImage), pid = processus à attendre
@@ -357,6 +355,172 @@ exec "$dest"
         return false;
     }
 }
+
+// --- Mise à jour manuelle (AppImage) ---
+const GITHUB_OWNER = 'SandersonnDev';
+const GITHUB_REPO = 'workspace';
+
+function normalizeSemver(v) {
+    const s = String(v || '').trim().replace(/^v/i, '');
+    return s;
+}
+
+function compareSemver(a, b) {
+    const pa = normalizeSemver(a).split('.').map(x => parseInt(x, 10) || 0);
+    const pb = normalizeSemver(b).split('.').map(x => parseInt(x, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        const da = pa[i] || 0;
+        const db = pb[i] || 0;
+        if (da > db) return 1;
+        if (da < db) return -1;
+    }
+    return 0;
+}
+
+async function fetchLatestGithubRelease() {
+    const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
+    const res = await fetch(apiUrl, {
+        headers: {
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': `WorkspaceClient/${app.getVersion?.() || '0.0.0'}`
+        }
+    });
+    if (!res.ok) {
+        throw new Error(`GitHub API HTTP ${res.status}`);
+    }
+    return await res.json();
+}
+
+function pickAppImageAsset(releaseJson) {
+    const assets = Array.isArray(releaseJson?.assets) ? releaseJson.assets : [];
+    // Priorité au nom demandé par toi, puis variantes usuelles.
+    const preferred = assets.find(a => String(a?.name || '').toLowerCase() === 'workspace.appimage')
+        || assets.find(a => /workspace.*\.appimage$/i.test(String(a?.name || '')))
+        || assets.find(a => /\.appimage$/i.test(String(a?.name || '')));
+    return preferred || null;
+}
+
+async function downloadToFile(downloadUrl, destPath, onProgress) {
+    const res = await fetch(downloadUrl, {
+        redirect: 'follow',
+        headers: { 'User-Agent': `WorkspaceClient/${app.getVersion?.() || '0.0.0'}` }
+    });
+    if (!res.ok) throw new Error(`Téléchargement HTTP ${res.status}`);
+
+    const total = Number(res.headers.get('content-length') || 0) || null;
+    const body = res.body;
+    if (!body || typeof body.getReader !== 'function') {
+        const buf = Buffer.from(await res.arrayBuffer());
+        fs.writeFileSync(destPath, buf);
+        try { fs.chmodSync(destPath, 0o755); } catch (_) { }
+        if (typeof onProgress === 'function') onProgress({ received: buf.length, total, percent: 100 });
+        return { bytes: buf.length };
+    }
+
+    const reader = body.getReader();
+    const out = fs.createWriteStream(destPath, { flags: 'w', mode: 0o755 });
+    let received = 0;
+    let lastEmit = 0;
+    try {
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+                const buf = Buffer.from(value);
+                out.write(buf);
+                received += buf.length;
+                const now = Date.now();
+                if (typeof onProgress === 'function' && (now - lastEmit > 120)) {
+                    const percent = total ? Math.max(0, Math.min(100, Math.round((received / total) * 100))) : null;
+                    onProgress({ received, total, percent });
+                    lastEmit = now;
+                }
+            }
+        }
+        out.end();
+        try { fs.chmodSync(destPath, 0o755); } catch (_) { }
+        if (typeof onProgress === 'function') onProgress({ received, total, percent: 100 });
+        return { bytes: received };
+    } finally {
+        try { out.close(); } catch (_) { }
+        try { reader.releaseLock(); } catch (_) { }
+    }
+}
+
+ipcMain.handle('check-app-update', async () => {
+    try {
+        const current = normalizeSemver(app.getVersion());
+        const release = await fetchLatestGithubRelease();
+        const latest = normalizeSemver(release?.tag_name || release?.name || '');
+        const asset = pickAppImageAsset(release);
+        const downloadUrl = asset?.browser_download_url || null;
+        const available = !!latest && compareSemver(latest, current) > 0;
+        return {
+            success: true,
+            available,
+            currentVersion: current,
+            latestVersion: latest || null,
+            downloadUrl,
+            releaseName: release?.name || null
+        };
+    } catch (e) {
+        return { success: false, error: e?.message || String(e) };
+    }
+});
+
+ipcMain.handle('download-app-update', async () => {
+    try {
+        if (process.platform !== 'linux') {
+            return { success: false, error: 'Mise à jour manuelle supportée uniquement sous Linux AppImage' };
+        }
+        const currentApp = process.env.APPIMAGE;
+        if (!currentApp || !fs.existsSync(currentApp)) {
+            return { success: false, error: 'APPIMAGE introuvable (lance l’app via AppImage)' };
+        }
+
+        const release = await fetchLatestGithubRelease();
+        const asset = pickAppImageAsset(release);
+        if (!asset?.browser_download_url) {
+            return { success: false, error: 'Aucun asset AppImage trouvé sur la release' };
+        }
+        const latest = normalizeSemver(release?.tag_name || release?.name || '');
+        const tempDir = path.join(app.getPath('temp'), 'workspace-manual-update');
+        try { fs.mkdirSync(tempDir, { recursive: true }); } catch (_) { }
+        const downloadedPath = path.join(tempDir, 'workspace.appimage');
+
+        const dl = await downloadToFile(asset.browser_download_url, downloadedPath, ({ received, total, percent }) => {
+            try {
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('app-update-download-progress', { received, total, percent });
+                }
+            } catch (_) { }
+        });
+        linuxAppImageBackup(currentApp);
+
+        const helperOk = tryLinuxAppImageUpdateHelper(currentApp, downloadedPath);
+        if (!helperOk) {
+            return { success: false, error: 'Impossible de préparer le remplacement (helper non lancé)' };
+        }
+        try {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('app-update-download-done', { success: true, latestVersion: latest || null });
+            }
+        } catch (_) { }
+        return {
+            success: true,
+            latestVersion: latest || null,
+            bytes: dl.bytes,
+            message: 'Mise à jour téléchargée. Redémarre l’application pour l’appliquer.'
+        };
+    } catch (e) {
+        try {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('app-update-download-done', { success: false, error: e?.message || String(e) });
+            }
+        } catch (_) { }
+        return { success: false, error: e?.message || String(e) };
+    }
+});
 
 let pdfWindows = new Map();
 let serverConnected = false;
@@ -826,27 +990,8 @@ app.on('ready', async () => {
     console.log('ℹ️  La config réelle sera chargée par le client web');
     
     setupChatNotifications();
-    createSplashWindow();
-
-    if (app.isPackaged) {
-        await runAutoUpdate({
-            app,
-            path,
-            fs,
-            setSplashMessage,
-            setSplashProgress,
-            setSplashUpdateSuccess,
-            launchApp,
-            getSplashWindow: () => splashWindow,
-            getMainWindow: () => mainWindow,
-            setQuittingForUpdate: (v) => { quittingForUpdate = v; },
-            linuxAppImageBackup,
-            tryLinuxAppImageUpdateHelper,
-            sessionLog
-        });
-    } else {
-        await launchApp();
-    }
+    // Démarrage optimisé : plus de vérification MAJ au lancement.
+    await launchApp();
 });
 
 // IPC: lister les dossiers d'un chemin (restriction aux répertoires autorisés)
@@ -1318,6 +1463,17 @@ function formatDateForPdf(iso) {
     } catch (_) {
         return '-';
     }
+}
+
+/**
+ * Heure locale "HH-mm-ss" (pour rendre les noms de fichiers PDF uniques).
+ * Utilisé uniquement quand aucun nom explicite n'est fourni.
+ */
+function formatTimeForFilename(d = new Date()) {
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${hh}-${mm}-${ss}`;
 }
 
 /** Échapper pour affichage dans le HTML du template PDF */
@@ -2244,11 +2400,13 @@ ipcMain.handle('generate-don-pdf', async (_event, payload) => {
     const sanitizedName = (lotName && String(lotName).trim())
         ? String(lotName).trim().replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '').trim()
         : 'don';
-    const fileName = `${sanitizedName}_${dateStr}.pdf`;
+    const isDefaultDonName = String(sanitizedName || '').trim().toLowerCase() === 'don';
+    const timeSuffix = isDefaultDonName ? `_${formatTimeForFilename()}` : '';
+    const fileName = `${sanitizedName}_${dateStr}${timeSuffix}.pdf`;
     const fullPath = path.join(targetBasePath, fileName);
 
     try {
-        const result = await generateDonsPdfFromHtmlTemplate({ lotName: sanitizedName === 'don' ? '' : (lotName || '').trim(), date: dateStr, lines }, fullPath);
+        const result = await generateDonsPdfFromHtmlTemplate({ lotName: isDefaultDonName ? '' : (lotName || '').trim(), date: dateStr, lines }, fullPath);
         if (result) return result;
     } catch (err) {
         console.error('❌ generate-don-pdf (template HTML):', err.message);
@@ -2442,7 +2600,10 @@ ipcMain.handle('generate-pret-materiel-pdf', async (_event, payload) => {
     const refPart = sanitizePretPdfBaseName(reference);
     const borrowerPart = sanitizePretPdfBaseName(borrower_name);
     const baseName = refPart || borrowerPart || 'pret';
-    const fileName = `${baseName}_${dateStr}.pdf`;
+    const hasLotTitle = !!String(lot_name ?? lotName ?? '').trim();
+    // Règle unicité: si aucun "nom de lot" n'est fourni, on ajoute l'heure (évite l'écrasement le même jour).
+    const timeSuffix = !hasLotTitle ? `_${formatTimeForFilename()}` : '';
+    const fileName = `${baseName}_${dateStr}${timeSuffix}.pdf`;
     const fullPath = path.join(targetBasePath, fileName);
 
     try {

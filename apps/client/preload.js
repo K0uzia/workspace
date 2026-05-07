@@ -2,8 +2,35 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 const ALLOWED_CHANNELS = {
     send: ['open-pdf', 'chat-new-message'],
-    invoke: ['open-external', 'open-pdf-window', 'open-pdf-with-system-app', 'get-app-config', 'get-connection-config', 'get-server-config', 'get-local-ip', 'get-system-info', 'list-folders', 'open-path', 'launch-app', 'get-app-icon', 'generate-lot-pdf', 'generate-disques-pdf', 'generate-commande-pdf', 'generate-don-pdf', 'generate-pret-materiel-pdf', 'read-file-as-base64', 'run-lsblk'],
-    on: ['update-was-installed']
+    invoke: [
+        'open-external',
+        'open-pdf-window',
+        'open-pdf-with-system-app',
+        'get-app-config',
+        'get-connection-config',
+        'get-server-config',
+        'get-local-ip',
+        'get-system-info',
+        'list-folders',
+        'open-path',
+        'launch-app',
+        'get-app-icon',
+        'generate-lot-pdf',
+        'generate-disques-pdf',
+        'generate-commande-pdf',
+        'generate-don-pdf',
+        'generate-pret-materiel-pdf',
+        'read-file-as-base64',
+        'run-lsblk',
+        'check-app-update',
+        'download-app-update'
+    ],
+    on: [
+        'update-was-installed',
+        'app-update-available',
+        'app-update-download-progress',
+        'app-update-download-done'
+    ]
 };
 
 function validateChannel(channel, type) {
