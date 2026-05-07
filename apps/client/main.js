@@ -334,8 +334,8 @@ if [ ! -f "$downloaded" ]; then
   exit 1
 fi
 # Supprimer l'ancien .bak s'il existe, puis renommer l'AppImage actuelle en .bak
-rm -f "${dest}.bak"
-mv -f "$dest" "${dest}.bak"
+rm -f "\${dest}.bak"
+mv -f "$dest" "\${dest}.bak"
 # Déplacer la nouvelle AppImage du dossier temp vers l'emplacement final
 mv -f "$downloaded" "$dest"
 chmod +x "$dest"
@@ -352,6 +352,28 @@ exec "$dest"
     } catch (e) {
         console.warn('[Update] Helper script failed:', e?.message);
         return false;
+    }
+}
+
+function tryLinuxAppImageUpdateHelperDetailed(currentAppPath, newAppPath) {
+    try {
+        if (process.platform !== 'linux') return { ok: false, error: 'Plateforme non supportée' };
+        if (!currentAppPath) return { ok: false, error: 'APPIMAGE vide' };
+        if (!fs.existsSync(currentAppPath)) return { ok: false, error: `APPIMAGE introuvable: ${currentAppPath}` };
+        if (!newAppPath) return { ok: false, error: 'Chemin de téléchargement vide' };
+        if (!fs.existsSync(newAppPath)) return { ok: false, error: `Fichier téléchargé introuvable: ${newAppPath}` };
+        try {
+            fs.accessSync(path.dirname(currentAppPath), fs.constants.W_OK);
+        } catch (_) {
+            return {
+                ok: false,
+                error: `Dossier non accessible en écriture: ${path.dirname(currentAppPath)}`
+            };
+        }
+        const ok = tryLinuxAppImageUpdateHelper(currentAppPath, newAppPath);
+        return ok ? { ok: true } : { ok: false, error: 'spawn helper échoué (voir logs)' };
+    } catch (e) {
+        return { ok: false, error: e?.message || String(e) };
     }
 }
 
@@ -499,9 +521,19 @@ ipcMain.handle('download-app-update', async () => {
         });
         linuxAppImageBackup(currentApp);
 
-        const helperOk = tryLinuxAppImageUpdateHelper(currentApp, downloadedPath);
-        if (!helperOk) {
-            return { success: false, error: 'Impossible de préparer le remplacement (helper non lancé)' };
+        const helper = tryLinuxAppImageUpdateHelperDetailed(currentApp, downloadedPath);
+        if (!helper.ok) {
+            return {
+                success: false,
+                error: 'Impossible de préparer le remplacement (helper non lancé)',
+                detail: helper.error || null,
+                debug: {
+                    currentApp,
+                    downloadedPath,
+                    downloadedExists: fs.existsSync(downloadedPath),
+                    destDir: path.dirname(currentApp)
+                }
+            };
         }
         try {
             if (mainWindow && !mainWindow.isDestroyed()) {
