@@ -90,6 +90,8 @@ class PageManager {
 
         // Charger le header puis afficher la page tout de suite (premier rendu plus rapide)
         await this.loadComponent('header', './components/header.html', () => this.initializeAuth());
+        // Check MAJ en arrière-plan pour afficher le ping/badge Profil si nécessaire
+        this.checkUpdateInBackground();
 
         // Fermer le WebSocket à la fermeture de la fenêtre pour que le serveur
         // reçoive l'événement close et libère la session (évite "déjà connecté" au retour).
@@ -508,6 +510,20 @@ class PageManager {
         }
     }
 
+    async checkUpdateInBackground() {
+        try {
+            if (!window.electron?.invoke) return;
+            // Éviter de spammer GitHub si init est rappelé
+            if (this._updateCheckedOnce) return;
+            this._updateCheckedOnce = true;
+            const res = await window.electron.invoke('check-app-update', {});
+            this._updateInfo = res;
+            this.refreshUpdateUI();
+        } catch (_) {
+            // silent (pas de bruit UX au démarrage)
+        }
+    }
+
     async loadSettingsModal() {
         try {
             const response = await fetch('./components/settings-modal.html');
@@ -787,11 +803,13 @@ class PageManager {
         const hint = document.getElementById('settingsUpdateHint');
         const badgeUser = document.getElementById('profileUpdateBadge');
         const badgeGuest = document.getElementById('profileUpdateBadgeGuest');
+        const ping = document.getElementById('profileUpdatePing');
 
         const available = !!(info && info.success && info.available);
 
         if (badgeUser) badgeUser.classList.toggle('hidden', !available);
         if (badgeGuest) badgeGuest.classList.toggle('hidden', !available);
+        if (ping) ping.classList.toggle('hidden', !available);
 
         if (status) {
             if (!window.electron?.invoke) status.textContent = 'Disponible uniquement dans l’application desktop';

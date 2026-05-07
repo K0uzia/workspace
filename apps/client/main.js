@@ -321,8 +321,9 @@ function tryLinuxAppImageUpdateHelper(currentAppPath, newAppPath) {
         const dir = path.dirname(currentAppPath);
         // Remplacer exactement l'AppImage en cours (même nom/chemin).
         const finalPath = currentAppPath;
-        const scriptPath = path.join(app.getPath('userData'), 'workspace-update-helper.sh');
-        const script = `#!/bin/sh
+        // Important: éviter d'écrire un script sur disque (peut échouer selon droits/montage).
+        // On exécute directement via /bin/sh -c pour maximiser la compat.
+        const script = `
 # downloaded = AppImage téléchargée (dossier temporaire), dest = chemin final (workspace.AppImage), pid = processus à attendre
 downloaded="$1"
 dest="$2"
@@ -341,9 +342,7 @@ chmod +x "$dest"
 export APPIMAGE_SILENT_INSTALL=true
 exec "$dest"
 `;
-        fs.writeFileSync(scriptPath, script, 'utf8');
-        fs.chmodSync(scriptPath, 0o755);
-        const child = spawn('/bin/sh', [scriptPath, newAppPath, finalPath, String(process.pid)], {
+        const child = spawn('/bin/sh', ['-c', script, '_', newAppPath, finalPath, String(process.pid)], {
             detached: true,
             stdio: 'ignore',
             cwd: dir,
@@ -437,12 +436,15 @@ async function downloadToFile(downloadUrl, destPath, onProgress) {
                 }
             }
         }
-        out.end();
+        await new Promise((resolve, reject) => {
+            out.end(() => resolve());
+            out.on('error', reject);
+        });
         try { fs.chmodSync(destPath, 0o755); } catch (_) { }
         if (typeof onProgress === 'function') onProgress({ received, total, percent: 100 });
         return { bytes: received };
     } finally {
-        try { out.close(); } catch (_) { }
+        // close() est implicite après end(); éviter de fermer trop tôt.
         try { reader.releaseLock(); } catch (_) { }
     }
 }
