@@ -629,26 +629,39 @@ def emit_sql(
     lines.append("-- Commandes")
     for r in sorted(commandes, key=lambda x: (x.date, x.category, x.name)):
         if r.lines:
-            lines.append(
+            cmd_id_sub = (
+                f"(SELECT id FROM commandes WHERE pdf_path = {sql_literal(r.pdf_path)} ORDER BY id DESC LIMIT 1)"
+            )
+            ins_cte = (
                 "WITH ins AS ("
                 " INSERT INTO commandes (user_id, name, category, date, pdf_path, created_at)"
                 f" VALUES (NULL, {sql_literal(r.name)}, {sql_literal(r.category)}, {sql_date(r.date)}, {sql_literal(r.pdf_path)}, NOW())"
                 " RETURNING id"
                 ")"
             )
-            for ln in r.lines:
+            for idx, ln in enumerate(r.lines):
                 qty_raw = str(ln.get("quantity", "")).strip()
                 qty = int(qty_raw) if re.fullmatch(r"\d+", qty_raw or "") else 1
                 unit_price = parse_price_to_decimal(str(ln.get("price", "") or ""))
                 ship_price = parse_price_to_decimal(str(ln.get("shipping", "") or ""))
                 product_name = str(ln.get("produit", "") or "").strip() or None
                 link = str(ln.get("link", "") or "").strip() or None
-                lines.append(
-                    "INSERT INTO commande_lignes (commande_id, product_name, quantity, unit_price, shipping_cost, link, created_at)"
-                    " SELECT ins.id, "
-                    f"{sql_literal(product_name)}, {qty}, {sql_literal(unit_price)}::numeric, {sql_literal(ship_price)}::numeric, {sql_literal(link)}, NOW()"
-                    " FROM ins;"
-                )
+                cid = "ins.id" if idx == 0 else cmd_id_sub
+                ins_from = " FROM ins" if idx == 0 else ""
+                if idx == 0:
+                    lines.append(
+                        ins_cte
+                        + "\nINSERT INTO commande_lignes (commande_id, product_name, quantity, unit_price, shipping_cost, link, created_at)"
+                        f" SELECT {cid}, "
+                        f"{sql_literal(product_name)}, {qty}, {sql_literal(unit_price)}::numeric, {sql_literal(ship_price)}::numeric, {sql_literal(link)}, NOW()"
+                        f"{ins_from};"
+                    )
+                else:
+                    lines.append(
+                        "INSERT INTO commande_lignes (commande_id, product_name, quantity, unit_price, shipping_cost, link, created_at)"
+                        f" SELECT {cmd_id_sub}, "
+                        f"{sql_literal(product_name)}, {qty}, {sql_literal(unit_price)}::numeric, {sql_literal(ship_price)}::numeric, {sql_literal(link)}, NOW();"
+                    )
         else:
             lines.append(
                 "INSERT INTO commandes (user_id, name, category, date, pdf_path, created_at) VALUES "
@@ -662,14 +675,17 @@ def emit_sql(
         # item_count inconnu -> 0 ; status -> finished (ou received). On met received pour coller à réception.
         item_count = len(r.items) if r.items else 0
         if r.items:
-            lines.append(
+            lot_id_sub = (
+                f"(SELECT id FROM lots WHERE pdf_path = {sql_literal(r.pdf_path)} ORDER BY id DESC LIMIT 1)"
+            )
+            ins_lot_cte = (
                 "WITH ins_lot AS ("
                 " INSERT INTO lots (user_id, name, status, item_count, description, received_at, finished_at, recovered_at, pdf_path, created_at, updated_at)"
                 f" VALUES (NULL, {sql_literal(r.name)}, 'received', {item_count}, NULL, {sql_literal(r.date)}::date, NULL, NULL, {sql_literal(r.pdf_path)}, NOW(), NOW())"
                 " RETURNING id"
                 ")"
             )
-            for it in r.items:
+            for idx, it in enumerate(r.items):
                 sn = (it.get("serial_number") or "").strip() or None
                 type_v = (it.get("type") or "").strip() or None
                 marque_name = (it.get("marque_name") or "").strip() or None
@@ -687,12 +703,14 @@ def emit_sql(
                     if m2:
                         hh, mi = m2.groups()
                         entry_time = f"{hh}:{mi}:00"
+                lot_id_expr = "ins_lot.id" if idx == 0 else lot_id_sub
+                lot_from = " FROM ins_lot" if idx == 0 else ""
                 # Crée/cherche marque
                 if marque_name:
                     modele_name_lit = sql_literal(modele_name) if modele_name else "NULL"
                     should_insert_modele = "NOT EXISTS (SELECT 1 FROM modele)" if modele_name else "false"
                     modele_id_expr = "(SELECT id FROM modele_id LIMIT 1)" if modele_name else "NULL"
-                    sql_stmt = (
+                    marque_chain = (
                         "WITH marque AS ("
                         "  INSERT INTO marques(name) VALUES "
                         f"  ({sql_literal(marque_name)})"
@@ -717,7 +735,7 @@ def emit_sql(
                         "  UNION ALL SELECT id FROM modele"
                         " )"
                         " INSERT INTO lot_items (lot_id, serial_number, type, marque_id, modele_id, entry_type, entry_date, entry_time, state, technician, created_at, updated_at)"
-                        " SELECT ins_lot.id, "
+                        f" SELECT {lot_id_expr}, "
                         f"{sql_literal(sn)}, {sql_literal(type_v)}, "
                         "(SELECT id FROM marque_id LIMIT 1), "
                         f"{modele_id_expr}, "
@@ -725,16 +743,29 @@ def emit_sql(
                         f"{sql_date(entry_date)}::date, "
                         f"{sql_literal(entry_time)}::time, "
                         f"{sql_literal(state_v)}, {sql_literal(tech)}, NOW(), NOW()"
-                        " FROM ins_lot;"
+                        f"{lot_from};"
                     )
-                    lines.append(sql_stmt)
+                    if idx == 0:
+                        # Un seul WITH : ins_lot puis marque (pas deux WITH consécutifs)
+                        rest = marque_chain[4:].lstrip()  # enlève "WITH"
+                        lines.append(ins_lot_cte + ",\n" + rest)
+                    else:
+                        lines.append(marque_chain)
                 else:
-                    lines.append(
-                        "INSERT INTO lot_items (lot_id, serial_number, type, marque_id, modele_id, entry_type, entry_date, entry_time, state, technician, created_at, updated_at)"
-                        " SELECT ins_lot.id, "
-                        f"{sql_literal(sn)}, {sql_literal(type_v)}, NULL, NULL, 'manual', {sql_date(entry_date)}::date, {sql_literal(entry_time)}::time, {sql_literal(state_v)}, {sql_literal(tech)}, NOW(), NOW()"
-                        " FROM ins_lot;"
-                    )
+                    if idx == 0:
+                        lines.append(
+                            ins_lot_cte
+                            + "\nINSERT INTO lot_items (lot_id, serial_number, type, marque_id, modele_id, entry_type, entry_date, entry_time, state, technician, created_at, updated_at)"
+                            " SELECT ins_lot.id, "
+                            f"{sql_literal(sn)}, {sql_literal(type_v)}, NULL, NULL, 'manual', {sql_date(entry_date)}::date, {sql_literal(entry_time)}::time, {sql_literal(state_v)}, {sql_literal(tech)}, NOW(), NOW()"
+                            " FROM ins_lot;"
+                        )
+                    else:
+                        lines.append(
+                            "INSERT INTO lot_items (lot_id, serial_number, type, marque_id, modele_id, entry_type, entry_date, entry_time, state, technician, created_at, updated_at)"
+                            f" SELECT {lot_id_sub}, "
+                            f"{sql_literal(sn)}, {sql_literal(type_v)}, NULL, NULL, 'manual', {sql_date(entry_date)}::date, {sql_literal(entry_time)}::time, {sql_literal(state_v)}, {sql_literal(tech)}, NOW(), NOW();"
+                        )
         else:
             lines.append(
                 "INSERT INTO lots (user_id, name, status, item_count, description, received_at, finished_at, recovered_at, pdf_path, created_at, updated_at) VALUES "
@@ -746,21 +777,36 @@ def emit_sql(
     lines.append("-- Lots disques (sessions)")
     for r in sorted(disques, key=lambda x: (x.date, x.name)):
         if r.disks:
-            lines.append(
+            sess_id_sub = (
+                f"(SELECT id FROM disques_sessions WHERE pdf_path = {sql_literal(r.pdf_path)} ORDER BY id DESC LIMIT 1)"
+            )
+            ins_sess_cte = (
                 "WITH ins_sess AS ("
                 " INSERT INTO disques_sessions (date, name, pdf_path, created_at)"
                 f" VALUES ({sql_date(r.date)}, {sql_literal(r.name)}, {sql_literal(r.pdf_path)}, NOW())"
                 " RETURNING id"
                 ")"
             )
-            for dsk in r.disks:
-                lines.append(
-                    "INSERT INTO disques_session_disks (session_id, serial, marque, modele, size, disk_type, interface, shred, created_at)"
-                    " SELECT ins_sess.id, "
-                    f"{sql_literal(dsk.get('serial'))}, {sql_literal(dsk.get('marque'))}, {sql_literal(dsk.get('modele'))}, {sql_literal(dsk.get('size'))}, "
-                    f"{sql_literal(dsk.get('disk_type'))}, {sql_literal(dsk.get('interface'))}, {sql_literal(dsk.get('shred'))}, NOW()"
-                    " FROM ins_sess;"
-                )
+            for idx, dsk in enumerate(r.disks):
+                sid = "ins_sess.id" if idx == 0 else sess_id_sub
+                disk_from = " FROM ins_sess" if idx == 0 else ""
+                if idx == 0:
+                    lines.append(
+                        ins_sess_cte
+                        + "\nINSERT INTO disques_session_disks (session_id, serial, marque, modele, size, disk_type, interface, shred, created_at)"
+                        f" SELECT {sid}, "
+                        f"{sql_literal(dsk.get('serial'))}, {sql_literal(dsk.get('marque'))}, {sql_literal(dsk.get('modele'))}, {sql_literal(dsk.get('size'))}, "
+                        f"{sql_literal(dsk.get('disk_type'))}, {sql_literal(dsk.get('interface'))}, {sql_literal(dsk.get('shred'))}, NOW()"
+                        f"{disk_from};"
+                    )
+                else:
+                    lines.append(
+                        "INSERT INTO disques_session_disks (session_id, serial, marque, modele, size, disk_type, interface, shred, created_at)"
+                        f" SELECT {sid}, "
+                        f"{sql_literal(dsk.get('serial'))}, {sql_literal(dsk.get('marque'))}, {sql_literal(dsk.get('modele'))}, {sql_literal(dsk.get('size'))}, "
+                        f"{sql_literal(dsk.get('disk_type'))}, {sql_literal(dsk.get('interface'))}, {sql_literal(dsk.get('shred'))}, NOW()"
+                        f"{disk_from};"
+                    )
         else:
             lines.append(
                 "INSERT INTO disques_sessions (date, name, pdf_path, created_at) VALUES "
