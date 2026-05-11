@@ -611,6 +611,10 @@ export default class TracabiliteManager {
     createDisqueCard(session) {
         const count = Array.isArray(session.disks) ? session.disks.length : (session.disk_count ?? 0);
         const hasPdf = session.pdf_path != null && session.pdf_path !== '';
+        const sessionPdfLocal = String(session.pdf_path || '').trim();
+        const disqueLocalPdfAttr = sessionPdfLocal && this.isAllowedLocalPath(sessionPdfLocal)
+            ? ` data-local-pdf-path="${this.escapeHtml(sessionPdfLocal)}"`
+            : '';
         const sessionName = (session.name || '').trim() || 'Lot disques';
         const rawDate = session.date ?? session.created_at ?? '';
         const dateOnly = typeof rawDate === 'string' ? rawDate.slice(0, 10) : (rawDate ? new Date(rawDate).toISOString().slice(0, 10) : '');
@@ -645,7 +649,7 @@ export default class TracabiliteManager {
                         <button type="button" class="btn-action btn-open-pdf-location-disque" data-session-id="${session.id}" title="Ouvrir le dossier du PDF">
                             <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Emplacement PDF
                         </button>
-                        <button type="button" class="btn-action btn-view-pdf-disque" data-pdf-url="${pdfUrl.replace(/"/g, '&quot;')}" data-download-filename="disques-session-${session.id}.pdf" title="Ouvrir le PDF dans le navigateur">
+                        <button type="button" class="btn-action btn-view-pdf-disque" data-pdf-url="${pdfUrl.replace(/"/g, '&quot;')}" data-download-filename="disques-session-${session.id}.pdf"${disqueLocalPdfAttr} title="Ouvrir le PDF dans le navigateur">
                             <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir le PDF
                         </button>
                         <button type="button" class="btn-action btn-download-pdf-disque" data-session-id="${session.id}" data-pdf-url="${pdfUrl.replace(/"/g, '&quot;')}" data-download-filename="disques-session-${session.id}.pdf" title="Télécharger le certificat d'effacement (PDF)">
@@ -891,6 +895,10 @@ export default class TracabiliteManager {
         const isRecovered = lot.recovered_at != null && lot.recovered_at !== '';
         // Chemin PDF : backend peut renvoyer pdf_path, pdf_url, pdfPath, path, document_path
         const pdfPath = lot.pdf_path || lot.pdf_url || lot.pdfPath || lot.path || lot.document_path || '';
+        const pdfPathStr = String(pdfPath || '').trim();
+        const lotLocalPdfAttr = pdfPathStr && this.isAllowedLocalPath(pdfPathStr)
+            ? ` data-local-pdf-path="${this.escapeHtml(pdfPathStr)}"`
+            : '';
         const isGenerating = this._generatingPdfLotId === String(lot.id);
         const dateForFile = lot.finished_at ? this.formatDateForFilename(lot.finished_at) : this.formatDateForFilename(new Date().toISOString());
         const lotDisplayName = (lot.lot_name || lot.name || '').trim();
@@ -937,7 +945,7 @@ export default class TracabiliteManager {
                         <button type="button" class="btn-action btn-open-pdf-location-lot" data-lot-id="${lot.id}" title="Ouvrir le dossier du PDF">
                             <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Emplacement PDF
                         </button>
-                        <button type="button" class="btn-action btn-view-pdf" data-pdf-url="${(api.getServerUrl() + '/api/lots/' + lot.id + '/pdf?v=' + Date.now()).replace(/"/g, '&quot;')}" data-download-filename="${downloadFileName.replace(/"/g, '&quot;')}" title="Ouvrir le PDF du lot dans le navigateur">
+                        <button type="button" class="btn-action btn-view-pdf" data-pdf-url="${(api.getServerUrl() + '/api/lots/' + lot.id + '/pdf?v=' + Date.now()).replace(/"/g, '&quot;')}" data-download-filename="${downloadFileName.replace(/"/g, '&quot;')}"${lotLocalPdfAttr} title="Ouvrir le PDF du lot dans le navigateur">
                             <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir le PDF
                         </button>
                         <button type="button" class="btn-action btn-download-pdf" data-lot-id="${lot.id}" data-pdf-path="/api/lots/${lot.id}/pdf" data-download-filename="${downloadFileName.replace(/"/g, '&quot;')}" title="Télécharger le PDF du lot">
@@ -1010,7 +1018,8 @@ export default class TracabiliteManager {
                 e.stopPropagation();
                 const url = (btn.dataset.pdfUrl || '').replace(/&quot;/g, '"');
                 const filename = (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'lot.pdf';
-                this.openPdfWithSystemApp(url, filename);
+                const localPdf = (btn.dataset.localPdfPath || '').trim();
+                this.openPdfWithSystemApp(url, filename, localPdf || undefined);
             });
         });
         document.querySelectorAll('.btn-view-pdf-disque').forEach(btn => {
@@ -1018,7 +1027,8 @@ export default class TracabiliteManager {
                 e.stopPropagation();
                 const url = (btn.dataset.pdfUrl || '').replace(/&quot;/g, '"');
                 const filename = (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'disques-session.pdf';
-                this.openPdfWithSystemApp(url, filename);
+                const localPdf = (btn.dataset.localPdfPath || '').trim();
+                this.openPdfWithSystemApp(url, filename, localPdf || undefined);
             });
         });
 
@@ -1585,16 +1595,19 @@ export default class TracabiliteManager {
     /**
      * Ouvrir le PDF avec l'application système (Electron) ou dans un nouvel onglet (navigateur).
      */
-    async openPdfWithSystemApp(pdfUrl, suggestedFilename) {
+    async openPdfWithSystemApp(pdfUrl, suggestedFilename, localFilePath) {
         if (!pdfUrl || !pdfUrl.trim()) return;
         if (window.electron?.invoke) {
             try {
                 const token = localStorage.getItem('workspace_jwt') || '';
-                const result = await window.electron.invoke('open-pdf-with-system-app', {
+                const payload = {
                     url: pdfUrl.trim(),
                     token,
                     suggestedFilename: suggestedFilename || 'tracabilite.pdf'
-                });
+                };
+                const local = (localFilePath && String(localFilePath).trim()) || '';
+                if (local) payload.localFilePath = local;
+                const result = await window.electron.invoke('open-pdf-with-system-app', payload);
                 if (!result.success) {
                     this.showNotification(result.error || 'Impossible d\'ouvrir le PDF', 'error');
                 }

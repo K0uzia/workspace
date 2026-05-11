@@ -319,36 +319,48 @@ function tryLinuxAppImageUpdateHelper(currentAppPath, newAppPath) {
     if (!fs.existsSync(newAppPath)) return false;
     try {
         const dir = path.dirname(currentAppPath);
-        // Remplacer exactement l'AppImage en cours (même nom/chemin).
         const finalPath = currentAppPath;
-        // Important: éviter d'écrire un script sur disque (peut échouer selon droits/montage).
-        // On exécute directement via /bin/sh -c pour maximiser la compat.
-        const script = `
-# downloaded = AppImage téléchargée (dossier temporaire), dest = chemin final (workspace.AppImage), pid = processus à attendre
-downloaded="$1"
-dest="$2"
-pid="$3"
-while kill -0 "$pid" 2>/dev/null; do sleep 0.3; done
-# Ne rien faire si le fichier de MAJ n'existe pas (évite de perdre l'app)
-if [ ! -f "$downloaded" ]; then
-  exit 1
-fi
-# Supprimer l'ancien .bak s'il existe, puis renommer l'AppImage actuelle en .bak
-rm -f "\${dest}.bak"
-mv -f "$dest" "\${dest}.bak"
-# Déplacer la nouvelle AppImage du dossier temp vers l'emplacement final
-mv -f "$downloaded" "$dest"
-chmod +x "$dest"
-export APPIMAGE_SILENT_INSTALL=true
-exec "$dest"
-`;
-        const child = spawn('/bin/sh', ['-c', script, '_', newAppPath, finalPath, String(process.pid)], {
-            detached: true,
-            stdio: 'ignore',
-            cwd: dir,
-        });
-        child.unref();
-        return true;
+        // Chemins via l’environnement : évite les ambiguïtés $0/$1 avec `sh -c` selon les shells,
+        // et les chemins avec espaces / caractères spéciaux (pas d’interpolation dans le corps du script).
+        const env = {
+            ...process.env,
+            WS_APPIMAGE_NEW: newAppPath,
+            WS_APPIMAGE_DEST: finalPath,
+            WS_APPIMAGE_PID: String(process.pid)
+        };
+        const script = [
+            'while kill -0 "$WS_APPIMAGE_PID" 2>/dev/null; do sleep 0.3; done',
+            'test -f "$WS_APPIMAGE_NEW" || exit 1',
+            'rm -f "${WS_APPIMAGE_DEST}.bak"',
+            'mv -f "$WS_APPIMAGE_DEST" "${WS_APPIMAGE_DEST}.bak" || exit 1',
+            'mv -f "$WS_APPIMAGE_NEW" "$WS_APPIMAGE_DEST" || exit 1',
+            'chmod +x "$WS_APPIMAGE_DEST" 2>/dev/null || true',
+            'export APPIMAGE_SILENT_INSTALL=true',
+            'exec "$WS_APPIMAGE_DEST"'
+        ].join('; ');
+        const shells = ['/bin/sh', '/usr/bin/sh', '/bin/bash', '/usr/bin/bash'];
+        for (const shellPath of shells) {
+            try {
+                if (!fs.existsSync(shellPath)) continue;
+                const child = spawn(shellPath, ['-c', script], {
+                    detached: true,
+                    stdio: 'ignore',
+                    cwd: dir,
+                    env
+                });
+                if (child && typeof child.pid === 'number' && child.pid > 0) {
+                    child.once('error', (err) => {
+                        console.warn('[Update] helper spawn error:', shellPath, err?.message || err);
+                    });
+                    child.unref();
+                    return true;
+                }
+            } catch (inner) {
+                console.warn('[Update] helper spawn try failed:', shellPath, inner?.message || inner);
+            }
+        }
+        console.warn('[Update] Aucun shell utilisable pour le helper AppImage');
+        return false;
     } catch (e) {
         console.warn('[Update] Helper script failed:', e?.message);
         return false;
@@ -523,10 +535,13 @@ ipcMain.handle('download-app-update', async () => {
 
         const helper = tryLinuxAppImageUpdateHelperDetailed(currentApp, downloadedPath);
         if (!helper.ok) {
+            const detail = helper.error || null;
             return {
                 success: false,
-                error: 'Impossible de préparer le remplacement (helper non lancé)',
-                detail: helper.error || null,
+                error: detail
+                    ? `Impossible de préparer le remplacement : ${detail}`
+                    : 'Impossible de préparer le remplacement (helper non lancé)',
+                detail,
                 debug: {
                     currentApp,
                     downloadedPath,
@@ -1052,12 +1067,23 @@ ipcMain.handle('list-folders', async (_event, payload) => {
 
 // IPC: télécharger un PDF depuis une URL et l'ouvrir avec l'application système (traçabilité)
 ipcMain.handle('open-pdf-with-system-app', async (_event, payload) => {
-    const { url: pdfUrl, token, suggestedFilename } = payload || {};
+    const { url: pdfUrl, token, suggestedFilename, localFilePath } = payload || {};
     // #region agent log
     if (DEBUG_INGEST) { fetch('http://127.0.0.1:7769/ingest/5680a22c-9f00-42fe-8dff-e51f17df8a04',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'da2875'},body:JSON.stringify({sessionId:'da2875',location:'main.js:open-pdf-with-system-app',message:'handler entry',data:{urlStart:(pdfUrl||'').slice(0,100),hasToken:!!(token&&String(token).trim())},hypothesisId:'H3',timestamp:Date.now()})}).catch(()=>{}); }
     // #endregion
     if (!pdfUrl || typeof pdfUrl !== 'string') {
         return { success: false, error: 'URL requise' };
+    }
+    if (localFilePath && typeof localFilePath === 'string') {
+        try {
+            const resolvedLocal = path.resolve(localFilePath.trim());
+            if (isPathAllowed(resolvedLocal) && fs.existsSync(resolvedLocal) && fs.statSync(resolvedLocal).isFile()) {
+                const errLocal = await shell.openPath(resolvedLocal);
+                if (!errLocal) return { success: true, path: resolvedLocal, source: 'local' };
+            }
+        } catch (e) {
+            console.warn('open-pdf-with-system-app: ouverture locale ignorée, fallback URL', e?.message || e);
+        }
     }
     let safeName = (suggestedFilename && String(suggestedFilename).replace(/[\\/:*?"<>|]/g, '_')) || 'tracabilite.pdf';
     if (!safeName.toLowerCase().endsWith('.pdf')) safeName += '.pdf';

@@ -656,7 +656,9 @@ class PageManager {
                     if (progressFill) progressFill.style.width = '0%';
                     if (progressText) progressText.textContent = '0%';
                     const res = await window.electron.invoke('download-app-update', {});
-                    if (!res?.success) throw new Error(res?.error || 'Téléchargement impossible');
+                    if (!res?.success) {
+                        throw new Error(res?.error || res?.detail || 'Téléchargement impossible');
+                    }
                     if (status) status.textContent = res?.latestVersion ? `Téléchargé (v${res.latestVersion})` : 'Téléchargé';
                     // Le hint sera affiché via l'événement "done" pour éviter tout faux positif.
                 } catch (e) {
