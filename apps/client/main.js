@@ -2,7 +2,7 @@
  * Workspace Client - Electron Main Process
  * Gère la fenêtre d'application et la connexion au serveur distant
  */
-const { app, BrowserWindow, ipcMain, shell, Notification, nativeImage, Menu, globalShortcut, crashReporter } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Notification, nativeImage, Menu, globalShortcut, crashReporter, net } = require('electron');
 const path = require('path');
 const url = require('url');
 const http = require('http');
@@ -1065,6 +1065,69 @@ ipcMain.handle('list-folders', async (_event, payload) => {
     }
 });
 
+/**
+ * Télécharge le PDF côté main : préfère net.fetch (pile Chromium) pour coller au navigateur
+ * (certificats, proxy, AppImage) ; repli sur fetch Node si besoin.
+ */
+async function fetchPdfBufferForOpen(pdfUrl, token) {
+    const headers = { Authorization: `Bearer ${token || ''}` };
+    if (net && typeof net.fetch === 'function') {
+        try {
+            const res = await net.fetch(pdfUrl, { headers });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return Buffer.from(await res.arrayBuffer());
+        } catch (e) {
+            console.warn('[open-pdf] net.fetch, repli fetch Node:', e?.message || e);
+        }
+    }
+    const res = await fetch(pdfUrl, { headers });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+}
+
+/** Linux : ouvrir un fichier PDF via le bureau (xdg-open / gio) si shell.openPath échoue (souvent sous AppImage). */
+function tryLinuxSpawnOpenFile(filePath) {
+    if (process.platform !== 'linux') return false;
+    const candidates = [
+        ['/usr/bin/xdg-open', [filePath]],
+        ['/bin/xdg-open', [filePath]],
+        ['xdg-open', [filePath]],
+        ['/usr/bin/gio', ['open', filePath]],
+        ['/bin/gio', ['open', filePath]],
+        ['gio', ['open', filePath]],
+        ['/usr/bin/kde-open', [filePath]],
+        ['/usr/bin/kde-open5', [filePath]]
+    ];
+    for (const [cmd, args] of candidates) {
+        if (cmd.includes('/') && !fs.existsSync(cmd)) continue;
+        try {
+            const child = spawn(cmd, args, { detached: true, stdio: 'ignore', env: process.env });
+            if (child && typeof child.pid === 'number' && child.pid > 0) {
+                child.once('error', () => {});
+                child.unref();
+                return true;
+            }
+        } catch (_) { /* essai suivant */ }
+    }
+    return false;
+}
+
+async function openPdfFileWithDesktopDefault(filePath) {
+    const OPEN_PATH_TIMEOUT_MS = 15000;
+    try {
+        const err = await Promise.race([
+            shell.openPath(filePath),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Ouverture expirée')), OPEN_PATH_TIMEOUT_MS))
+        ]);
+        if (!err) return { ok: true };
+        if (tryLinuxSpawnOpenFile(filePath)) return { ok: true };
+        return { ok: false, error: typeof err === 'string' ? err : String(err) };
+    } catch (e) {
+        if (tryLinuxSpawnOpenFile(filePath)) return { ok: true };
+        return { ok: false, error: e?.message || String(e) };
+    }
+}
+
 // IPC: télécharger un PDF depuis une URL et l'ouvrir avec l'application système (traçabilité)
 ipcMain.handle('open-pdf-with-system-app', async (_event, payload) => {
     const { url: pdfUrl, token, suggestedFilename, localFilePath } = payload || {};
@@ -1078,8 +1141,8 @@ ipcMain.handle('open-pdf-with-system-app', async (_event, payload) => {
         try {
             const resolvedLocal = path.resolve(localFilePath.trim());
             if (isPathAllowed(resolvedLocal) && fs.existsSync(resolvedLocal) && fs.statSync(resolvedLocal).isFile()) {
-                const errLocal = await shell.openPath(resolvedLocal);
-                if (!errLocal) return { success: true, path: resolvedLocal, source: 'local' };
+                const opened = await openPdfFileWithDesktopDefault(resolvedLocal);
+                if (opened.ok) return { success: true, path: resolvedLocal, source: 'local' };
             }
         } catch (e) {
             console.warn('open-pdf-with-system-app: ouverture locale ignorée, fallback URL', e?.message || e);
@@ -1089,23 +1152,15 @@ ipcMain.handle('open-pdf-with-system-app', async (_event, payload) => {
     if (!safeName.toLowerCase().endsWith('.pdf')) safeName += '.pdf';
     const tempPath = path.join(os.tmpdir(), `workspace-pdf-${Date.now()}-${safeName}`);
     try {
-        const headers = { 'Authorization': `Bearer ${token || ''}` };
-        const res = await fetch(pdfUrl, { headers });
+        const buf = await fetchPdfBufferForOpen(pdfUrl.trim(), token);
         // #region agent log
-        if (DEBUG_INGEST) { fetch('http://127.0.0.1:7769/ingest/5680a22c-9f00-42fe-8dff-e51f17df8a04',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'da2875'},body:JSON.stringify({sessionId:'da2875',location:'main.js:open-pdf-with-system-app',message:'after fetch',data:{status:res?.status,ok:res?.ok},hypothesisId:'H4',timestamp:Date.now()})}).catch(()=>{}); }
+        if (DEBUG_INGEST) { fetch('http://127.0.0.1:7769/ingest/5680a22c-9f00-42fe-8dff-e51f17df8a04',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'da2875'},body:JSON.stringify({sessionId:'da2875',location:'main.js:open-pdf-with-system-app',message:'after fetch',data:{bytes:buf?.length},hypothesisId:'H4',timestamp:Date.now()})}).catch(()=>{}); }
         // #endregion
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const buf = await res.arrayBuffer();
-        fs.writeFileSync(tempPath, Buffer.from(buf));
-        // shell.openPath peut ne jamais résoudre sur certains environnements Linux → timeout pour toujours renvoyer une réponse IPC
-        const OPEN_PATH_TIMEOUT_MS = 8000;
-        const err = await Promise.race([
-            shell.openPath(tempPath),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Ouverture expirée')), OPEN_PATH_TIMEOUT_MS))
-        ]);
-        if (err) {
+        fs.writeFileSync(tempPath, buf);
+        const opened = await openPdfFileWithDesktopDefault(tempPath);
+        if (!opened.ok) {
             try { fs.unlinkSync(tempPath); } catch (_) {}
-            return { success: false, error: err };
+            return { success: false, error: opened.error || 'Ouverture impossible' };
         }
         return { success: true, path: tempPath };
     } catch (e) {
@@ -1486,6 +1541,9 @@ const PRETS_PDF_BASE = '/mnt/team/#TEAM/#TRAÇABILITÉ/prets_materiel';
 /** Base partagée pour FolderManager (presets team, guest, capsule, development). */
 const TEAM_BASE = '/mnt/team/#TEAM';
 
+/** Montage équipe (chemins réels peuvent ne pas contenir le littéral « #TEAM »). */
+const TEAM_MOUNT_ROOT = '/mnt/team';
+
 /** Répertoires autorisés pour list-folders, open-path, read-file-as-base64 (sécurité). */
 function getAllowedPathPrefixes() {
     const bases = [
@@ -1493,6 +1551,7 @@ function getAllowedPathPrefixes() {
         app.getPath('userData'),
         app.getPath('documents'),
         app.getPath('temp'),
+        TEAM_MOUNT_ROOT,
         TEAM_BASE,
         TRACABILITE_PDF_BASE,
         COMMANDES_PDF_BASE,

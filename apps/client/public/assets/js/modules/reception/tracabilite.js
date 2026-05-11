@@ -1417,7 +1417,8 @@ export default class TracabiliteManager {
         if (/^https?:\/\//i.test(p)) return false;
         if (p.startsWith('/api/')) return false;
         const normalized = p.replace(/\\/g, '/');
-        return normalized.startsWith('/mnt/team/#TEAM/');
+        if (/\.\.(\/|$)/.test(normalized)) return false;
+        return normalized.startsWith('/mnt/team/');
     }
 
     toDirectoryPath(candidatePath) {
