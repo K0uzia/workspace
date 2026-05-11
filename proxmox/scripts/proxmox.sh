@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
 
 # =============== Proxmox Backend Installer & Manager ===============
-# Version 11.1 : FIX Logs (Affichage Docker Logs pour les requêtes)
+# Version 11.5 : backup pg_dump avant maj | compose up --build (pas de down sur maj)
 # Debian 13 Trixie
+#
+# Sans argument + terminal interactif → menu (mise à jour vs purge légère).
+# La base PostgreSQL vit dans le volume Docker : il n'est ni recréé (maj) ni
+# supprimé (purge menu). Aucun "docker compose down -v" dans les flux normaux.
+#
+# Effacer DÉFINITIVEMENT les données PostgreSQL (rare, à éviter) :
+#   I_ACCEPT_DESTROY_ALL_DATABASE_DATA=YES_I_UNDERSTAND sudo bash proxmox/scripts/proxmox.sh destroy-db-volume
+#
+# import.sql : racine du repo ou IMPORT_SQL_PATH= ; SKIP_IMPORT_SQL=1 pour ignorer
+# Avant mise à jour : pg_dump → proxmox/docker/backups/pre_update_*.sql.gz
+#   SKIP_BACKUP_BEFORE_UPDATE=1 pour désactiver | BACKUP_KEEP_COUNT=7 (rétention)
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -69,50 +80,60 @@ require_root() {
 
 get_ip() { hostname -I | awk '{print $1}'; }
 
+# Arrêt compose SANS -v : le volume nommé (ex. proxmox_postgres_data) reste sur le disque du CT.
 stop_and_clean() {
-  local reset_db="${1:-false}"
-  warn "Arrêt et Nettoyage..."
+  warn "Arrêt des services Proxmox (docker compose down — volumes DB conservés, pas de -v)..."
   systemctl stop "$SERVICE_NAME" 2>/dev/null || true
 
   if [[ -f "$DOCKER_DIR/docker-compose.yml" ]]; then
     cd "$DOCKER_DIR"
-    if [[ "$reset_db" == "true" ]]; then
-      warn "Option --reset-db : suppression des volumes (données perdues)..."
-      docker compose down -v --remove-orphans 2>/dev/null || true
-    else
-      docker compose down --remove-orphans 2>/dev/null || true
+    docker compose down --remove-orphans 2>/dev/null || true
+  fi
+
+  info "Volume PostgreSQL Docker : inchangé (aucune suppression, aucune recréation)."
+  ok "Arrêt terminé."
+}
+
+# Purge « disque » sans toucher aux volumes persistants (donc pas à la DB).
+cmd_purge_safe() {
+  require_root
+  log "=== PURGE LÉGÈRE (caches Docker / images pendantes) — volume PostgreSQL intact ==="
+  if ! command -v docker >/dev/null 2>&1; then
+    warn "Docker absent — rien à faire."
+    return 0
+  fi
+  info "Builder cache Docker (orphelins)..."
+  docker builder prune -f 2>/dev/null || true
+  info "Images Docker non utilisées (dangling uniquement, pas d'image prune -a)..."
+  docker image prune -f 2>/dev/null || true
+  info "Conteneurs arrêtés orphelins (sans toucher aux volumes nommés du projet)..."
+  docker container prune -f 2>/dev/null || true
+  warn "docker volume prune volontairement omis — les données PostgreSQL restent."
+  ok "Purge légère terminée. La base sur le volume Docker du CT n'a pas été modifiée."
+}
+
+# Destruction explicite du volume DB — hors menu, variable d'environnement obligatoire.
+cmd_destroy_db_volume() {
+  require_root
+  if [[ "${I_ACCEPT_DESTROY_ALL_DATABASE_DATA:-}" != "YES_I_UNDERSTAND" ]]; then
+    err "Refusé : pour supprimer le volume PostgreSQL, exporter exactement I_ACCEPT_DESTROY_ALL_DATABASE_DATA=YES_I_UNDERSTAND puis relancer destroy-db-volume."
+  fi
+  warn "=== DESTRUCTION DU VOLUME POSTGRES (données irrécupérables) ==="
+  systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+  if [[ -f "$DOCKER_DIR/docker-compose.yml" ]]; then
+    cd "$DOCKER_DIR"
+    docker compose down -v --remove-orphans 2>/dev/null || true
+  fi
+  for vol in proxmox_postgres_data workspace_postgres_data; do
+    if docker volume inspect "$vol" &>/dev/null; then
+      warn "Suppression du volume : $vol"
+      docker volume rm "$vol" 2>/dev/null || true
     fi
-  fi
-
-  if [[ "$reset_db" == "true" ]] && docker volume ls -q | grep -q proxmox_postgres_data; then
-    warn "Suppression du volume 'proxmox_postgres_data' (--reset-db)..."
-    docker volume rm proxmox_postgres_data 2>/dev/null || true
-  fi
-
-  # IMPORTANT: ne jamais pruner automatiquement les volumes en install standard.
-  # Ça peut donner l'impression que la DB est "vidée" (nouveau volume / volume supprimé).
-  if [[ "$reset_db" == "true" ]]; then
-    info "Nettoyage Docker (--reset-db) : prune des images/containers/volumes..."
-    docker image prune -a -f 2>/dev/null || true
-    docker builder prune -a -f 2>/dev/null || true
-    docker container prune -f 2>/dev/null || true
-    docker volume prune -f 2>/dev/null || true
-  else
-    info "Nettoyage Docker (sans reset-db) : arrêt uniquement, pas de prune de volumes."
-    docker container prune -f 2>/dev/null || true
-  fi
-
-  info "Nettoyage des logs Docker..."
-  find /var/lib/docker/containers/ -type f -name "*.log" -exec truncate -s 0 {} \; 2>/dev/null || true
-
-  info "Nettoyage des fichiers temporaires..."
-  apt-get clean 2>/dev/null || true
-  rm -rf /tmp/* 2>/dev/null || true
-  rm -rf /var/tmp/* 2>/dev/null || true
-
-  journalctl --vacuum-time=7d 2>/dev/null || true
-
-  ok "Nettoyage terminé."
+  done
+  info "Prune Docker agressive (post-destruction volume)..."
+  docker image prune -a -f 2>/dev/null || true
+  docker builder prune -a -f 2>/dev/null || true
+  ok "Volume DB supprimé. Une prochaine install recréera une base vide sur un volume neuf."
 }
 
 ensure_paths() {
@@ -467,6 +488,94 @@ CREATE INDEX IF NOT EXISTS idx_folder_presets_key ON folder_presets(preset_key);
 SQLEOF
 }
 
+# Schéma applicatif complet (commandes, disques, dons, prêts, …) — source de vérité dans le repo
+APP_SCHEMA_SQL="$APP_SRC_DIR/src/db/schema.sql"
+
+# Sauvegarde logique avant mise à jour (même volume / conteneurs mis à jour, pas recréés vides).
+# Appeler depuis $DOCKER_DIR ; n'utilise pas docker compose down.
+backup_postgres_before_update() {
+  local out_dir="$DOCKER_DIR/backups"
+  mkdir -p "$out_dir"
+  local ts f
+  ts="$(date +%Y%m%d_%H%M%S)"
+  f="$out_dir/pre_update_${ts}.sql.gz"
+  info "Sauvegarde PostgreSQL (avant mise à jour) → $f"
+
+  if ! docker compose ps --services --status running 2>/dev/null | grep -qx 'db'; then
+    info "Conteneur db non démarré — démarrage minimal pour pg_dump..."
+    docker compose up -d db 2>/dev/null || true
+  fi
+
+  local w
+  for w in {1..40}; do
+    if docker compose exec -T db pg_isready -U "$DB_USER_DEFAULT" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
+
+  if ! docker compose exec -T db pg_isready -U "$DB_USER_DEFAULT" >/dev/null 2>&1; then
+    warn "PostgreSQL indisponible — impossible de sauvegarder. Vérifie la stack ou lance : docker compose up -d db"
+    return 1
+  fi
+
+  if docker compose exec -T db pg_dump -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" --no-owner --no-acl 2>/dev/null | gzip -c >"$f"; then
+    if [[ -s "$f" ]]; then
+      ok "Backup OK ($(du -h "$f" 2>/dev/null | awk '{print $1}' || echo '?'))"
+    else
+      rm -f "$f"
+      warn "pg_dump vide — fichier supprimé."
+      return 1
+    fi
+  else
+    rm -f "$f"
+    warn "pg_dump a échoué."
+    return 1
+  fi
+
+  local keep="${BACKUP_KEEP_COUNT:-7}"
+  if [[ "$keep" =~ ^[0-9]+$ ]] && [[ "$keep" -ge 1 ]]; then
+    ls -1t "$out_dir"/pre_update_*.sql.gz 2>/dev/null | tail -n +$((keep + 1)) | while read -r old; do
+      [[ -z "$old" ]] && continue
+      rm -f "$old"
+      info "Rotation sauvegardes : suppression $(basename "$old")"
+    done
+  fi
+  return 0
+}
+
+# À appeler depuis $DOCKER_DIR avec le service db déjà up.
+apply_db_schemas_and_import() {
+  if [[ -f "$APP_SCHEMA_SQL" ]]; then
+    info "Schéma applicatif : $APP_SCHEMA_SQL"
+    if docker compose exec -T db psql -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" -v ON_ERROR_STOP=1 < "$APP_SCHEMA_SQL"; then
+      ok "Schéma applicatif appliqué."
+    else
+      warn "Schéma applicatif : erreur (voir ci-dessus). Poursuite avec migrations embarquées."
+    fi
+  else
+    warn "Fichier introuvable : $APP_SCHEMA_SQL (tables commandes/disques/dons/prêts peuvent manquer pour import.sql)."
+  fi
+
+  docker compose exec -T db psql -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" < /tmp/proxmox_schema.sql && ok "Migrations embarquées (proxmox_schema) OK." || warn "Migrations embarquées : erreur partielle."
+
+  if [[ "${SKIP_IMPORT_SQL:-}" == "1" ]]; then
+    info "SKIP_IMPORT_SQL=1 — aucun import SQL fichier."
+  else
+    local import_file="${IMPORT_SQL_PATH:-$REPO_ROOT/import.sql}"
+    if [[ -f "$import_file" ]]; then
+      info "Injection SQL (données) : $import_file"
+      if docker compose exec -T db psql -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" -v ON_ERROR_STOP=1 < "$import_file"; then
+        ok "import.sql appliqué."
+      else
+        warn "import.sql : échec (contraintes uniques, doublons, ou schéma incomplet). Les données déjà présentes ne sont pas effacées."
+      fi
+    else
+      info "Pas de fichier import ($import_file). Aucune injection. Générer puis copier import.sql à la racine du workspace ou définir IMPORT_SQL_PATH."
+    fi
+  fi
+}
+
 run_db_setup() {
   prepare_sql_script
   info "Configuration de la base de données..."
@@ -504,7 +613,7 @@ run_db_setup() {
     done
     echo
     sleep 2
-    docker compose exec -T db psql -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" < /tmp/proxmox_schema.sql && ok "Tables & Migrations créées." || warn "Erreur Tables."
+    apply_db_schemas_and_import
     docker compose down
   fi
   rm -f /tmp/proxmox_schema.sql
@@ -536,7 +645,8 @@ Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=${DOCKER_DIR}
 ExecStart=/usr/bin/docker compose up -d
-ExecStop=/usr/bin/docker compose down
+# stop (pas down) : garde réseau/volumes, évite de tout démonter comme un « nouveau déploiement »
+ExecStop=/usr/bin/docker compose stop
 TimeoutStartSec=0
 [Install]
 WantedBy=multi-user.target
@@ -868,21 +978,15 @@ CLISCRIPT
 # =============== Main ===============
 cmd_install() {
   require_root
-  local reset_db="false"
-  for arg in "$@"; do
-    [[ "$arg" == "--reset-db" ]] && reset_db="true"
-  done
-
-  if [[ "$reset_db" == "true" ]]; then
-    log "=== INSTALLATION V11.2 — RESET DB ACTIVÉ (données effacées) ==="
-  else
-    log "=== INSTALLATION V11.2 — données existantes conservées ==="
-  fi
-
-  stop_and_clean "$reset_db"
+  log "=== INSTALLATION / RÉPARATION (volume PostgreSQL Docker conservé) ==="
+  stop_and_clean
   ensure_paths
   git_update
-  generate_env
+  if [[ -f "$ENV_FILE" ]]; then
+    info "Fichier .env existant — conservation (JWT, ADMIN_TOKEN, mot de passe DB). Pour tout régénérer : rm \"$ENV_FILE\" puis relancer install."
+  else
+    generate_env
+  fi
   npm_build
   docker_build_images
   run_db_setup
@@ -892,9 +996,7 @@ cmd_install() {
   echo ""
   echo -e "${GREEN}Pour démarrer le serveur :${RESET}  ${BOLD}proxmox start${RESET}"
   echo -e "Puis statut / logs :  ${BOLD}proxmox status${RESET}  |  ${BOLD}proxmox logs${RESET}"
-  if [[ "$reset_db" == "false" ]]; then
-    echo -e "${YELLOW}Note :${RESET} les données de la DB ont été conservées. Pour tout réinitialiser : ${BOLD}$0 install --reset-db${RESET}"
-  fi
+  echo -e "${YELLOW}Base PostgreSQL :${RESET} toujours sur le même volume Docker du CT (non recréé)."
   echo ""
 }
 
@@ -903,24 +1005,112 @@ cmd_stop() { require_root; systemctl stop "$SERVICE_NAME"; ok "Arrêté."; }
 cmd_restart() { require_root; systemctl restart "$SERVICE_NAME"; sleep 3; /usr/local/bin/proxmox status; }
 cmd_status() { /usr/local/bin/proxmox status; }
 cmd_test() { /usr/local/bin/proxmox test-api; }
-cmd_reset_db() {
+cmd_menu() {
   require_root
-  warn "=== RESET DB : toutes les données seront supprimées ==="
-  if [[ -t 0 ]]; then
-    read -r -p "Confirmer la suppression de la base de données ? [o/N] " reply
-    [[ ! "$reply" =~ ^[oOyY] ]] && { info "Annulé."; exit 0; }
-  fi
-  cmd_install --reset-db
+  while true; do
+    echo ""
+    log "=== Proxmox backend (sur le CT) — choisir une action ==="
+    echo -e "  ${BOLD}1${RESET}  ${GREEN}Mise à jour${RESET} — backup PostgreSQL, Git, build panel/API, puis docker compose up --build (sans down)."
+    echo "      → ${BOLD}Volume PostgreSQL${RESET} inchangé ; conteneurs mis à jour (même projet, pas de stack neuve)."
+    echo ""
+    echo -e "  ${BOLD}2${RESET}  ${YELLOW}Purge légère${RESET} — caches Docker (builder, images pendantes, conteneurs orphelins)."
+    echo "      → ${BOLD}Aucune${RESET} suppression du volume où la base est enregistrée (pas de docker volume rm / prune des volumes)."
+    echo ""
+    echo -e "  ${BOLD}3${RESET}  ${BLUE}Installation / réparation complète${RESET} — build images, schéma DB, systemd, CLI (comme une 1ʳᵉ install mais DB conservée)."
+    echo ""
+    echo -e "  ${BOLD}q${RESET}  Quitter"
+    echo ""
+    read -r -p "Choix [1-3 ou q] : " choice || true
+    case "${choice:-}" in
+      1) cmd_update; break ;;
+      2) cmd_purge_safe; break ;;
+      3) cmd_install; break ;;
+      q|Q) info "Au revoir."; exit 0 ;;
+      *) warn "Choix invalide (tape 1, 2, 3 ou q)." ;;
+    esac
+  done
 }
 
+# Mise à jour : backup → Git → build → compose up --build (pas de systemctl restart / compose down)
+cmd_update() {
+  require_root
+  log "=== MISE À JOUR (backup DB + Git + build + compose up --build + migrations) ==="
+  ensure_paths
+  cd "$DOCKER_DIR"
+
+  if [[ "${SKIP_BACKUP_BEFORE_UPDATE:-}" == "1" ]]; then
+    info "SKIP_BACKUP_BEFORE_UPDATE=1 — aucune sauvegarde pg_dump."
+  else
+    backup_postgres_before_update || warn "Pas de backup fichier — poursuite de la mise à jour."
+  fi
+
+  git_update
+  if [[ ! -f "$ENV_FILE" ]]; then
+    generate_env
+  else
+    info ".env conservé."
+  fi
+  npm_build
+
+  cd "$DOCKER_DIR"
+  info "Mise à jour des conteneurs : docker compose up -d --build (rebuild + redémarrage, sans compose down)..."
+  docker compose up -d --build --remove-orphans
+
+  if systemctl is-enabled "$SERVICE_NAME" &>/dev/null && ! systemctl is-active "$SERVICE_NAME" &>/dev/null; then
+    info "Service systemd inactif — marquage actif (oneshot déjà « actif » si déjà démarré manuellement)."
+    systemctl start "$SERVICE_NAME" 2>/dev/null || true
+  fi
+
+  info "Attente PostgreSQL..."
+  local i
+  for i in {1..45}; do
+    if docker compose exec -T db pg_isready -U "$DB_USER_DEFAULT" >/dev/null 2>&1; then
+      ok "PostgreSQL prêt"
+      break
+    fi
+    echo -n "."
+    sleep 1
+  done
+  echo
+  sleep 2
+  prepare_sql_script
+  apply_db_schemas_and_import
+  rm -f /tmp/proxmox_schema.sql
+  ok "Mise à jour terminée. Sauvegardes : $DOCKER_DIR/backups/ — vérifier : proxmox status"
+}
+
+if [[ $# -eq 0 ]]; then
+  if [[ -t 0 ]]; then
+    cmd_menu
+    exit 0
+  fi
+  echo "Usage: $0 <commande>   (sans TTY : pas de menu interactif)" >&2
+  set -- help
+fi
+
 COMMAND="${1:-help}"
+shift || true
+
 case "$COMMAND" in
-  install) shift; cmd_install "$@" ;;
+  install) cmd_install "$@" ;;
+  menu) cmd_menu ;;
+  purge|purge-safe) cmd_purge_safe ;;
+  destroy-db-volume) cmd_destroy_db_volume ;;
   start) cmd_start ;;
   stop) cmd_stop ;;
   restart) cmd_restart ;;
   status) cmd_status ;;
   test-api|api-test) cmd_test ;;
-  reset-db) cmd_reset_db ;;
-  *) echo "Usage: $0 [install|install --reset-db|start|stop|restart|status|test-api|reset-db]" ;;
+  update) cmd_update ;;
+  help|--help|-h)
+    echo "Usage: $0 [menu|update|purge|install|destroy-db-volume|start|stop|restart|status|test-api|help]"
+    echo ""
+    echo "  (sans argument, en terminal)  menu interactif — mise à jour ou purge légère, sans toucher au volume PostgreSQL."
+    echo "  update              Backup pg_dump, Git + build, compose up --build, migrations + import.sql."
+    echo "  purge               Nettoie caches/images Docker orphelins (ne supprime pas la DB)."
+    echo "  install             Installation ou réparation complète (volume DB inchangé)."
+    echo "  destroy-db-volume   SUPPRIME le volume PostgreSQL (données perdues). Nécessite :"
+    echo "                      I_ACCEPT_DESTROY_ALL_DATABASE_DATA=YES_I_UNDERSTAND"
+    ;;
+  *) echo "Usage: $0 [menu|update|purge|install|start|stop|restart|status|test-api|help]" >&2; exit 1 ;;
 esac
