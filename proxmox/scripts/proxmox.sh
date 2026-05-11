@@ -14,6 +14,8 @@
 # import.sql : racine du repo ou IMPORT_SQL_PATH= ; SKIP_IMPORT_SQL=1 pour ignorer
 # (Générer import.sql là où les PDFs sont, commit/push, puis pull sur le CT — le CT n’a pas besoin des PDFs.)
 # Avant mise à jour : pg_dump → proxmox/docker/backups/pre_update_*.sql.gz
+# Le dump inclut --clean --if-exists : une restauration (gunzip | psql) remplace l'état des objets du dump.
+# Restaurer : cd proxmox/docker && gunzip -c backups/pre_update_XXX.sql.gz | docker compose exec -T db psql -U Admin -d workspace_db -v ON_ERROR_STOP=1
 #   SKIP_BACKUP_BEFORE_UPDATE=1 pour désactiver | BACKUP_KEEP_COUNT=7 (rétention)
 
 set -euo pipefail
@@ -520,7 +522,8 @@ backup_postgres_before_update() {
     return 1
   fi
 
-  if docker compose exec -T db pg_dump -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" --no-owner --no-acl 2>/dev/null | gzip -c >"$f"; then
+  # --clean --if-exists : au restore, DROP des objets avant recréation (sinon les INSERT s'ajoutent sans annuler l'ancien état)
+  if docker compose exec -T db pg_dump -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" --no-owner --no-acl --clean --if-exists 2>/dev/null | gzip -c >"$f"; then
     if [[ -s "$f" ]]; then
       ok "Backup OK ($(du -h "$f" 2>/dev/null | awk '{print $1}' || echo '?'))"
     else
@@ -1112,6 +1115,10 @@ case "$COMMAND" in
     echo "  install             Installation ou réparation complète (volume DB inchangé)."
     echo "  destroy-db-volume   SUPPRIME le volume PostgreSQL (données perdues). Nécessite :"
     echo "                      I_ACCEPT_DESTROY_ALL_DATABASE_DATA=YES_I_UNDERSTAND"
+    echo ""
+    echo "Restaurer une backup (fichiers sous proxmox/docker/backups/pre_update_*.sql.gz) :"
+    echo "  cd proxmox/docker && gunzip -c backups/pre_update_DATE.sql.gz | docker compose exec -T db psql -U Admin -d workspace_db -v ON_ERROR_STOP=1"
+    echo "  (les backups après correctif incluent --clean ; les anciennes sans --clean ne peuvent pas « annuler » seules les modifs SQL.)"
     ;;
   *) echo "Usage: $0 [menu|update|purge|install|start|stop|restart|status|test-api|help]" >&2; exit 1 ;;
 esac
