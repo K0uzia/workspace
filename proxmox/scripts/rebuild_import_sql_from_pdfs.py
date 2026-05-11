@@ -4,7 +4,15 @@ Reconstruit un import SQL (PostgreSQL) à partir des PDFs présents sur /mnt/tea
 
 Objectif:
 - Générer un fichier import.sql pour réinsérer des enregistrements dans la DB (commandes/lots/disques/dons/prêts).
-- Ne lit PAS le contenu des PDFs : uniquement les chemins et les noms de fichiers.
+- Sans --parse-* : uniquement chemins + noms de fichiers (pas de lecture du contenu PDF).
+- Avec --parse-all-pdf (ou --parse-*-pdf) : tableaux extraits via pdftotext ; les PDFs doivent être
+  accessibles sur la machine où tu lances ce script (souvent ton poste ou un serveur avec /mnt/team).
+
+Workflow typique « CT sans PDF »:
+1) Sur une machine où les PDFs existent : python3 proxmox/scripts/rebuild_import_sql_from_pdfs.py --parse-all-pdf --out import.sql
+2) git add import.sql && git commit && git push
+3) Sur le CT : git pull puis sudo bash proxmox/scripts/proxmox.sh update (injecte import.sql à la racine du repo).
+   Le CT n’a pas besoin des PDFs ni de relancer le script Python : seul import.sql est requis côté CT.
 
 Hypothèses de nommage fournies:
 - Commandes: /mnt/team/#TEAM/#COMMANDES/Chargeur/<categorie>/*.pdf  (nom: nom_date.pdf)
@@ -13,9 +21,8 @@ Hypothèses de nommage fournies:
 - Dons:      /mnt/team/#TEAM/#TRAÇABILITÉ/don_stagiaires/<année>/<mois>/*.pdf (nom: nom_date_heure.pdf)
 - Prêts:     /mnt/team/#TEAM/#TRAÇABILITÉ/prets_materiel/<année>/<mois>/*.pdf (nom: nom_date.pdf)
 
-⚠️ Important:
-- Si le backend n'a pas accès à /mnt/team, les liens PDF ne fonctionneront pas côté API (404).
-  Dans ce cas, il faut copier les PDFs sur le CT et adapter les chemins avant import.
+⚠️ Si le backend sur le CT n’a pas /mnt/team, les pdf_path dans la DB pointeront vers des chemins inexistants
+  sur le CT (404 côté API) : prévoir une copie des PDFs ou des chemins adaptés si les liens doivent marcher en prod.
 """
 
 from __future__ import annotations

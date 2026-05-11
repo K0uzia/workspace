@@ -12,6 +12,7 @@
 #   I_ACCEPT_DESTROY_ALL_DATABASE_DATA=YES_I_UNDERSTAND sudo bash proxmox/scripts/proxmox.sh destroy-db-volume
 #
 # import.sql : racine du repo ou IMPORT_SQL_PATH= ; SKIP_IMPORT_SQL=1 pour ignorer
+# (Générer import.sql là où les PDFs sont, commit/push, puis pull sur le CT — le CT n’a pas besoin des PDFs.)
 # Avant mise à jour : pg_dump → proxmox/docker/backups/pre_update_*.sql.gz
 #   SKIP_BACKUP_BEFORE_UPDATE=1 pour désactiver | BACKUP_KEEP_COUNT=7 (rétention)
 
