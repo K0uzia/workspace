@@ -21,6 +21,9 @@ Dates en base : colonne date / received_at = date dans le nom du PDF si présent
 du chemin (…/2026/Mars/…), sinon jour du mtime du fichier. Les created_at / updated_at (hors lignes métier) utilisent
 le mtime du PDF pour éviter que tout soit regroupé sur l’instant d’exécution de l’import SQL.
 
+Lots : statut « finished » + finished_at = mtime du PDF — ce sont des archives PDF déjà bouclées ; sinon elles
+resteraient en « received » et rempliraient l’inventaire (lots actifs = tout sauf finished côté API).
+
 Hypothèses de nommage fournies:
 - Commandes: /mnt/team/#TEAM/#COMMANDES/Chargeur/<categorie>/*.pdf  (nom: nom_date.pdf)
 - Lots:      /mnt/team/#TEAM/#TRAÇABILITÉ/<année>/<mois>/*.pdf     (nom: nom_date.pdf)
@@ -753,7 +756,7 @@ def emit_sql(
     lines.append("-- Lots (traçabilité)")
     for r in sorted(lots, key=lambda x: (x.date, x.name)):
         _ts = sql_timestamp(pdf_mtime_dt(r.pdf_path))
-        # item_count inconnu -> 0 ; status -> finished (ou received). On met received pour coller à réception.
+        # item_count inconnu -> 0 ; status « finished » + finished_at : archives PDF (inventaire = lots non terminés).
         item_count = len(r.items) if r.items else 0
         if r.items:
             lot_id_sub = (
@@ -762,7 +765,7 @@ def emit_sql(
             ins_lot_cte = (
                 "WITH ins_lot AS ("
                 " INSERT INTO lots (user_id, name, status, item_count, description, received_at, finished_at, recovered_at, pdf_path, created_at, updated_at)"
-                f" VALUES (NULL, {sql_literal(r.name)}, 'received', {item_count}, NULL, {sql_literal(r.date)}::date, NULL, NULL, {sql_literal(r.pdf_path)}, {_ts}, {_ts})"
+                f" VALUES (NULL, {sql_literal(r.name)}, 'finished', {item_count}, NULL, {sql_literal(r.date)}::date, {_ts}, NULL, {sql_literal(r.pdf_path)}, {_ts}, {_ts})"
                 " RETURNING id"
                 ")"
             )
@@ -850,7 +853,7 @@ def emit_sql(
         else:
             lines.append(
                 "INSERT INTO lots (user_id, name, status, item_count, description, received_at, finished_at, recovered_at, pdf_path, created_at, updated_at) VALUES "
-                f"(NULL, {sql_literal(r.name)}, 'received', 0, NULL, {sql_literal(r.date)}::date, NULL, NULL, {sql_literal(r.pdf_path)}, {_ts}, {_ts});"
+                f"(NULL, {sql_literal(r.name)}, 'finished', 0, NULL, {sql_literal(r.date)}::date, {_ts}, NULL, {sql_literal(r.pdf_path)}, {_ts}, {_ts});"
             )
     lines.append("")
 
