@@ -63,6 +63,13 @@ function resolvePdfFilePath(rawPath: string): string | null {
     candidates.add(path.resolve(teamBase, basename));
     candidates.add(path.resolve(teamParent, basename));
   }
+  const extra = new Set<string>();
+  for (const c of candidates) {
+    if (c.includes('TRAÇABILITÉ')) extra.add(c.replace(/TRAÇABILITÉ/g, 'TRACABILITE'));
+    if (c.includes('TRACABILITÉ')) extra.add(c.replace(/TRACABILITÉ/g, 'TRACABILITE'));
+  }
+  for (const e of extra) candidates.add(e);
+
   for (const candidate of candidates) {
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
   }
@@ -1598,26 +1605,26 @@ function broadcastUserCount() {
       }
       try {
         const result = await query('SELECT pdf_path FROM lots WHERE id = $1', [id]);
-        if (result.rowCount === 0 || !(result.rows[0] as any)?.pdf_path) {
+        const raw = (result.rows[0] as any)?.pdf_path;
+        if (result.rowCount === 0 || !raw) {
           reply.statusCode = 404;
           return { error: 'PDF not found for this lot' };
         }
-        let filePath = (result.rows[0] as any).pdf_path;
-        // Ne pas utiliser un chemin API comme chemin disque (sécurité / cohérence)
-        if (typeof filePath !== 'string' || filePath.startsWith('/api/') || filePath.startsWith('http')) {
+        let filePath = String(raw);
+        if (filePath.startsWith('/api/') || filePath.startsWith('http')) {
           reply.statusCode = 404;
           return { error: 'PDF path invalid' };
         }
-        filePath = path.resolve(filePath);
-        if (!fs.existsSync(filePath)) {
-          fastify.log.warn({ filePath, lotId: id }, 'GET /api/lots/:id/pdf file not found on disk');
+        const resolvedFile = resolvePdfFilePath(filePath);
+        if (!resolvedFile || !fs.existsSync(resolvedFile)) {
+          fastify.log.warn({ pdfPath: filePath, lotId: id, teamBase: TEAM_BASE_PATH }, 'GET /api/lots/:id/pdf file not found on disk');
           reply.statusCode = 404;
           return { error: 'PDF file not found' };
         }
         reply.header('Content-Type', 'application/pdf');
         reply.header('Content-Disposition', 'inline; filename="lot-' + id + '.pdf"');
         reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
-        return reply.send(fs.createReadStream(filePath));
+        return reply.send(fs.createReadStream(resolvedFile));
       } catch (err: any) {
         fastify.log.error({ err }, 'GET /api/lots/:id/pdf error');
         reply.statusCode = 500;
@@ -1879,25 +1886,26 @@ function broadcastUserCount() {
       }
       try {
         const result = await query('SELECT pdf_path FROM disques_sessions WHERE id = $1', [id]);
-        if (result.rowCount === 0 || !(result.rows[0] as any)?.pdf_path) {
+        const raw = (result.rows[0] as any)?.pdf_path;
+        if (result.rowCount === 0 || !raw) {
           reply.statusCode = 404;
           return { error: 'PDF not found for this session' };
         }
-        let filePath = (result.rows[0] as any).pdf_path;
-        if (typeof filePath !== 'string' || filePath.startsWith('/api/') || filePath.startsWith('http')) {
+        let filePath = String(raw);
+        if (filePath.startsWith('/api/') || filePath.startsWith('http')) {
           reply.statusCode = 404;
           return { error: 'PDF path invalid' };
         }
-        filePath = path.resolve(filePath);
-        if (!fs.existsSync(filePath)) {
-          fastify.log.warn({ filePath, sessionId: id }, 'GET /api/disques/sessions/:id/pdf file not found on disk');
+        const resolvedFile = resolvePdfFilePath(filePath);
+        if (!resolvedFile || !fs.existsSync(resolvedFile)) {
+          fastify.log.warn({ pdfPath: filePath, sessionId: id, teamBase: TEAM_BASE_PATH }, 'GET /api/disques/sessions/:id/pdf file not found on disk');
           reply.statusCode = 404;
           return { error: 'PDF file not found' };
         }
         reply.header('Content-Type', 'application/pdf');
         reply.header('Content-Disposition', 'inline; filename="disques-session-' + id + '.pdf"');
         reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
-        return reply.send(fs.createReadStream(filePath));
+        return reply.send(fs.createReadStream(resolvedFile));
       } catch (err: any) {
         fastify.log.error({ err }, 'GET /api/disques/sessions/:id/pdf error');
         reply.statusCode = 500;
@@ -2076,13 +2084,13 @@ function broadcastUserCount() {
           reply.statusCode = 404;
           return { error: 'PDF not found for this session', message: 'Générez d\'abord le PDF du lot disques.' };
         }
-        let filePath = (result.rows[0] as any).pdf_path;
-        if (typeof filePath !== 'string' || filePath.startsWith('/api/') || filePath.startsWith('http')) {
+        let filePath = String((result.rows[0] as any).pdf_path);
+        if (!filePath || filePath.startsWith('/api/') || filePath.startsWith('http')) {
           reply.statusCode = 404;
           return { error: 'PDF path invalid', message: 'Chemin PDF invalide.' };
         }
-        filePath = path.resolve(filePath);
-        if (!fs.existsSync(filePath)) {
+        const resolvedEmail = resolvePdfFilePath(filePath);
+        if (!resolvedEmail || !fs.existsSync(resolvedEmail)) {
           fastify.log.warn({ filePath, sessionId: id }, 'POST /api/disques/sessions/:id/email PDF file not found on disk');
           reply.statusCode = 404;
           return { error: 'PDF file not found', message: 'Fichier PDF introuvable.' };
@@ -2108,8 +2116,8 @@ function broadcastUserCount() {
           secure: smtpCfg.SMTP_SECURE === 'true',
           auth: smtpCfg.SMTP_USER ? { user: smtpCfg.SMTP_USER, pass: smtpCfg.SMTP_PASS } : undefined
         });
-        const fileName = path.basename(filePath);
-        const pdfBuffer = fs.readFileSync(filePath);
+        const fileName = path.basename(resolvedEmail);
+        const pdfBuffer = fs.readFileSync(resolvedEmail);
         await transporter.sendMail({
           from: smtpCfg.MAIL_FROM,
           to: email,
@@ -2153,14 +2161,14 @@ function broadcastUserCount() {
           reply.statusCode = 404;
           return { error: 'PDF not found for this lot', message: 'Générez d\'abord le PDF du lot.' };
         }
-        let filePath = (result.rows[0] as any).pdf_path;
-        if (typeof filePath !== 'string' || filePath.startsWith('/api/') || filePath.startsWith('http')) {
+        let filePath = String((result.rows[0] as any).pdf_path);
+        if (!filePath || filePath.startsWith('/api/') || filePath.startsWith('http')) {
           reply.statusCode = 404;
           return { error: 'PDF path invalid', message: 'Chemin PDF invalide.' };
         }
-        filePath = path.resolve(filePath);
-        if (!fs.existsSync(filePath)) {
-          fastify.log.warn({ filePath, lotId: id }, 'POST /api/lots/:id/email PDF file not found on disk');
+        const resolvedLotPdf = resolvePdfFilePath(filePath);
+        if (!resolvedLotPdf || !fs.existsSync(resolvedLotPdf)) {
+          fastify.log.warn({ pdfPath: filePath, lotId: id, teamBase: TEAM_BASE_PATH }, 'POST /api/lots/:id/email PDF file not found on disk');
           reply.statusCode = 404;
           return { error: 'PDF file not found', message: 'Fichier PDF introuvable.' };
         }
@@ -2186,9 +2194,9 @@ function broadcastUserCount() {
           secure: smtpCfg.SMTP_SECURE === 'true',
           auth: smtpCfg.SMTP_USER ? { user: smtpCfg.SMTP_USER, pass: smtpCfg.SMTP_PASS } : undefined
         });
-        const fileName = path.basename(filePath);
+        const fileName = path.basename(resolvedLotPdf);
         // Lire le fichier en buffer pour éviter problèmes de stream avec nodemailer
-        const pdfBuffer = fs.readFileSync(filePath);
+        const pdfBuffer = fs.readFileSync(resolvedLotPdf);
         await transporter.sendMail({
           from: smtpCfg.MAIL_FROM,
           to: email,
