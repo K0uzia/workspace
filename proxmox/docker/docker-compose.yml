@@ -63,6 +63,8 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       CONTAINER_API_NAME: ${CONTAINER_API_NAME:-workspace-proxmox}
       CONTAINER_DB_NAME: ${CONTAINER_DB_NAME:-workspace-db}
+      # Montage PDF équipe côté hôte + volumes ci-dessous si besoin (ex. /mnt/team:/mnt/team:ro)
+      TEAM_BASE_PATH: ${TEAM_BASE_PATH:-/mnt/team/#TEAM}
     ports:
       - "${API_PORT:-4000}:4000"
     volumes:

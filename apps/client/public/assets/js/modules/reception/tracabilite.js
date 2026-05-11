@@ -189,7 +189,6 @@ export default class TracabiliteManager {
         const isRecovered = lot.recovered_at != null && lot.recovered_at !== '';
         // Chemin PDF : backend peut renvoyer pdf_path, pdf_url, pdfPath, path, document_path
         const pdfPath = lot.pdf_path || lot.pdf_url || lot.pdfPath || lot.path || lot.document_path || '';
-        const apiPdfUrl = `/api/lots/${lot.id}/pdf`;
         const isGenerating = this._generatingPdfLotId === String(lot.id);
 
         return `
@@ -230,10 +229,10 @@ export default class TracabiliteManager {
 
                 <div class="lot-card-actions">
                     ${pdfPath ? `
-                        <button type="button" class="btn-action btn-view-pdf" data-lot-id="${lot.id}" data-pdf-path="${apiPdfUrl}">
+                        <button type="button" class="btn-action btn-view-pdf" data-lot-id="${lot.id}" data-pdf-path="${this.isLocalPdfPath(pdfPath) ? String(pdfPath).replace(/"/g, '&quot;') : `/api/lots/${lot.id}/pdf`}">
                             <i class="fa-solid fa-eye"></i> Voir le PDF
                         </button>
-                        <button type="button" class="btn-action btn-download-pdf" data-lot-id="${lot.id}" data-pdf-path="${apiPdfUrl}">
+                        <button type="button" class="btn-action btn-download-pdf" data-lot-id="${lot.id}" data-pdf-path="${this.isLocalPdfPath(pdfPath) ? String(pdfPath).replace(/"/g, '&quot;') : `/api/lots/${lot.id}/pdf`}">
                             <i class="fa-solid fa-download"></i> Télécharger PDF
                         </button>
                         <button type="button" class="btn-action btn-send-email" data-lot-id="${lot.id}">
@@ -311,17 +310,16 @@ export default class TracabiliteManager {
      */
     async viewPDF(lotId, pdfPath) {
         try {
-            const lot = this.lots.find(l => String(l.id) === String(lotId));
-            const localPath = lot && (lot.pdf_path || lot.pdfPath) ? String(lot.pdf_path || lot.pdfPath).trim() : '';
-            if (this.isLocalPdfPath(localPath) && window.electron && typeof window.electron.invoke === 'function') {
-                const result = await window.electron.invoke('open-path', { path: localPath });
+            if (this.isLocalPdfPath(pdfPath) && window.electron && typeof window.electron.invoke === 'function') {
+                const result = await window.electron.invoke('open-path', { path: pdfPath });
                 if (result && result.success) {
                     this.showNotification('PDF ouvert', 'success');
-                    return;
+                } else {
+                    this.showNotification(result?.error || 'Impossible d\'ouvrir le fichier', 'error');
                 }
+                return;
             }
-            const pathPart = pdfPath.startsWith('http') ? pdfPath : (pdfPath.startsWith('/') ? pdfPath : '/' + pdfPath);
-            const url = pathPart.startsWith('http') ? pathPart : api.getServerUrl() + pathPart;
+            const url = pdfPath.startsWith('http') ? pdfPath : api.getServerUrl() + (pdfPath.startsWith('/') ? pdfPath : '/' + pdfPath);
             window.open(url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now(), '_blank');
         } catch (error) {
             logger.error('❌ Erreur ouverture PDF:', error);
@@ -334,14 +332,14 @@ export default class TracabiliteManager {
      */
     async downloadPDF(lotId, pdfPath) {
         try {
-            const lot = this.lots.find(l => String(l.id) === String(lotId));
-            const localPath = lot && (lot.pdf_path || lot.pdfPath) ? String(lot.pdf_path || lot.pdfPath).trim() : '';
-            if (this.isLocalPdfPath(localPath) && window.electron && typeof window.electron.invoke === 'function') {
-                const result = await window.electron.invoke('open-path', { path: localPath });
+            if (this.isLocalPdfPath(pdfPath) && window.electron && typeof window.electron.invoke === 'function') {
+                const result = await window.electron.invoke('open-path', { path: pdfPath });
                 if (result && result.success) {
                     this.showNotification('PDF ouvert (enregistrez depuis le lecteur si besoin)', 'success');
-                    return;
+                } else {
+                    this.showNotification(result?.error || 'Impossible d\'ouvrir le fichier', 'error');
                 }
+                return;
             }
             const baseUrl = pdfPath.startsWith('http') ? '' : api.getServerUrl();
             const pathPart = pdfPath.startsWith('http') ? pdfPath : (pdfPath.startsWith('/') ? pdfPath : '/' + pdfPath);

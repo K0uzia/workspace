@@ -3,6 +3,7 @@ import { PoolClient } from 'pg';
 import { query, transaction } from '../db';
 import { getServerLogs } from '../utils/server-log-buffer';
 import { generateDisquesPdf, buildDisquesPdfPath } from '../utils/disques-pdf';
+import { resolvePdfFilePath, TEAM_BASE_PATH } from '../utils/pdf-path';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -25,7 +26,6 @@ const PVE_VERIFY_TLS = (process.env.PVE_VERIFY_TLS || 'true').trim().toLowerCase
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'admin-monitoring-token';
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
-const TEAM_BASE_PATH = process.env.TEAM_BASE_PATH || '/mnt/team/#TEAM';
 
 function isAllowedLocalPath(targetPath: string): boolean {
   if (!targetPath) return false;
@@ -753,7 +753,11 @@ export async function registerAdminRoutes(fastify: FastifyInstance): Promise<voi
       reply.statusCode = 400;
       return { error: 'Chemin requis' };
     }
-    const resolved = normalizeOpenPath(rawPath);
+    let resolved = normalizeOpenPath(rawPath);
+    if (resolved && /\.pdf$/i.test(resolved) && !fs.existsSync(resolved)) {
+      const found = resolvePdfFilePath(rawPath);
+      if (found) resolved = found;
+    }
     // #region agent log
     if (typeof fetch === 'function') fetch('http://127.0.0.1:7680/ingest/250de527-3fcc-4619-b66e-c496868c4275',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fdef1d'},body:JSON.stringify({sessionId:'fdef1d',runId:'run1',hypothesisId:'H4',location:'admin.ts:/api/admin/open-path',message:'open-path normalize',data:{rawPath,resolved,teamBase:TEAM_BASE_PATH},timestamp:Date.now()})}).catch(()=>{});
     // #endregion

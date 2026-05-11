@@ -19,6 +19,7 @@ import { globalCache } from './utils/cache';
 import { initServerLogBuffer, createPinoBufferStream } from './utils/server-log-buffer';
 import { testConnection, initializeDatabase, query } from './db';
 import { buildDisquesPdfPath } from './utils/disques-pdf';
+import { resolvePdfFilePath, TEAM_BASE_PATH } from './utils/pdf-path';
 
 // Load environment variables
 dotenv.config();
@@ -33,48 +34,6 @@ const proxmoxConfig = {
   host: process.env.SERVER_HOST || '0.0.0.0',
   wsPort: parseInt(process.env.WS_PORT || '4000', 10)
 };
-const TEAM_BASE_PATH = process.env.TEAM_BASE_PATH || '/mnt/team/#TEAM';
-
-function normalizeStoredPdfPath(rawPath: string): string {
-  const trimmed = String(rawPath || '').trim();
-  if (!trimmed) return '';
-  if (/^file:\/\//i.test(trimmed)) {
-    try {
-      const url = new URL(trimmed);
-      return decodeURIComponent(url.pathname || '');
-    } catch {
-      return decodeURIComponent(trimmed.replace(/^file:\/\//i, ''));
-    }
-  }
-  const normalizedSlashes = trimmed.replace(/\\/g, '/');
-  return path.isAbsolute(normalizedSlashes) ? path.resolve(normalizedSlashes) : path.resolve(TEAM_BASE_PATH, normalizedSlashes);
-}
-
-function resolvePdfFilePath(rawPath: string): string | null {
-  const first = normalizeStoredPdfPath(rawPath);
-  if (!first) return null;
-  const candidates = new Set<string>([first]);
-  const teamBase = path.resolve(TEAM_BASE_PATH);
-  const teamParent = path.dirname(teamBase);
-  if (first.startsWith('/mnt/team/#TEAM/')) candidates.add(path.resolve(teamBase, first.slice('/mnt/team/#TEAM/'.length)));
-  if (first.startsWith('/mnt/team/')) candidates.add(path.resolve(teamParent, first.slice('/mnt/team/'.length)));
-  const basename = path.basename(first);
-  if (basename) {
-    candidates.add(path.resolve(teamBase, basename));
-    candidates.add(path.resolve(teamParent, basename));
-  }
-  const extra = new Set<string>();
-  for (const c of candidates) {
-    if (c.includes('TRAÇABILITÉ')) extra.add(c.replace(/TRAÇABILITÉ/g, 'TRACABILITE'));
-    if (c.includes('TRACABILITÉ')) extra.add(c.replace(/TRACABILITÉ/g, 'TRACABILITE'));
-  }
-  for (const e of extra) candidates.add(e);
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
-  }
-  return null;
-}
 
 // Logger Pino : multistream = même process (pas de worker) → tous les logs vont à stdout ET au buffer monitoring
 function createLoggerStreams() {
