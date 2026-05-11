@@ -1092,6 +1092,11 @@ cmd_restore_backup() {
     f="$DOCKER_DIR/backups/$(basename "$f")"
   fi
   [[ -f "$f" ]] || err "Backup introuvable: $1"
+  # Chemin absolu obligatoire : après « cd $DOCKER_DIR », un chemin relatif type
+  # proxmox/docker/backups/… depuis la racine du repo serait résolu sous docker/ → fichier introuvable.
+  if [[ "$f" != /* ]]; then
+    f="$(cd "$(dirname "$f")" && pwd)/$(basename "$f")"
+  fi
 
   warn "=== Remplacement complet de la base PostgreSQL « ${DB_NAME_DEFAULT} » ==="
   warn "Fichier: $(basename "$f") — tout le contenu actuel de cette base sera détruit avant restauration."
