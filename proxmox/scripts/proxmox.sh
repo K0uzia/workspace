@@ -1083,6 +1083,56 @@ cmd_update() {
   ok "Mise à jour terminée. Sauvegardes : $DOCKER_DIR/backups/ — vérifier : proxmox status"
 }
 
+# Restauration « ancien pg_dump » (sans --clean dans le fichier) : il faut une base vide, sinon ERROR: relation already exists
+cmd_restore_backup() {
+  require_root
+  local f="${1:-}"
+  [[ -z "$f" ]] && err "Usage: $0 restore-backup /chemin/vers/pre_update_XXX.sql.gz   (ou seulement le nom du fichier dans backups/)"
+  if [[ ! -f "$f" ]]; then
+    f="$DOCKER_DIR/backups/$(basename "$f")"
+  fi
+  [[ -f "$f" ]] || err "Backup introuvable: $1"
+
+  warn "=== Remplacement complet de la base PostgreSQL « ${DB_NAME_DEFAULT} » ==="
+  warn "Fichier: $(basename "$f") — tout le contenu actuel de cette base sera détruit avant restauration."
+  if [[ -t 0 ]]; then
+    read -r -p "Taper OUI en majuscules pour confirmer : " reply
+    [[ "$reply" == "OUI" ]] || { info "Annulé."; exit 0; }
+  fi
+
+  ensure_paths
+  cd "$DOCKER_DIR"
+  docker compose up -d db
+  local w
+  for w in {1..40}; do
+    if docker compose exec -T db pg_isready -U "$DB_USER_DEFAULT" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
+  docker compose exec -T db pg_isready -U "$DB_USER_DEFAULT" >/dev/null 2>&1 || err "PostgreSQL indisponible."
+
+  info "Fermeture des connexions puis DROP + CREATE DATABASE ${DB_NAME_DEFAULT}…"
+  docker compose exec -T db psql -U "$DB_USER_DEFAULT" -d postgres -v ON_ERROR_STOP=1 \
+    -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${DB_NAME_DEFAULT}' AND pid <> pg_backend_pid();" \
+    -c "DROP DATABASE IF EXISTS ${DB_NAME_DEFAULT} WITH (FORCE);" \
+    -c "CREATE DATABASE ${DB_NAME_DEFAULT} OWNER \"${DB_USER_DEFAULT}\";" \
+    || err "Échec recréation de la base."
+
+  info "Injection du dump…"
+  if [[ "$f" == *.gz ]]; then
+    gunzip -c "$f" | docker compose exec -T db psql -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" -v ON_ERROR_STOP=1 \
+      || err "Échec restauration SQL (dump incomplet ou incompatible)."
+  else
+    docker compose exec -T db psql -U "$DB_USER_DEFAULT" -d "$DB_NAME_DEFAULT" -v ON_ERROR_STOP=1 <"$f" \
+      || err "Échec restauration SQL."
+  fi
+
+  info "Redémarrage de l'API (pool / connexions)…"
+  systemctl restart "$SERVICE_NAME" 2>/dev/null || docker compose up -d --remove-orphans
+  ok "Restauration terminée. Vérifier : proxmox status"
+}
+
 if [[ $# -eq 0 ]]; then
   if [[ -t 0 ]]; then
     cmd_menu
@@ -1106,8 +1156,9 @@ case "$COMMAND" in
   status) cmd_status ;;
   test-api|api-test) cmd_test ;;
   update) cmd_update ;;
+  restore-backup) cmd_restore_backup "$@" ;;
   help|--help|-h)
-    echo "Usage: $0 [menu|update|purge|install|destroy-db-volume|start|stop|restart|status|test-api|help]"
+    echo "Usage: $0 [menu|update|restore-backup|purge|install|destroy-db-volume|start|stop|restart|status|test-api|help]"
     echo ""
     echo "  (sans argument, en terminal)  menu interactif — mise à jour ou purge légère, sans toucher au volume PostgreSQL."
     echo "  update              Backup pg_dump, Git + build, compose up --build, migrations + import.sql."
@@ -1116,9 +1167,12 @@ case "$COMMAND" in
     echo "  destroy-db-volume   SUPPRIME le volume PostgreSQL (données perdues). Nécessite :"
     echo "                      I_ACCEPT_DESTROY_ALL_DATABASE_DATA=YES_I_UNDERSTAND"
     echo ""
-    echo "Restaurer une backup (fichiers sous proxmox/docker/backups/pre_update_*.sql.gz) :"
+    echo "  restore-backup FICHIER.sql.gz"
+    echo "      Recrée la base vide puis restaure le dump (obligatoire pour les backups SANS --clean dans le fichier)."
+    echo "      Exemple : sudo bash proxmox/scripts/proxmox.sh restore-backup proxmox/docker/backups/pre_update_20260511_123326.sql.gz"
+    echo ""
+    echo "Backups récentes (avec --clean dans pg_dump) : un simple gunzip|psql peut suffire sur une base déjà remplie."
     echo "  cd proxmox/docker && gunzip -c backups/pre_update_DATE.sql.gz | docker compose exec -T db psql -U Admin -d workspace_db -v ON_ERROR_STOP=1"
-    echo "  (les backups après correctif incluent --clean ; les anciennes sans --clean ne peuvent pas « annuler » seules les modifs SQL.)"
     ;;
-  *) echo "Usage: $0 [menu|update|purge|install|start|stop|restart|status|test-api|help]" >&2; exit 1 ;;
+  *) echo "Usage: $0 [menu|update|restore-backup|purge|install|start|stop|restart|status|test-api|help]" >&2; exit 1 ;;
 esac
