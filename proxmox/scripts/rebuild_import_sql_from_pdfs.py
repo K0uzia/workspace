@@ -17,6 +17,10 @@ Workflow typique « CT sans PDF »:
 Règle métier : 1 fichier PDF = 1 enregistrement (lot, don, etc.). Le chemin du dossier fait partie de l’identité
 (chemins différents = lots / typologies différents même si le nom de fichier se ressemble).
 
+Dates en base : colonne date / received_at = date dans le nom du PDF si présente, sinon 1er jour du mois déduit
+du chemin (…/2026/Mars/…), sinon jour du mtime du fichier. Les created_at / updated_at (hors lignes métier) utilisent
+le mtime du PDF pour éviter que tout soit regroupé sur l’instant d’exécution de l’import SQL.
+
 Hypothèses de nommage fournies:
 - Commandes: /mnt/team/#TEAM/#COMMANDES/Chargeur/<categorie>/*.pdf  (nom: nom_date.pdf)
 - Lots:      /mnt/team/#TEAM/#TRAÇABILITÉ/<année>/<mois>/*.pdf     (nom: nom_date.pdf)
@@ -44,6 +48,77 @@ from decimal import Decimal, InvalidOperation
 
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 TIME_RE = re.compile(r"^\d{2}-\d{2}-\d{2}$")
+
+# Mois français (dossiers type …/2026/Mars/…) → numéro 1–12
+_MONTH_FR: dict[str, int] = {}
+for i, names in enumerate(
+    [
+        ("janvier", "janv", "jan"),
+        ("fevrier", "février", "fevr", "févr", "feb"),
+        ("mars", "mar"),
+        ("avril", "avr"),
+        ("mai", "may"),
+        ("juin", "jun"),
+        ("juillet", "juil", "jul"),
+        ("aout", "août", "aug"),
+        ("septembre", "sept", "sep"),
+        ("octobre", "oct"),
+        ("novembre", "nov"),
+        ("decembre", "décembre", "dec"),
+    ],
+    start=1,
+):
+    for n in names:
+        _MONTH_FR[n.lower()] = i
+        _MONTH_FR[n.lower().replace("é", "e")] = i
+
+
+def pdf_mtime_dt(pdf_path: str) -> datetime:
+    """Heure fichier (mtime) : sert de created_at pour ranger par vrai instant du PDF, pas l’import SQL."""
+    try:
+        return datetime.fromtimestamp(Path(pdf_path).stat().st_mtime)
+    except OSError:
+        return datetime(1970, 1, 1, 0, 0, 0)
+
+
+def sql_timestamp(dt: datetime) -> str:
+    return "'" + dt.strftime("%Y-%m-%d %H:%M:%S") + "'::timestamp"
+
+
+def path_year_month_folder_date(pdf_path: str) -> Optional[str]:
+    """
+    Si le chemin contient …/<année>/<Mois_français ou MM>/… (année sur 4 chiffres),
+    retourne le 1er jour de ce mois (YYYY-MM-01) pour ancrer la date « dossier ».
+    """
+    parts = [p for p in Path(pdf_path).parts]
+    for i, seg in enumerate(parts[:-1]):
+        if not re.fullmatch(r"\d{4}", seg):
+            continue
+        year = int(seg)
+        nxt = parts[i + 1]
+        month: Optional[int] = None
+        if re.fullmatch(r"\d{1,2}", nxt):
+            m = int(nxt)
+            if 1 <= m <= 12:
+                month = m
+        else:
+            month = _MONTH_FR.get(nxt.lower().replace("é", "e"))
+        if month is not None:
+            return f"{year:04d}-{month:02d}-01"
+    return None
+
+
+def resolve_row_calendar_date(pdf_path: str, stem_date: str) -> str:
+    """
+    Date « métier » (colonne date / received_at) : date dans le nom du fichier si présente,
+    sinon 1er jour du mois déduit du chemin (…/2026/Mars/…), sinon jour calendaire du mtime.
+    """
+    if stem_date:
+        return stem_date
+    p = path_year_month_folder_date(pdf_path)
+    if p:
+        return p
+    return pdf_mtime_dt(pdf_path).date().isoformat()
 
 
 def pick_existing_dir(base: Path, candidates: List[str]) -> Optional[Path]:
@@ -167,9 +242,8 @@ def build_commandes_rows(commandes_root: Path) -> List[CommandeRow]:
         return rows
     # Structure réelle observée: souvent commandes_root/<categorie...>/*.pdf (parfois profond: alcool/chargeur/RJ45)
     for pdf in iter_pdfs(commandes_root):
-        name, d, _t = parse_name_date_from_stem(pdf.stem)
-        if not d:
-            continue
+        name, d_stem, _t = parse_name_date_from_stem(pdf.stem)
+        d = resolve_row_calendar_date(str(pdf), d_stem or "")
         rel_parent = pdf.parent.relative_to(commandes_root)
         category = str(rel_parent) if str(rel_parent) != "." else "Divers"
         rows.append(CommandeRow(name=name, category=category, date=d, pdf_path=str(pdf), lines=[]))
@@ -179,9 +253,8 @@ def build_commandes_rows(commandes_root: Path) -> List[CommandeRow]:
 def build_simple_rows(base: Path) -> List[LotRow]:
     rows: List[LotRow] = []
     for pdf in iter_pdfs(base):
-        name, d, _t = parse_name_date_from_stem(pdf.stem)
-        if not d:
-            continue
+        name, d_stem, _t = parse_name_date_from_stem(pdf.stem)
+        d = resolve_row_calendar_date(str(pdf), d_stem or "")
         rows.append(LotRow(name=name, date=d, pdf_path=str(pdf), items=[]))
     return rows
 
@@ -189,9 +262,8 @@ def build_simple_rows(base: Path) -> List[LotRow]:
 def build_disques_rows(base: Path) -> List[DisqueSessionRow]:
     rows: List[DisqueSessionRow] = []
     for pdf in iter_pdfs(base):
-        name, d, _t = parse_name_date_from_stem(pdf.stem)
-        if not d:
-            continue
+        name, d_stem, _t = parse_name_date_from_stem(pdf.stem)
+        d = resolve_row_calendar_date(str(pdf), d_stem or "")
         rows.append(DisqueSessionRow(name=name, date=d, pdf_path=str(pdf), disks=[]))
     return rows
 
@@ -199,9 +271,8 @@ def build_disques_rows(base: Path) -> List[DisqueSessionRow]:
 def build_dons_rows(base: Path) -> List[DonRow]:
     rows: List[DonRow] = []
     for pdf in iter_pdfs(base):
-        name, d, _t = parse_name_date_from_stem(pdf.stem)
-        if not d:
-            continue
+        name, d_stem, _t = parse_name_date_from_stem(pdf.stem)
+        d = resolve_row_calendar_date(str(pdf), d_stem or "")
         # lot_name vide possible, mais on garde le "name" du fichier
         rows.append(DonRow(lot_name=name, date=d, pdf_path=str(pdf), lines=[]))
     return rows
@@ -210,9 +281,8 @@ def build_dons_rows(base: Path) -> List[DonRow]:
 def build_prets_rows(base: Path) -> List[PretRow]:
     rows: List[PretRow] = []
     for pdf in iter_pdfs(base):
-        name, d, _t = parse_name_date_from_stem(pdf.stem)
-        if not d:
-            continue
+        name, d_stem, _t = parse_name_date_from_stem(pdf.stem)
+        d = resolve_row_calendar_date(str(pdf), d_stem or "")
         # On ne peut pas déduire borrower_name autrement : on utilise le nom de fichier.
         rows.append(PretRow(reference=None, borrower_name=name, date=d, pdf_path=str(pdf), lines_json="[]"))
     return rows
@@ -356,9 +426,8 @@ def parse_prets_from_text(text: str) -> Tuple[Optional[str], Optional[str], List
 def build_prets_rows_with_pdf_parse(base: Path) -> List[PretRow]:
     rows: List[PretRow] = []
     for pdf in iter_pdfs(base):
-        borrower_name, d, _t = parse_name_date_from_stem(pdf.stem)
-        if not d:
-            continue
+        borrower_name, d_stem, _t = parse_name_date_from_stem(pdf.stem)
+        d = resolve_row_calendar_date(str(pdf), d_stem or "")
         extracted_text = try_extract_text_from_pdf(pdf)
         if extracted_text:
             borrower2, reference2, lines = parse_prets_from_text(extracted_text)
@@ -638,6 +707,7 @@ def emit_sql(
     # Commandes
     lines.append("-- Commandes")
     for r in sorted(commandes, key=lambda x: (x.date, x.category, x.name)):
+        _ts = sql_timestamp(pdf_mtime_dt(r.pdf_path))
         if r.lines:
             cmd_id_sub = (
                 f"(SELECT id FROM commandes WHERE pdf_path = {sql_literal(r.pdf_path)} ORDER BY id DESC LIMIT 1)"
@@ -645,7 +715,7 @@ def emit_sql(
             ins_cte = (
                 "WITH ins AS ("
                 " INSERT INTO commandes (user_id, name, category, date, pdf_path, created_at)"
-                f" VALUES (NULL, {sql_literal(r.name)}, {sql_literal(r.category)}, {sql_date(r.date)}, {sql_literal(r.pdf_path)}, NOW())"
+                f" VALUES (NULL, {sql_literal(r.name)}, {sql_literal(r.category)}, {sql_date(r.date)}, {sql_literal(r.pdf_path)}, {_ts})"
                 " RETURNING id"
                 ")"
             )
@@ -663,25 +733,26 @@ def emit_sql(
                         ins_cte
                         + "\nINSERT INTO commande_lignes (commande_id, product_name, quantity, unit_price, shipping_cost, link, created_at)"
                         f" SELECT {cid}, "
-                        f"{sql_literal(product_name)}, {qty}, {sql_literal(unit_price)}::numeric, {sql_literal(ship_price)}::numeric, {sql_literal(link)}, NOW()"
+                        f"{sql_literal(product_name)}, {qty}, {sql_literal(unit_price)}::numeric, {sql_literal(ship_price)}::numeric, {sql_literal(link)}, {_ts}"
                         f"{ins_from};"
                     )
                 else:
                     lines.append(
                         "INSERT INTO commande_lignes (commande_id, product_name, quantity, unit_price, shipping_cost, link, created_at)"
                         f" SELECT {cmd_id_sub}, "
-                        f"{sql_literal(product_name)}, {qty}, {sql_literal(unit_price)}::numeric, {sql_literal(ship_price)}::numeric, {sql_literal(link)}, NOW();"
+                        f"{sql_literal(product_name)}, {qty}, {sql_literal(unit_price)}::numeric, {sql_literal(ship_price)}::numeric, {sql_literal(link)}, {_ts};"
                     )
         else:
             lines.append(
                 "INSERT INTO commandes (user_id, name, category, date, pdf_path, created_at) VALUES "
-                f"(NULL, {sql_literal(r.name)}, {sql_literal(r.category)}, {sql_date(r.date)}, {sql_literal(r.pdf_path)}, NOW());"
+                f"(NULL, {sql_literal(r.name)}, {sql_literal(r.category)}, {sql_date(r.date)}, {sql_literal(r.pdf_path)}, {_ts});"
             )
     lines.append("")
 
     # Lots (traçabilité)
     lines.append("-- Lots (traçabilité)")
     for r in sorted(lots, key=lambda x: (x.date, x.name)):
+        _ts = sql_timestamp(pdf_mtime_dt(r.pdf_path))
         # item_count inconnu -> 0 ; status -> finished (ou received). On met received pour coller à réception.
         item_count = len(r.items) if r.items else 0
         if r.items:
@@ -691,7 +762,7 @@ def emit_sql(
             ins_lot_cte = (
                 "WITH ins_lot AS ("
                 " INSERT INTO lots (user_id, name, status, item_count, description, received_at, finished_at, recovered_at, pdf_path, created_at, updated_at)"
-                f" VALUES (NULL, {sql_literal(r.name)}, 'received', {item_count}, NULL, {sql_literal(r.date)}::date, NULL, NULL, {sql_literal(r.pdf_path)}, NOW(), NOW())"
+                f" VALUES (NULL, {sql_literal(r.name)}, 'received', {item_count}, NULL, {sql_literal(r.date)}::date, NULL, NULL, {sql_literal(r.pdf_path)}, {_ts}, {_ts})"
                 " RETURNING id"
                 ")"
             )
@@ -752,7 +823,7 @@ def emit_sql(
                         "'manual', "
                         f"{sql_date(entry_date)}::date, "
                         f"{sql_literal(entry_time)}::time, "
-                        f"{sql_literal(state_v)}, {sql_literal(tech)}, NOW(), NOW()"
+                        f"{sql_literal(state_v)}, {sql_literal(tech)}, {_ts}, {_ts}"
                         f"{lot_from};"
                     )
                     if idx == 0:
@@ -767,25 +838,26 @@ def emit_sql(
                             ins_lot_cte
                             + "\nINSERT INTO lot_items (lot_id, serial_number, type, marque_id, modele_id, entry_type, entry_date, entry_time, state, technician, created_at, updated_at)"
                             " SELECT ins_lot.id, "
-                            f"{sql_literal(sn)}, {sql_literal(type_v)}, NULL, NULL, 'manual', {sql_date(entry_date)}::date, {sql_literal(entry_time)}::time, {sql_literal(state_v)}, {sql_literal(tech)}, NOW(), NOW()"
+                            f"{sql_literal(sn)}, {sql_literal(type_v)}, NULL, NULL, 'manual', {sql_date(entry_date)}::date, {sql_literal(entry_time)}::time, {sql_literal(state_v)}, {sql_literal(tech)}, {_ts}, {_ts}"
                             " FROM ins_lot;"
                         )
                     else:
                         lines.append(
                             "INSERT INTO lot_items (lot_id, serial_number, type, marque_id, modele_id, entry_type, entry_date, entry_time, state, technician, created_at, updated_at)"
                             f" SELECT {lot_id_sub}, "
-                            f"{sql_literal(sn)}, {sql_literal(type_v)}, NULL, NULL, 'manual', {sql_date(entry_date)}::date, {sql_literal(entry_time)}::time, {sql_literal(state_v)}, {sql_literal(tech)}, NOW(), NOW();"
+                            f"{sql_literal(sn)}, {sql_literal(type_v)}, NULL, NULL, 'manual', {sql_date(entry_date)}::date, {sql_literal(entry_time)}::time, {sql_literal(state_v)}, {sql_literal(tech)}, {_ts}, {_ts};"
                         )
         else:
             lines.append(
                 "INSERT INTO lots (user_id, name, status, item_count, description, received_at, finished_at, recovered_at, pdf_path, created_at, updated_at) VALUES "
-                f"(NULL, {sql_literal(r.name)}, 'received', 0, NULL, {sql_literal(r.date)}::date, NULL, NULL, {sql_literal(r.pdf_path)}, NOW(), NOW());"
+                f"(NULL, {sql_literal(r.name)}, 'received', 0, NULL, {sql_literal(r.date)}::date, NULL, NULL, {sql_literal(r.pdf_path)}, {_ts}, {_ts});"
             )
     lines.append("")
 
     # Disques sessions
     lines.append("-- Lots disques (sessions)")
     for r in sorted(disques, key=lambda x: (x.date, x.name)):
+        _ts = sql_timestamp(pdf_mtime_dt(r.pdf_path))
         if r.disks:
             sess_id_sub = (
                 f"(SELECT id FROM disques_sessions WHERE pdf_path = {sql_literal(r.pdf_path)} ORDER BY id DESC LIMIT 1)"
@@ -793,7 +865,7 @@ def emit_sql(
             ins_sess_cte = (
                 "WITH ins_sess AS ("
                 " INSERT INTO disques_sessions (date, name, pdf_path, created_at)"
-                f" VALUES ({sql_date(r.date)}, {sql_literal(r.name)}, {sql_literal(r.pdf_path)}, NOW())"
+                f" VALUES ({sql_date(r.date)}, {sql_literal(r.name)}, {sql_literal(r.pdf_path)}, {_ts})"
                 " RETURNING id"
                 ")"
             )
@@ -806,7 +878,7 @@ def emit_sql(
                         + "\nINSERT INTO disques_session_disks (session_id, serial, marque, modele, size, disk_type, interface, shred, created_at)"
                         f" SELECT {sid}, "
                         f"{sql_literal(dsk.get('serial'))}, {sql_literal(dsk.get('marque'))}, {sql_literal(dsk.get('modele'))}, {sql_literal(dsk.get('size'))}, "
-                        f"{sql_literal(dsk.get('disk_type'))}, {sql_literal(dsk.get('interface'))}, {sql_literal(dsk.get('shred'))}, NOW()"
+                        f"{sql_literal(dsk.get('disk_type'))}, {sql_literal(dsk.get('interface'))}, {sql_literal(dsk.get('shred'))}, {_ts}"
                         f"{disk_from};"
                     )
                 else:
@@ -814,32 +886,34 @@ def emit_sql(
                         "INSERT INTO disques_session_disks (session_id, serial, marque, modele, size, disk_type, interface, shred, created_at)"
                         f" SELECT {sid}, "
                         f"{sql_literal(dsk.get('serial'))}, {sql_literal(dsk.get('marque'))}, {sql_literal(dsk.get('modele'))}, {sql_literal(dsk.get('size'))}, "
-                        f"{sql_literal(dsk.get('disk_type'))}, {sql_literal(dsk.get('interface'))}, {sql_literal(dsk.get('shred'))}, NOW()"
+                        f"{sql_literal(dsk.get('disk_type'))}, {sql_literal(dsk.get('interface'))}, {sql_literal(dsk.get('shred'))}, {_ts}"
                         f"{disk_from};"
                     )
         else:
             lines.append(
                 "INSERT INTO disques_sessions (date, name, pdf_path, created_at) VALUES "
-                f"({sql_date(r.date)}, {sql_literal(r.name)}, {sql_literal(r.pdf_path)}, NOW());"
+                f"({sql_date(r.date)}, {sql_literal(r.name)}, {sql_literal(r.pdf_path)}, {_ts});"
             )
     lines.append("")
 
     # Dons
     lines.append("-- Dons")
     for r in sorted(dons, key=lambda x: (x.date, x.lot_name)):
+        _ts = sql_timestamp(pdf_mtime_dt(r.pdf_path))
         lines_json = json.dumps(r.lines or [], ensure_ascii=False)
         lines.append(
             "INSERT INTO dons (user_id, lot_name, date, pdf_path, lines, created_at) VALUES "
-            f"(NULL, {sql_literal(r.lot_name)}, {sql_date(r.date)}, {sql_literal(r.pdf_path)}, {sql_literal(lines_json)}::jsonb, NOW());"
+            f"(NULL, {sql_literal(r.lot_name)}, {sql_date(r.date)}, {sql_literal(r.pdf_path)}, {sql_literal(lines_json)}::jsonb, {_ts});"
         )
     lines.append("")
 
     # Prêts matériel
     lines.append("-- Prêts matériel")
     for r in sorted(prets, key=lambda x: (x.date, x.borrower_name)):
+        _ts = sql_timestamp(pdf_mtime_dt(r.pdf_path))
         lines.append(
             "INSERT INTO prets_materiel (user_id, reference, borrower_type, borrower_name, borrower_contact, date, date_debut, date_fin, remuneration_gratuit, remuneration_montant, pdf_path, lines, created_at, updated_at) VALUES "
-            f"(NULL, {sql_literal(r.reference)}, 'personne', {sql_literal(r.borrower_name)}, NULL, {sql_date(r.date)}, {sql_date(r.date)}, {sql_date(r.date)}, true, NULL, {sql_literal(r.pdf_path)}, {sql_literal(r.lines_json)}::jsonb, NOW(), NOW());"
+            f"(NULL, {sql_literal(r.reference)}, 'personne', {sql_literal(r.borrower_name)}, NULL, {sql_date(r.date)}, {sql_date(r.date)}, {sql_date(r.date)}, true, NULL, {sql_literal(r.pdf_path)}, {sql_literal(r.lines_json)}::jsonb, {_ts}, {_ts});"
         )
     lines.append("")
 
