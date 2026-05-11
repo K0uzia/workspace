@@ -14,9 +14,8 @@ Workflow typique « CT sans PDF »:
 3) Sur le CT : git pull puis sudo bash proxmox/scripts/proxmox.sh update (injecte import.sql à la racine du repo).
    Le CT n’a pas besoin des PDFs ni de relancer le script Python : seul import.sql est requis côté CT.
 
-Déduplication (par défaut) : un même PDF logique (même nom + même date dans le nom de fichier) copié sous
-/2026/, /2026/Mars/, etc. ne produit qu’un seul lot / session / don. Réimporter sans --wipe ajoute encore des lignes :
-   en cas d’historique déjà pollué par des doublons, nettoyer la base une fois ou utiliser --wipe avant un dernier import.
+Règle métier : 1 fichier PDF = 1 enregistrement (lot, don, etc.). Le chemin du dossier fait partie de l’identité
+(chemins différents = lots / typologies différents même si le nom de fichier se ressemble).
 
 Hypothèses de nommage fournies:
 - Commandes: /mnt/team/#TEAM/#COMMANDES/Chargeur/<categorie>/*.pdf  (nom: nom_date.pdf)
@@ -185,79 +184,6 @@ def build_simple_rows(base: Path) -> List[LotRow]:
             continue
         rows.append(LotRow(name=name, date=d, pdf_path=str(pdf), items=[]))
     return rows
-
-
-def _pick_shorter_path(a: str, b: str) -> str:
-    """Chemin canonique : le plus court (souvent la racine année) évite les doublons Miroirs Mars/01trimestre."""
-    if len(a) != len(b):
-        return a if len(a) < len(b) else b
-    return a if a < b else b
-
-
-def dedupe_lots_by_name_date(rows: List[LotRow]) -> List[LotRow]:
-    """Un seul lot par (nom fichier, date) : plusieurs copies du même PDF dans l'arborescence -> une entrée."""
-    best: dict[tuple[str, str], LotRow] = {}
-    for r in rows:
-        k = (r.name.strip().lower(), r.date)
-        if k not in best:
-            best[k] = r
-        else:
-            cur = best[k]
-            keep_path = _pick_shorter_path(cur.pdf_path, r.pdf_path)
-            best[k] = cur if keep_path == cur.pdf_path else r
-    return list(best.values())
-
-
-def dedupe_disques_by_name_date(rows: List[DisqueSessionRow]) -> List[DisqueSessionRow]:
-    best: dict[tuple[str, str], DisqueSessionRow] = {}
-    for r in rows:
-        k = (r.name.strip().lower(), r.date)
-        if k not in best:
-            best[k] = r
-        else:
-            cur = best[k]
-            keep_path = _pick_shorter_path(cur.pdf_path, r.pdf_path)
-            best[k] = cur if keep_path == cur.pdf_path else r
-    return list(best.values())
-
-
-def dedupe_dons_by_lot_date(rows: List[DonRow]) -> List[DonRow]:
-    best: dict[tuple[str, str], DonRow] = {}
-    for r in rows:
-        k = (r.lot_name.strip().lower(), r.date)
-        if k not in best:
-            best[k] = r
-        else:
-            cur = best[k]
-            keep_path = _pick_shorter_path(cur.pdf_path, r.pdf_path)
-            best[k] = cur if keep_path == cur.pdf_path else r
-    return list(best.values())
-
-
-def dedupe_prets_by_borrower_date(rows: List[PretRow]) -> List[PretRow]:
-    best: dict[tuple[str, str], PretRow] = {}
-    for r in rows:
-        k = (r.borrower_name.strip().lower(), r.date)
-        if k not in best:
-            best[k] = r
-        else:
-            cur = best[k]
-            keep_path = _pick_shorter_path(cur.pdf_path, r.pdf_path)
-            best[k] = cur if keep_path == cur.pdf_path else r
-    return list(best.values())
-
-
-def dedupe_commandes(rows: List[CommandeRow]) -> List[CommandeRow]:
-    best: dict[tuple[str, str, str], CommandeRow] = {}
-    for r in rows:
-        k = (r.name.strip().lower(), r.date, r.category.strip().lower())
-        if k not in best:
-            best[k] = r
-        else:
-            cur = best[k]
-            keep_path = _pick_shorter_path(cur.pdf_path, r.pdf_path)
-            best[k] = cur if keep_path == cur.pdf_path else r
-    return list(best.values())
 
 
 def build_disques_rows(base: Path) -> List[DisqueSessionRow]:
@@ -935,11 +861,6 @@ def main() -> int:
     ap.add_argument("--parse-disques-pdf", action="store_true", help="Parse les tableaux des disques + insère disques_session_disks (via pdftotext)")
     ap.add_argument("--parse-dons-pdf", action="store_true", help="Parse les tableaux des dons (via pdftotext)")
     ap.add_argument("--parse-all-pdf", action="store_true", help="Active tous les parseurs PDF (commandes/lots/disques/dons/prêts)")
-    ap.add_argument(
-        "--no-dedupe",
-        action="store_true",
-        help="Désactive la fusion des PDFs miroirs (même nom+date sous /2026/, /2026/Mars/, etc.). Par défaut: dédupage actif.",
-    )
     args = ap.parse_args()
 
     team = Path(args.team_root)
@@ -1010,19 +931,6 @@ def main() -> int:
     disques = build_disques_rows(disques_dir)
     dons = build_dons_rows(dons_dir)
 
-    if not args.no_dedupe:
-        n_cmd, n_lot, n_disk, n_don = len(commandes), len(lots), len(disques), len(dons)
-        commandes = dedupe_commandes(commandes)
-        lots = dedupe_lots_by_name_date(lots)
-        disques = dedupe_disques_by_name_date(disques)
-        dons = dedupe_dons_by_lot_date(dons)
-        if n_cmd > len(commandes) or n_lot > len(lots) or n_disk > len(disques) or n_don > len(dons):
-            print(
-                "INFO Déduplication (même nom+date, chemins miroirs) : "
-                f"commandes {n_cmd}->{len(commandes)}, lots {n_lot}->{len(lots)}, "
-                f"disques {n_disk}->{len(disques)}, dons {n_don}->{len(dons)}"
-            )
-
     parse_all = args.parse_all_pdf
     commandes, lots, disques, dons = build_rows_with_pdf_parse(
         commandes=commandes,
@@ -1036,11 +944,6 @@ def main() -> int:
     )
 
     prets = build_prets_rows_with_pdf_parse(prets_dir) if (parse_all or args.parse_prets_pdf) else build_prets_rows(prets_dir)
-    if not args.no_dedupe:
-        np = len(prets)
-        prets = dedupe_prets_by_borrower_date(prets)
-        if np > len(prets):
-            print(f"INFO Déduplication prêts : {np}->{len(prets)}")
 
     if args.debug:
         print("")
