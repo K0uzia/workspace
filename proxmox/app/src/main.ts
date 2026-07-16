@@ -1657,6 +1657,230 @@ function broadcastUserCount() {
       }
     });
 
+    // Ajouter un item à un lot existant
+    fastify.post('/api/lots/:id/items', async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      const body = (request.body as any) || {};
+      const {
+        serialNumber,
+        serial_number,
+        type,
+        marqueId,
+        marque_id,
+        modeleId,
+        modele_id,
+        marque_name,
+        modele_name,
+        entryType,
+        entry_type,
+        date,
+        entry_date,
+        time,
+        entry_time,
+        os,
+        state,
+        technician
+      } = body;
+
+      try {
+        const lotResult = await query(
+          `SELECT id, status FROM lots WHERE id = $1 AND (deleted_at IS NULL)`,
+          [id]
+        );
+        if (lotResult.rowCount === 0) {
+          reply.statusCode = 404;
+          return { error: 'Lot not found' };
+        }
+        const lot = lotResult.rows[0];
+        if (lot.status === 'finished') {
+          reply.statusCode = 400;
+          return { error: 'Lot finished', message: 'Impossible d\'ajouter du matériel à un lot terminé.' };
+        }
+
+        let resolvedMarqueId: number | null = null;
+        if (marqueId != null || marque_id != null) {
+          const parsed = parseInt(String(marqueId ?? marque_id), 10);
+          resolvedMarqueId = Number.isNaN(parsed) ? null : parsed;
+        } else if (marque_name) {
+          resolvedMarqueId = await findOrCreateMarqueIdByName(String(marque_name));
+        }
+
+        let resolvedModeleId: number | null = null;
+        if (modeleId != null || modele_id != null) {
+          const parsed = parseInt(String(modeleId ?? modele_id), 10);
+          resolvedModeleId = Number.isNaN(parsed) ? null : parsed;
+        } else if (modele_name && resolvedMarqueId) {
+          resolvedModeleId = await findOrCreateModeleIdByName(resolvedMarqueId, String(modele_name));
+        }
+
+        const sn = String(serial_number ?? serialNumber ?? '').trim() || null;
+        const itemType = String(type || '').trim() || null;
+        const entryTypeVal = String(entry_type ?? entryType ?? 'manual').trim() || 'manual';
+        const entryDateVal = entry_date ?? date ?? null;
+        const entryTimeVal = entry_time ?? time ?? null;
+        const osVal = (typeof os === 'string' && ['windows', 'linux', 'chrome', 'apple', 'android', 'bsd'].includes(os))
+          ? os
+          : 'linux';
+        const stateVal = state != null && String(state).trim() !== '' ? String(state).trim() : null;
+        const techVal = technician != null && String(technician).trim() !== '' ? String(technician).trim() : null;
+
+        const insertResult = await query(
+          `INSERT INTO lot_items
+           (lot_id, serial_number, type, marque_id, modele_id, entry_type, entry_date, entry_time, os, state, technician, state_changed_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CASE WHEN $10::text IS NOT NULL THEN NOW() ELSE NULL END)
+           RETURNING *`,
+          [
+            id,
+            sn,
+            itemType,
+            resolvedMarqueId,
+            resolvedModeleId,
+            entryTypeVal,
+            entryDateVal,
+            entryTimeVal,
+            osVal,
+            stateVal,
+            techVal
+          ]
+        );
+
+        await query(
+          `UPDATE lots SET item_count = (
+             SELECT COUNT(*) FROM lot_items WHERE lot_id = $1 AND (deleted_at IS NULL)
+           ), updated_at = NOW() WHERE id = $1`,
+          [id]
+        );
+
+        const row = insertResult.rows[0];
+        let marqueName = null;
+        let modeleName = null;
+        if (row.marque_id) {
+          const m = await query('SELECT name FROM marques WHERE id = $1', [row.marque_id]);
+          marqueName = m.rows[0]?.name ?? null;
+        }
+        if (row.modele_id) {
+          const m = await query('SELECT name FROM modeles WHERE id = $1', [row.modele_id]);
+          modeleName = m.rows[0]?.name ?? null;
+        }
+
+        return {
+          success: true,
+          item: {
+            id: row.id,
+            lot_id: row.lot_id,
+            serial_number: row.serial_number,
+            type: row.type,
+            marque_id: row.marque_id,
+            modele_id: row.modele_id,
+            marque_name: marqueName,
+            modele_name: modeleName,
+            state: row.state || null,
+            technician: row.technician || null,
+            state_changed_at: row.state_changed_at || null,
+            entry_type: row.entry_type,
+            entry_date: row.entry_date,
+            entry_time: row.entry_time,
+            os: row.os || 'linux'
+          }
+        };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'POST /api/lots/:id/items error');
+        reply.statusCode = 500;
+        return { error: 'Database error', message: error.message || 'Unknown error' };
+      }
+    });
+
+    // Soft-delete d'un item de lot
+    fastify.delete('/api/lots/items/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+
+      try {
+        const current = await query(
+          `SELECT li.*, l.status AS lot_status
+           FROM lot_items li
+           JOIN lots l ON l.id = li.lot_id
+           WHERE li.id = $1 AND (li.deleted_at IS NULL)`,
+          [id]
+        );
+        if (current.rowCount === 0) {
+          reply.statusCode = 404;
+          return { error: 'Lot item not found' };
+        }
+        const item = current.rows[0];
+        if (item.lot_status === 'finished') {
+          reply.statusCode = 400;
+          return { error: 'Lot finished', message: 'Impossible de retirer du matériel d\'un lot terminé.' };
+        }
+
+        await query(
+          `UPDATE lot_items SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1`,
+          [id]
+        );
+        await query(
+          `UPDATE lots SET item_count = (
+             SELECT COUNT(*) FROM lot_items WHERE lot_id = $1 AND (deleted_at IS NULL)
+           ), updated_at = NOW() WHERE id = $1`,
+          [item.lot_id]
+        );
+
+        return {
+          success: true,
+          item: { id: item.id, lot_id: item.lot_id, deleted: true }
+        };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'DELETE /api/lots/items/:id error');
+        reply.statusCode = 500;
+        return { error: 'Database error', message: error.message || 'Unknown error' };
+      }
+    });
+
+    // Restaurer un item soft-supprimé (undo)
+    fastify.post('/api/lots/items/:id/restore', async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+
+      try {
+        const current = await query(
+          `SELECT li.*, l.status AS lot_status
+           FROM lot_items li
+           JOIN lots l ON l.id = li.lot_id
+           WHERE li.id = $1`,
+          [id]
+        );
+        if (current.rowCount === 0) {
+          reply.statusCode = 404;
+          return { error: 'Lot item not found' };
+        }
+        const item = current.rows[0];
+        if (item.lot_status === 'finished') {
+          reply.statusCode = 400;
+          return { error: 'Lot finished', message: 'Impossible de restaurer du matériel sur un lot terminé.' };
+        }
+        if (item.deleted_at == null) {
+          return { success: true, item: { id: item.id, lot_id: item.lot_id, restored: false } };
+        }
+
+        await query(
+          `UPDATE lot_items SET deleted_at = NULL, updated_at = NOW() WHERE id = $1`,
+          [id]
+        );
+        await query(
+          `UPDATE lots SET item_count = (
+             SELECT COUNT(*) FROM lot_items WHERE lot_id = $1 AND (deleted_at IS NULL)
+           ), updated_at = NOW() WHERE id = $1`,
+          [item.lot_id]
+        );
+
+        return {
+          success: true,
+          item: { id: item.id, lot_id: item.lot_id, restored: true }
+        };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'POST /api/lots/items/:id/restore error');
+        reply.statusCode = 500;
+        return { error: 'Database error', message: error.message || 'Unknown error' };
+      }
+    });
+
     // Réception du PDF : le client envoie le contenu (base64) pour stockage côté serveur + backup local côté client
     const pdfStorageDir = process.env.PDF_STORAGE_PATH || path.join(process.cwd(), 'data', 'pdfs');
     fastify.post('/api/lots/:id/pdf', async (request: FastifyRequest, reply: FastifyReply) => {

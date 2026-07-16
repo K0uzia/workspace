@@ -77,10 +77,10 @@
     width: 100%;
     min-height: 40px;
     padding: var(--unit-1) var(--unit-2);
-    border: 1px solid rgba(13, 13, 13, 0.12);
+    border: 1px solid var(--border);
     border-radius: var(--radius-medium);
     font-size: 0.9375rem;
-    background: #fff;
+    background: var(--bg-surface-2);
     color: var(--text2);
     box-sizing: border-box;
 }
@@ -115,7 +115,7 @@
 }
 
 .tracabilite-container .lot-btn--secondary {
-    background: #fff;
+    background: var(--bg-surface-2);
     color: var(--bleu2);
     border: 1px solid rgba(62, 59, 140, 0.25);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -163,7 +163,7 @@
 .tracabilite-container .month-header {
     margin-bottom: var(--unit-2);
     padding-bottom: var(--unit-1);
-    border-bottom: 1px solid rgba(13, 13, 13, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .tracabilite-container .month-header h3 {
@@ -190,8 +190,8 @@
 }
 
 .tracabilite-container .lot-card {
-    background: var(--recep-panel-bg, #fff);
-    border: 1px solid rgba(13, 13, 13, 0.06);
+    background: var(--recep-panel-bg);
+    border: 1px solid var(--border);
     border-radius: var(--recep-panel-radius, 12px);
     box-shadow: var(--recep-panel-shadow, 0 1px 3px rgba(0,0,0,0.06));
     overflow: hidden;
@@ -282,7 +282,7 @@
     flex-wrap: wrap;
     gap: var(--unit-2);
     padding: var(--unit-2) var(--unit-4) var(--unit-3);
-    border-top: 1px solid rgba(13, 13, 13, 0.06);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .tracabilite-container .lot-card-actions .btn-action {
@@ -292,7 +292,7 @@
     gap: var(--unit-1);
     min-height: 36px;
     padding: var(--unit-1) var(--unit-2);
-    background: #fff;
+    background: var(--bg-surface-2);
     color: var(--bleu2);
     border: 1px solid rgba(62, 59, 140, 0.25);
     border-radius: var(--radius-medium);
@@ -324,7 +324,7 @@
 .tracabilite-container .lot-card-actions .btn-open-pdf-location-commande,
 .tracabilite-container .lot-card-actions .btn-open-pdf-location-don {
     background: rgba(242, 130, 65, 0.16);
-    color: #8a3e12;
+    color: #fdba74;
     border-color: rgba(242, 130, 65, 0.4);
 }
 
@@ -333,7 +333,7 @@
 .tracabilite-container .lot-card-actions .btn-open-pdf-location-commande:hover,
 .tracabilite-container .lot-card-actions .btn-open-pdf-location-don:hover {
     background: rgba(242, 130, 65, 0.24);
-    color: #6f300d;
+    color: #fed7aa;
     border-color: rgba(242, 130, 65, 0.6);
 }
 
@@ -384,14 +384,14 @@
 .tracabilite-container .lot-card-actions .btn-send-email,
 .tracabilite-container .lot-card-actions .btn-send-email-disque {
     background: rgba(0, 128, 0, 0.14);
-    color: #1f5e20;
+    color: #86efac;
     border-color: rgba(0, 128, 0, 0.45);
 }
 
 .tracabilite-container .lot-card-actions .btn-send-email:hover,
 .tracabilite-container .lot-card-actions .btn-send-email-disque:hover {
     background: rgba(0, 128, 0, 0.24);
-    color: #124013;
+    color: #bbf7d0;
     border-color: rgba(0, 128, 0, 0.65);
 }
 
@@ -400,7 +400,7 @@
 .tracabilite-container .lot-card-actions .btn-regenerate-pdf-commande,
 .tracabilite-container .lot-card-actions .btn-regenerate-pdf-don {
     background: rgba(242, 188, 27, 0.2);
-    color: #6a5200;
+    color: #fbbf24;
     border-color: rgba(242, 188, 27, 0.5);
 }
 
@@ -409,7 +409,7 @@
 .tracabilite-container .lot-card-actions .btn-regenerate-pdf-commande:hover,
 .tracabilite-container .lot-card-actions .btn-regenerate-pdf-don:hover {
     background: rgba(242, 188, 27, 0.3);
-    color: #4d3b00;
+    color: #fde68a;
     border-color: rgba(242, 188, 27, 0.7);
 }
 
@@ -426,7 +426,7 @@
     color: var(--text2);
     opacity: 0.9;
     border-radius: var(--recep-panel-radius, 12px);
-    border: 1px dashed rgba(13, 13, 13, 0.12);
+    border: 1px dashed rgba(255, 255, 255, 0.12);
 }
 
 .tracabilite-container .empty-state {

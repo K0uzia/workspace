@@ -17,24 +17,18 @@ class PageManager {
         this._updateDownloaded = false;
         
         // Pages et leur configuration de layout (sous-pages réception = même layout que reception)
-        const receptionLayout = { showHeader: true, showFooter: false, showChat: false };
+        const receptionLayout = { showHeader: true, showFooter: false };
         this.pagesConfig = {
-            'home': { showHeader: true, showFooter: true, showChat: true },
-            'agenda': { showHeader: true, showFooter: true, showChat: false },
-            'dossier': { showHeader: true, showFooter: true, showChat: true },
+            'agenda': { showHeader: true, showFooter: true },
             'reception': receptionLayout,
             'entrer': receptionLayout,
             'sortie': receptionLayout,
             'inventaire': receptionLayout,
             'historique': receptionLayout,
-            'tracabilite': receptionLayout,
             'disques': receptionLayout,
             'commande': receptionLayout,
             'dons': receptionLayout,
-            'prets': receptionLayout,
-            'option': { showHeader: true, showFooter: true, showChat: false },
-            'login': { showHeader: false, showFooter: false, showChat: false },
-            'signup': { showHeader: false, showFooter: false, showChat: false }
+            'prets': receptionLayout
         };
         
         this.init();
@@ -88,26 +82,19 @@ class PageManager {
 
         // Charger le header puis afficher la page tout de suite (premier rendu plus rapide)
         await this.loadComponent('header', './components/header.html', () => this.initializeAuth());
-        // Check MAJ en arrière-plan pour afficher le ping/badge Profil si nécessaire
+        // Check MAJ en arrière-plan pour afficher le ping Paramètres si nécessaire
         this.checkUpdateInBackground();
 
-        // Fermer le WebSocket à la fermeture de la fenêtre pour que le serveur
-        // reçoive l'événement close et libère la session (évite "déjà connecté" au retour).
-        const closeChatWebSocketOnUnload = () => {
-            try {
-                if (window.chatManager?.webSocket?.close) {
-                    window.chatManager.webSocket.close(true);
-                }
-            } catch (_) { /* ignore */ }
-        };
-        window.addEventListener('beforeunload', closeChatWebSocketOnUnload);
-        window.addEventListener('pagehide', closeChatWebSocketOnUnload);
-
-        // Charger la page sauvegardée ou home (y compris sous-pages réception : entrer, historique, tracabilite, etc.)
+        // Page sauvegardée, ou agenda par défaut (accueil/dossier/tracabilite → redirection)
         const lastPage = this.getLastPage();
-        const receptionSubPages = ['entrer', 'sortie', 'inventaire', 'historique', 'tracabilite', 'disques', 'commande', 'dons', 'prets'];
-        const isValidPage = lastPage && (this.pagesConfig[lastPage] || receptionSubPages.includes(lastPage));
-        const pageToLoad = isValidPage ? lastPage : 'home';
+        const receptionSubPages = ['entrer', 'sortie', 'inventaire', 'historique', 'disques', 'commande', 'dons', 'prets'];
+        const removedPages = ['home', 'dossier', 'tracabilite', 'login', 'signup', 'option'];
+        let pageToLoad = 'agenda';
+        if (lastPage === 'tracabilite') {
+            pageToLoad = 'historique';
+        } else if (lastPage && !removedPages.includes(lastPage) && (this.pagesConfig[lastPage] || receptionSubPages.includes(lastPage))) {
+            pageToLoad = lastPage;
+        }
         this.loadPage(pageToLoad);
 
         // Footer et infos système en arrière-plan pour ne pas retarder le premier affichage
@@ -120,53 +107,19 @@ class PageManager {
 
     initializeThemePreference() {
         try {
-            const isDark = localStorage.getItem(this.themeStorageKey) === '1';
+            const stored = localStorage.getItem(this.themeStorageKey);
+            const isDark = stored === null ? true : stored === '1';
             this.applyThemePreference(isDark);
         } catch (_) {
-            this.applyThemePreference(false);
+            this.applyThemePreference(true);
         }
     }
 
     applyThemePreference(isDark) {
         const enabled = !!isDark;
-        const root = document.documentElement;
-        const themeVars = enabled
-            ? {
-                '--text': '#e8e8ef',
-                '--text2': '#e8e8ef',
-                '--h1': '#f6f6ff',
-                '--h2': '#ececff',
-                '--link': '#f2bc1b',
-                '--btn': '#5a56c8',
-                '--btn-hover': '#6e6ae0',
-                '--btn-text': '#f7f7ff',
-                '--scrollbar-color': '#7a7a98',
-                '--blanc': '#151722',
-                '--noir': '#f2f2f2'
-            }
-            : {
-                '--text': '',
-                '--text2': '',
-                '--h1': '',
-                '--h2': '',
-                '--link': '',
-                '--btn': '',
-                '--btn-hover': '',
-                '--btn-text': '',
-                '--scrollbar-color': '',
-                '--blanc': '',
-                '--noir': ''
-            };
-
-        Object.entries(themeVars).forEach(([key, value]) => {
-            if (value) root.style.setProperty(key, value);
-            else root.style.removeProperty(key);
-        });
-
-        // Ajustement global minimal sans toucher aux fichiers CSS.
-        document.body.style.backgroundColor = enabled ? '#0f1119' : '';
-        document.body.style.color = enabled ? '#e8e8ef' : '';
         document.documentElement.setAttribute('data-theme-dark', enabled ? '1' : '0');
+        document.body.style.backgroundColor = '';
+        document.body.style.color = '';
     }
 
     syncThemeToggleUI() {
@@ -303,41 +256,42 @@ class PageManager {
 
     async initializeAuth() {
         try {
+            // Auth silencieuse : conserve le JWT en localStorage pour les API réception
             const module = await import('./assets/js/modules/auth/AuthManager.js');
             const AuthManager = module.default;
             this.authManager = new AuthManager();
-            
+
             this.authManager.on('auth-change', (user) => {
                 this.logger.debug('Auth change event', { user: user?.username });
-                this.updateProfileUI(user);
-                // Mettre à jour les récents pour le nouvel utilisateur
-                if (this.recentItemsManager) {
-                    this.recentItemsManager.updateForNewUser();
-                }
             });
 
             window.addEventListener('session-expired', () => {
                 if (this.authManager) {
                     this.authManager.clearSession();
-                    this.updateProfileUI(null);
                 }
             });
 
-            await this.loadAuthModal();
             await this.loadSettingsModal();
-
-            // Attendre que le DOM soit complètement chargé
-            setTimeout(() => {
-                const currentUser = this.authManager.getCurrentUser();
-                this.logger.debug('Current user at init', { user: currentUser?.username });
-                this.updateProfileUI(currentUser);
-            }, 100);
-            
             this.attachListeners();
-            this.attachProfileListeners();
+            this.attachSettingsNavListener();
         } catch (error) {
             this.logger.error('Erreur import AuthManager', error);
+            try {
+                await this.loadSettingsModal();
+                this.attachListeners();
+                this.attachSettingsNavListener();
+            } catch (_) { /* ignore */ }
         }
+    }
+
+    attachSettingsNavListener() {
+        const navSettings = document.getElementById('navSettings');
+        if (!navSettings || navSettings.dataset.listenerAttached) return;
+        navSettings.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showSettingsModal();
+        });
+        navSettings.dataset.listenerAttached = 'true';
     }
 
     async loadAuthModal() {
@@ -539,27 +493,15 @@ class PageManager {
     showSettingsModal() {
         const modal = document.getElementById('settingsModal');
         if (!modal) return;
-        const isAuth = this.authManager && this.authManager.isAuthenticated();
-        const user = this.authManager ? this.authManager.getCurrentUser() : null;
-        const usernameInput = document.getElementById('settingsNewUsername');
-        if (usernameInput && user) usernameInput.value = user.username || '';
-        const usernameError = document.getElementById('settingsUsernameError');
-        const passwordError = document.getElementById('settingsPasswordError');
-        const deleteError = document.getElementById('settingsDeleteError');
-        const deleteConfirmError = document.getElementById('settingsDeleteConfirmError');
-        const deleteConfirm = document.getElementById('settingsDeleteConfirm');
-        if (usernameError) { usernameError.classList.add('hidden'); usernameError.textContent = ''; }
-        if (passwordError) { passwordError.classList.add('hidden'); passwordError.textContent = ''; }
-        if (deleteError) { deleteError.classList.add('hidden'); deleteError.textContent = ''; }
-        if (deleteConfirmError) { deleteConfirmError.classList.add('hidden'); deleteConfirmError.textContent = ''; }
-        if (deleteConfirm) deleteConfirm.classList.add('hidden');
-        document.querySelectorAll('.settings-auth-only').forEach(el => { el.style.display = isAuth ? '' : 'none'; });
+        // Compte utilisateur retiré de l’UI — sections auth masquées si présentes
+        document.querySelectorAll('.settings-auth-only').forEach(el => { el.style.display = 'none'; });
+        const accountDropdown = document.getElementById('settingsDropdownAccount');
+        if (accountDropdown) accountDropdown.style.display = 'none';
         const themeInput = document.getElementById('settingsThemeDark');
         if (themeInput) {
             themeInput.value = localStorage.getItem(this.themeStorageKey) === '1' ? '1' : '0';
             this.syncThemeToggleUI();
         }
-        // Ne jamais afficher le hint tant qu'aucune MAJ n'a été téléchargée avec succès.
         this._updateDownloaded = false;
         this.refreshUpdateUI();
         modal.classList.remove('hidden');
@@ -995,7 +937,15 @@ class PageManager {
 
     async loadPage(pageName) {
         try {
-            const isReceptionSubPage = ['entrer', 'sortie', 'inventaire', 'historique', 'tracabilite', 'disques', 'commande', 'dons', 'prets'].includes(pageName);
+            const isReceptionSubPage = ['entrer', 'sortie', 'inventaire', 'historique', 'disques', 'commande', 'dons', 'prets'].includes(pageName);
+
+            // Ancienne page traçabilité fusionnée dans historique
+            if (pageName === 'tracabilite') {
+                return this.loadPage('historique');
+            }
+            if (pageName === 'home' || pageName === 'dossier') {
+                return this.loadPage('agenda');
+            }
             
             // Si c'est une sous-page de réception, charger d'abord reception.html
             if (isReceptionSubPage) {
@@ -1056,7 +1006,6 @@ class PageManager {
             // Pour les sous-pages reception, utiliser la config 'reception'
             const layoutPageName = isReceptionSubPage ? 'reception' : pageName;
             this.updateLayout(layoutPageName);
-            this.initializeChatIfNeeded();
             this.initializeTimeIfNeeded();
             this.initializePageElements(pageName);
             this.attachListeners();
@@ -1121,73 +1070,8 @@ class PageManager {
         }
     }
 
-    initializeChatIfNeeded() {
-        const chatMessagesContainer = document.getElementById('chat-messages');
-        if (!chatMessagesContainer) return;
-        if (window.chatManager) return;
-        Promise.all([
-            import('./assets/js/modules/chat/ChatManager.js'),
-            import('./assets/js/config/ChatSecurityConfig.js')
-        ]).then(async ([chatModule, configModule]) => {
-            const ChatManager = chatModule.default;
-            const securityConfig = configModule.default;
-            const apiModule = await import('./assets/js/config/api.js');
-            const wsUrl = apiModule.default.getWsUrl?.() || (window.APP_CONFIG?.serverWsUrl);
-            window.chatManager = new ChatManager({
-                wsUrl,
-                messagesContainerId: 'chat-messages',
-                inputId: 'chat-input',
-                sendButtonId: 'chat-send',
-                pseudoDisplayId: 'chat-pseudo-display',
-                securityConfig: securityConfig
-            });
-        }).catch(error => {
-            logger.error('❌ Erreur import ChatManager:', error);
-        });
-    }
-
     initializePageElements(pageName) {
-        if (pageName === 'home') {
-            Promise.all([
-                import('./assets/js/modules/pdf/PDFManager.js'),
-                import('./assets/js/config/PDFConfig.js'),
-                import('./assets/js/modules/recent/RecentItemsManager.js')
-            ]).then(([pdfModule, configModule, recentModule]) => {
-                const PDFManager = pdfModule.default;
-                const pdfConfig = configModule.pdfConfig;
-                const RecentItemsManager = recentModule.default;
-                
-                window.pdfManager = new PDFManager();
-                window.pdfManager.attachPDFListeners(pdfConfig);
-
-                // Initialiser le gestionnaire des éléments récents
-                if (!window.recentItemsManager) {
-                    window.recentItemsManager = new RecentItemsManager({ maxItems: 5 });
-                    logger.debug('✅ RecentItemsManager créé');
-                } else {
-                    logger.debug('♻️ RecentItemsManager réutilisé');
-                }
-                
-                // Afficher les éléments récents après un court délai pour laisser le DOM se stabiliser
-                requestAnimationFrame(() => {
-                    if (window.recentItemsManager) {
-                        window.recentItemsManager.display();
-                        logger.debug('✅ RecentItemsManager affiché');
-                    }
-                });
-            }).catch(error => {
-                logger.error('❌ Erreur import modules home:', error);
-            });
-
-            import('./assets/js/modules/agenda/AgendaStore.js')
-                .then(module => {
-                    const AgendaStore = module.default;
-                    this.loadTodayEvents(AgendaStore);
-                })
-                .catch(error => {
-                    logger.error('❌ Erreur import AgendaStore:', error);
-                });
-        } else if (pageName === 'agenda') {
+        if (pageName === 'agenda') {
             import('./assets/js/modules/agenda/AgendaInit.js')
                 .then(module => {
                     module.destroyAgenda();
@@ -1253,8 +1137,12 @@ class PageManager {
                 window.historiqueManager.destroy();
                 window.historiqueManager = null;
             }
+            if (window.tracabiliteManager) {
+                window.tracabiliteManager.destroy();
+                window.tracabiliteManager = null;
+            }
             
-            // Initialiser le gestionnaire d'historique
+            // Initialiser le gestionnaire d'historique (inclut traçabilité / PDF)
             import('./assets/js/modules/reception/historique.js')
                 .then(module => {
                     const HistoriqueManager = module.default;
@@ -1263,23 +1151,6 @@ class PageManager {
                 })
                 .catch(error => {
                     logger.error('❌ Erreur import HistoriqueManager:', error);
-                });
-        } else if (pageName === 'tracabilite') {
-            // Détruire l'ancien manager s'il existe
-            if (window.tracabiliteManager) {
-                window.tracabiliteManager.destroy();
-                window.tracabiliteManager = null;
-            }
-            
-            // Initialiser le gestionnaire de traçabilité
-            import('./assets/js/modules/reception/tracabilite.js')
-                .then(module => {
-                    const TracabiliteManager = module.default;
-                    window.tracabiliteManager = new TracabiliteManager(window.modalManager);
-                    logger.debug('✅ TracabiliteManager initialisé depuis app.js');
-                })
-                .catch(error => {
-                    logger.error('❌ Erreur import TracabiliteManager:', error);
                 });
         } else if (pageName === 'disques') {
             if (window.disquesManagerInitializing) {
@@ -1477,14 +1348,14 @@ class PageManager {
      * @param {number} [options.duration] ms (défaut 3000, 5000 si onUndo)
      * @param {string} [options.undoLabel='Annuler']
      * @param {() => void} [options.onUndo] callback annulation (toast ~5 s)
-     * @param {'bottom'|'top-right'} [options.position='bottom']
+     * @param {'bottom'|'top-right'} [options.position='top-right']
      */
     showNotification(message, type = 'info', options = {}) {
         const duration = options.duration ?? (options.onUndo ? 5000 : 3000);
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         if (options.onUndo) notification.classList.add('has-action');
-        if (options.position === 'top-right') notification.classList.add('notification--top-right');
+        if (options.position === 'bottom') notification.classList.add('notification--bottom');
         notification.setAttribute('role', 'status');
 
         let icon = '<i class="fa-solid fa-circle-info"></i>';
@@ -1537,17 +1408,6 @@ class PageManager {
         
         header.style.display = config.showHeader ? 'block' : 'none';
         footer.style.display = config.showFooter ? 'block' : 'none';
-        
-        const chatWidget = document.getElementById('chat-widget-wrapper');
-        if (chatWidget) {
-            chatWidget.style.display = config.showChat ? 'flex' : 'none';
-            
-            if (!config.showChat && window.chatWidgetManager) {
-                window.chatWidgetManager.closePanel();
-            }
-        }
-        
-        const layoutType = config.showHeader ? '📱 Normal' : '🔒 Full-screen';
     }
 
     showError(pageName) {
@@ -1594,8 +1454,7 @@ class PageManager {
         const titles = {
             entrer: 'Réception de Lots',
             inventaire: 'Inventaire',
-            historique: 'Historique',
-            tracabilite: 'Traçabilité',
+            historique: 'Historique & traçabilité',
             disques: 'Réception de Disques',
             commande: 'Réception de Commande',
             dons: 'Réception de Dons',
@@ -1619,7 +1478,7 @@ class PageManager {
         const descriptions = {
             entrer: 'Saisissez les numéros de série et les informations des machines.',
             inventaire: 'Gérez l\'état des PC et assignez les techniciens.',
-            historique: 'Consultez les lots terminés et les sessions disques archivées.',
+            historique: 'Archives des lots, disques, commandes, dons et prêts — détails, édition, PDF et email.',
             disques: 'Saisissez les disques puis enregistrez en traçabilité.',
             commande: 'Constituer une liste de produits et générer le PDF.',
             dons: 'Enregistrez les dons de matériel aux stagiaires et générez le certificat.',

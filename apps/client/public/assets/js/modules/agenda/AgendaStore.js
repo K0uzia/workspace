@@ -55,7 +55,7 @@ class AgendaStore {
                 title: 'Réunion d\'équipe',
                 start: `${this.formatDate(today)}T09:00:00`,
                 end: `${this.formatDate(today)}T10:00:00`,
-                color: '#3788d8',
+                color: '#5b7cfa',
                 description: 'Réunion hebdomadaire avec l\'équipe'
             },
             {
@@ -79,7 +79,7 @@ class AgendaStore {
                 title: 'Conférence',
                 start: `${this.addDays(today, 5)}T14:00:00`,
                 end: `${this.addDays(today, 5)}T16:00:00`,
-                color: '#3788d8',
+                color: '#5b7cfa',
                 description: 'Conférence sur les nouvelles technologies'
             }
         ];

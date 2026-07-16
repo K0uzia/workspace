@@ -9,7 +9,7 @@
     align-items: flex-start;
     gap: var(--unit-2);
     padding: var(--unit-2);
-    border: 1px solid rgba(13, 13, 13, 0.1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-medium);
     cursor: pointer;
 }

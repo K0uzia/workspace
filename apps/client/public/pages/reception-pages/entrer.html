@@ -1,146 +1,169 @@
-<section class="recep-page lot-page entrer-page">
+<section class="recep-page lot-page entrer-page lots-saisie-page">
     <div class="lot-page__body">
-        <div class="lot-card lot-card--config">
-            <div class="lot-card__inner">
-                <div class="lot-config">
-                    <div class="lot-config__field">
-                        <label class="lot-config__label" for="input-lot-name"><i class="fa-solid fa-tag"></i> Nom du lot</label>
-                        <input class="lot-config__input" type="text" id="input-lot-name" name="lot_name" placeholder="Ex: Nom entreprise" maxlength="255">
-                    </div>
-                    <div class="lot-config__actions">
-                        <button type="button" class="lot-btn lot-btn--secondary" id="btn-add-marque" data-modal-open="modal-add-marque" title="Ajouter une marque"><i class="fa-solid fa-plus"></i> marque</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="btn-add-modele" data-modal-open="modal-add-modele" title="Ajouter un modèle"><i class="fa-solid fa-plus"></i> modèle</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="btn-add-manual" title="Ajouter une ligne"><i class="fa-solid fa-plus"></i> ligne</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="btn-apply-mass" title="Appliquer aux lignes sélectionnées"><i class="fa-solid fa-layer-group"></i>Appliquer à tous</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="btn-cancel-lot" title="Nouveau lot"><i class="fa-solid fa-arrow-rotate-right"></i>Nouveau lot</button>
-                        <button type="button" class="lot-btn lot-btn--primary" id="btn-save-lot" title="Enregistrer le lot"><i class="fa-solid fa-save"></i>Enregistrer</button>
-                    </div>
-                </div>
+        <div class="lot-toolbar" id="lot-toolbar" role="toolbar" aria-label="Actions lot">
+            <input
+                class="lot-toolbar__name"
+                type="text"
+                id="input-lot-name"
+                name="lot_name"
+                placeholder="Nom du lot (optionnel)"
+                maxlength="255"
+                aria-label="Nom du lot"
+            >
+            <div class="lot-toolbar__actions">
+                <button type="button" class="lot-btn lot-btn--ghost" id="btn-add-manual" title="Ajouter une ligne manuellement">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Ligne
+                </button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="btn-add-marque" data-modal-open="modal-add-marque" title="Ajouter une nouvelle marque à la liste">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Marque
+                </button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="btn-add-modele" data-modal-open="modal-add-modele" title="Ajouter un nouveau modèle à la liste">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Modèle
+                </button>
+                <span class="lot-toolbar__sep" aria-hidden="true"></span>
+                <span class="lot-toolbar__count" aria-live="polite"><span id="lot-line-count-value">0</span></span>
+                <button type="button" class="lot-btn lot-btn--muted" id="btn-cancel-lot" title="Réinitialiser et commencer un nouveau lot">
+                    <i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i> Nouveau
+                </button>
+                <button type="button" class="lot-btn lot-btn--primary" id="btn-save-lot" title="Enregistrer le lot en cours">
+                    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer
+                </button>
             </div>
         </div>
 
-        <div class="lot-card lot-card--table">
-                <div class="lot-table-wrap">
-                    <table class="lot-table">
-                        <thead>
-                            <tr>
-                                <th class="lot-table__th--select"><input type="checkbox" id="select-all" title="Tout sélectionner" class="lot-checkbox"></th>
-                                <th class="lot-table__th--num"><i class="fa-solid fa-hashtag" aria-hidden="true"></i></th>
-                                <th class="lot-table__th--sn"><i class="fa-solid fa-barcode" aria-hidden="true"></i> S/N</th>
-                                <th class="lot-table__th--type"><i class="fa-solid fa-tag" aria-hidden="true"></i> Type</th>
-                                <th class="lot-table__th--marque"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</th>
-                                <th class="lot-table__th--modele"><i class="fa-solid fa-cube" aria-hidden="true"></i> Modèle</th>
-                                <th class="lot-table__th--date"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Date / Heure</th>
-                                <th class="lot-table__th--entree"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Entrée</th>
-                                <th class="lot-table__th--action"><i class="fa-solid fa-trash" aria-hidden="true"></i></th>
-                            </tr>
-                        </thead>
-                        <tbody id="lot-table-body"></tbody>
-                    </table>
-                </div>
+        <div class="lot-selection-bar" id="lot-selection-bar" hidden aria-hidden="true">
+            <span id="lot-selection-count">0 sélectionnées</span>
+            <button type="button" class="lot-btn lot-btn--primary" id="btn-apply-mass" title="Appliquer des valeurs aux lignes sélectionnées">
+                <i class="fa-solid fa-check-double" aria-hidden="true"></i> Appliquer
+            </button>
+        </div>
+
+        <div class="lot-table-area">
+            <div class="lot-table-wrap">
+                <table class="lot-table" id="lot-table">
+                    <thead>
+                        <tr>
+                            <th class="lot-table__th--select"><input type="checkbox" id="select-all" title="Tout sélectionner" class="lot-checkbox"></th>
+                            <th class="lot-table__th--num">#</th>
+                            <th class="lot-table__th--sn">S/N</th>
+                            <th class="lot-table__th--type">Type</th>
+                            <th class="lot-table__th--marque">Marque</th>
+                            <th class="lot-table__th--modele">Modèle</th>
+                            <th class="lot-table__th--date">Date</th>
+                            <th class="lot-table__th--entree">Entrée</th>
+                            <th class="lot-table__th--action"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="lot-table-body"></tbody>
+                </table>
             </div>
         </div>
+    </div>
 </section>
 
-<!-- Modales : marque, modèle, masse, suppression, nouveau lot (conservées pour le JS) -->
-<dialog class="universal-modal" id="modal-add-marque" data-modal-id="modal-add-marque">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-building"></i> Nouvelle marque</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-add-marque" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<!-- Modales Lots (thème sombre, IDs conservés pour gestion-lots.js) -->
+<dialog class="universal-modal lots-modal" id="modal-add-marque" data-modal-id="modal-add-marque">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-building" aria-hidden="true"></i> Nouvelle marque</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-add-marque" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
-            <p class="form-help">Ajoutez une marque. Elle sera disponible dans la liste.</p>
+        <div class="modal-body lots-modal__body">
+            <p class="lots-modal__help">Ajoutez une marque. Elle sera immédiatement disponible dans les listes déroulantes.</p>
             <form id="form-add-marque">
-                <div class="form-group">
-                    <label for="input-new-marque">Nom de la marque</label>
-                    <input type="text" id="input-new-marque" name="marque" placeholder="Ex: Dell, HP, Lenovo..." required autocomplete="off" autofocus>
+                <div class="form-group lots-modal__field">
+                    <label for="input-new-marque"><i class="fa-solid fa-tag" aria-hidden="true"></i> Nom de la marque</label>
+                    <input type="text" id="input-new-marque" name="marque" class="lots-modal__input" placeholder="Ex : Dell, HP, Lenovo…" required autocomplete="off" autofocus>
                 </div>
             </form>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="modal-add-marque">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="btn-submit-marque"><i class="fa-solid fa-check" aria-hidden="true"></i> Ajouter</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-add-marque">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="btn-submit-marque"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter</button>
         </div>
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-add-modele" data-modal-id="modal-add-modele">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-laptop"></i> Nouveau modèle</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-add-modele" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="modal-add-modele" data-modal-id="modal-add-modele">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-laptop" aria-hidden="true"></i> Nouveau modèle</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-add-modele" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body lots-modal__body">
+            <p class="lots-modal__help">Associez le modèle à une marque existante.</p>
             <form id="form-add-modele">
-                <div class="form-group">
-                    <label for="select-marque-for-modele">Marque</label>
-                    <select id="select-marque-for-modele" name="marqueId" required autofocus>
-                        <option value="">— Choisir —</option>
+                <div class="form-group lots-modal__field">
+                    <label for="select-marque-for-modele"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</label>
+                    <select id="select-marque-for-modele" name="marqueId" class="lots-modal__input" required autofocus>
+                        <option value="">— Choisir une marque —</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="input-new-modele">Nom du modèle</label>
-                    <input type="text" id="input-new-modele" name="modele" placeholder="Ex: Latitude 5410..." required autocomplete="off">
+                <div class="form-group lots-modal__field">
+                    <label for="input-new-modele"><i class="fa-solid fa-laptop" aria-hidden="true"></i> Nom du modèle</label>
+                    <input type="text" id="input-new-modele" name="modele" class="lots-modal__input" placeholder="Ex : Latitude 5410…" required autocomplete="off">
                 </div>
             </form>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="modal-add-modele">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="btn-submit-modele"><i class="fa-solid fa-check" aria-hidden="true"></i> Ajouter</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-add-modele">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="btn-submit-modele"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter</button>
         </div>
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-mass-apply" data-modal-id="modal-mass-apply">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-layer-group"></i> Appliquer à la sélection</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-mass-apply" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="modal-mass-apply" data-modal-id="modal-mass-apply">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Appliquer à la sélection</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-mass-apply" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
-            <p class="form-help" id="mass-apply-info">Lignes sélectionnées</p>
+        <div class="modal-body lots-modal__body">
+            <p class="lots-modal__info" id="mass-apply-info">Lignes sélectionnées</p>
             <form id="form-mass-apply">
-                <div class="form-group">
-                    <label for="modal-mass-type">Type</label>
-                    <select id="modal-mass-type" name="type">
+                <div class="form-group lots-modal__field">
+                    <label for="modal-mass-type"><i class="fa-solid fa-tag" aria-hidden="true"></i> Type</label>
+                    <select id="modal-mass-type" name="type" class="lots-modal__input">
                         <option value="">— Ne pas modifier —</option>
                         <option value="portable">Portable</option>
                         <option value="fixe">Fixe</option>
                         <option value="ecran">Écran</option>
                         <option value="autres">Autres</option>
                     </select>
-                    <input type="text" id="modal-mass-type-other" name="type_other" class="type-other-input recep-input" placeholder="Précisez..." style="display:none" maxlength="100">
+                    <input type="text" id="modal-mass-type-other" name="type_other" class="type-other-input lots-modal__input" placeholder="Précisez…" style="display:none" maxlength="100">
                 </div>
-                <div class="form-group">
-                    <label for="modal-mass-marque">Marque</label>
-                    <select id="modal-mass-marque" name="marque"><option value="">— Ne pas modifier —</option></select>
+                <div class="form-group lots-modal__field">
+                    <label for="modal-mass-marque"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</label>
+                    <select id="modal-mass-marque" name="marque" class="lots-modal__input"><option value="">— Ne pas modifier —</option></select>
                 </div>
-                <div class="form-group">
-                    <label for="modal-mass-modele">Modèle</label>
-                    <select id="modal-mass-modele" name="modele"><option value="">— Ne pas modifier —</option></select>
+                <div class="form-group lots-modal__field">
+                    <label for="modal-mass-modele"><i class="fa-solid fa-laptop" aria-hidden="true"></i> Modèle</label>
+                    <select id="modal-mass-modele" name="modele" class="lots-modal__input"><option value="">— Ne pas modifier —</option></select>
                 </div>
             </form>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="modal-mass-apply">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="btn-confirm-mass-apply"><i class="fa-solid fa-check" aria-hidden="true"></i> Appliquer</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-mass-apply">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="btn-confirm-mass-apply"><i class="fa-solid fa-check" aria-hidden="true"></i> Appliquer</button>
         </div>
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-clear-lot" data-modal-id="modal-clear-lot">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-arrow-rotate-right"></i> Nouveau lot</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-clear-lot" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="modal-clear-lot" data-modal-id="modal-clear-lot">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i> Nouveau lot</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-clear-lot" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
-            <p>Le lot actuel sera réinitialisé. Toutes les lignes seront supprimées. Continuer ?</p>
+        <div class="modal-body lots-modal__body">
+            <div class="lots-modal__warning">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <p>Le lot actuel sera réinitialisé. <strong>Toutes les lignes seront supprimées.</strong> Continuer ?</p>
+            </div>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="modal-clear-lot">Non, continuer</button>
-            <button type="button" class="btn-danger" id="btn-confirm-clear-lot"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i> Oui, nouveau lot</button>
+        <div class="modal-footer lots-modal__footer lots-modal__footer--split">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-clear-lot">Non, continuer</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--danger" id="btn-confirm-clear-lot"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i> Oui, nouveau lot</button>
         </div>
     </div>
 </dialog>

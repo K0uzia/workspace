@@ -21,7 +21,7 @@ function pretTypeSansSn(typeVal) {
 }
 
 export default class TracabiliteManager {
-    constructor(modalManager) {
+    constructor(modalManager, options = {}) {
         this.modalManager = modalManager;
         this.lots = [];
         this.sessionsDisques = [];
@@ -31,7 +31,9 @@ export default class TracabiliteManager {
         this.apiIssues = [];
         this.currentEmailLotId = null;
         this.currentEmailSessionId = null;
-        this.init();
+        if (!options.skipInit) {
+            this.init();
+        }
     }
 
     async init() {

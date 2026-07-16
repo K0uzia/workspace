@@ -203,9 +203,9 @@ export default class CalendarRenderer {
         button.appendChild(titleEl);
         button.appendChild(timeEl);
 
-        const eventColor = ev.color || '#3788d8';
-        button.style.backgroundColor = eventColor + '20';
-        button.style.borderLeft = `4px solid ${eventColor}`;
+        const eventColor = ev.color || '#5b7cfa';
+        button.style.backgroundColor = this.softEventBg(eventColor);
+        button.style.setProperty('--event-accent', eventColor);
         button.style.alignItems = 'flex-start';
 
         button.addEventListener('click', (e) => {
@@ -214,6 +214,15 @@ export default class CalendarRenderer {
         });
 
         return button;
+    }
+
+    softEventBg(hex) {
+        const raw = String(hex || '').replace('#', '');
+        if (!/^[0-9a-fA-F]{6}$/.test(raw)) return 'rgba(91, 124, 250, 0.16)';
+        const r = parseInt(raw.slice(0, 2), 16);
+        const g = parseInt(raw.slice(2, 4), 16);
+        const b = parseInt(raw.slice(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, 0.18)`;
     }
 
     displayEventDetails(ev, onEditClick) {

@@ -48,6 +48,7 @@ export default class GestionLotsManager {
                     snInput.focus();
                     logger.debug('✅ AutoFocus sur S/N de la première ligne');
                 }
+                this.updateLotUI();
             }
         }, 500);
         logger.debug('✅ GestionLotsManager prêt');
@@ -220,7 +221,17 @@ export default class GestionLotsManager {
                     document.querySelectorAll('.row-checkbox').forEach(cb => {
                         cb.checked = e.target.checked;
                     });
+                    this.updateSelectionBar();
                 });
+            }
+
+            const tbody = document.getElementById('lot-table-body');
+            if (tbody) {
+                this._onRowCheckboxChange = (e) => {
+                    if (!e.target.classList?.contains('row-checkbox')) return;
+                    this.updateSelectionBar();
+                };
+                this.addListener(tbody, 'change', this._onRowCheckboxChange);
             }
 
             this.populateMassSelects();
@@ -314,6 +325,7 @@ export default class GestionLotsManager {
                 newSnInput.focus();
                 newSnInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
+            this.updateLotUI();
             this.showNotification('S/N enregistré, prêt pour le prochain scan', 'success');
         };
         document.addEventListener('keydown', this._onSerialEnter);
@@ -362,6 +374,8 @@ export default class GestionLotsManager {
             snInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
+        this.flashScanPanel();
+        this.updateLotUI();
         this.showNotification('Appareil scanné ajouté', 'success');
     }
 
@@ -380,7 +394,8 @@ export default class GestionLotsManager {
         // Focus sur le champ S/N
         const snInput = row.querySelector('input[name="serial_number"]');
         if (snInput) snInput.focus();
-        
+
+        this.updateLotUI();
         this.showNotification('Ligne ajoutée', 'success');
     }
 
@@ -630,6 +645,7 @@ export default class GestionLotsManager {
         setTimeout(() => {
             const row = this.createRow('', 'scan');
             tbody.appendChild(row);
+            this.updateLotUI();
         }, 100);
         
         this.modalManager.close('modal-clear-lot');
@@ -939,6 +955,7 @@ export default class GestionLotsManager {
         row.remove();
         this.renumberRows();
         this.ensureScanRow();
+        this.updateLotUI();
 
         this.showNotification('Ligne supprimée', 'success', {
             onUndo: () => {
@@ -946,6 +963,7 @@ export default class GestionLotsManager {
                 else tbody.appendChild(row);
                 this.renumberRows();
                 this.ensureScanRow();
+                this.updateLotUI();
             }
         });
     }
@@ -1069,9 +1087,58 @@ export default class GestionLotsManager {
         document.getElementById('modal-mass-modele').value = '';
         document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
         document.getElementById('select-all').checked = false;
+        this.updateSelectionBar();
     }
 
+    updateLotUI() {
+        this.updateLineCount();
+        this.updateSelectionBar();
+    }
 
+    updateLineCount() {
+        const tbody = document.getElementById('lot-table-body');
+        const countEl = document.getElementById('lot-line-count-value');
+        if (!tbody || !countEl) return;
+        countEl.textContent = String(tbody.querySelectorAll('tr').length);
+    }
+
+    updateSelectionBar() {
+        const bar = document.getElementById('lot-selection-bar');
+        const countEl = document.getElementById('lot-selection-count');
+        const selected = document.querySelectorAll('.row-checkbox:checked');
+        const count = selected.length;
+
+        if (bar) {
+            const visible = count > 0;
+            bar.hidden = !visible;
+            bar.setAttribute('aria-hidden', visible ? 'false' : 'true');
+        }
+
+        if (countEl) {
+            countEl.textContent = count === 1 ? '1 sélectionnée' : `${count} sélectionnées`;
+        }
+
+        const selectAll = document.getElementById('select-all');
+        const all = document.querySelectorAll('.row-checkbox');
+        if (selectAll && all.length > 0) {
+            selectAll.indeterminate = count > 0 && count < all.length;
+            selectAll.checked = count === all.length;
+        } else if (selectAll) {
+            selectAll.indeterminate = false;
+            selectAll.checked = false;
+        }
+    }
+
+    flashScanPanel() {
+        const toolbar = document.getElementById('lot-toolbar');
+        if (!toolbar) return;
+
+        toolbar.classList.add('is-scanning');
+        clearTimeout(this._scanFlashTimer);
+        this._scanFlashTimer = setTimeout(() => {
+            toolbar.classList.remove('is-scanning');
+        }, 600);
+    }
 
     showNotification(message, type = 'info', options) {
         showAppNotification(message, type, options);
@@ -1098,6 +1165,10 @@ export default class GestionLotsManager {
         if (this._barcodeTimer) {
             clearTimeout(this._barcodeTimer);
             this._barcodeTimer = null;
+        }
+        if (this._scanFlashTimer) {
+            clearTimeout(this._scanFlashTimer);
+            this._scanFlashTimer = null;
         }
         this._barcodeBuffer = '';
 

@@ -25,7 +25,8 @@
 
 .auth-modal-container {
     position: relative;
-    background-color: var(--blanc);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius-medium);
     box-shadow: var(--shadow-large);
     width: 90%;

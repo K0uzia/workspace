@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme-dark="1">
 
 <head>
     <meta charset="UTF-8">
@@ -15,9 +15,9 @@
     <!-- HEADER -->
     <header id="header"></header>
 
-    <!-- AUTH MODAL -->
+    <!-- AUTH MODAL (JWT silencieux si token déjà présent — pas d'UI compte) -->
     <div id="authModalContainer"></div>
-    <!-- SETTINGS MODAL -->
+    <!-- SETTINGS MODAL (thème / mises à jour) -->
     <div id="settingsModalContainer"></div>
 
     <!-- CONTENU PRINCIPAL (où les pages se chargeront) -->
@@ -28,69 +28,6 @@
     <!-- FOOTER -->
     <footer id="footer"></footer>
 
-    <!-- CHAT WIDGET (Floating button + panel) -->
-    <div class="chat-widget-wrapper" id="chat-widget-wrapper">
-        <!-- Floating button -->
-        <button class="chat-widget-btn" id="chat-widget-btn" title="Ouvrir le chat">
-            <i class="fas fa-comments"></i>
-            <div class="notification-badge" id="chat-notification-badge">0</div>
-        </button>
-
-        <!-- Chat Panel (initially hidden) -->
-        <div class="chat-widget-panel" id="chat-widget-panel">
-            <!-- Header -->
-            <div class="chat-widget-header">
-                <h2><i class="fas fa-comments"></i> Chat</h2>
-                <button class="chat-widget-close" id="chat-widget-close" title="Fermer le chat">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <!-- Chat Content -->
-            <div class="chat-widget-content">
-                <!-- Pseudo display area -->
-                <div class="chat-widget-pseudo-area" id="chat-widget-pseudo-area">
-                    <div id="chat-widget-pseudo-display"></div>
-                </div>
-
-                <!-- Messages area -->
-                <div id="chat-widget-messages" class="chat-widget-empty">
-                    Aucun message pour le moment
-                </div>
-
-                <!-- Input area -->
-                <div class="chat-widget-input-area">
-                    <div id="chat-widget-reply-preview" class="chat-widget-reply-preview" aria-hidden="true">
-                        <span class="chat-reply-preview-label">Réponse à <span class="chat-reply-preview-pseudo"></span> :</span>
-                        <span class="chat-reply-preview-text"></span>
-                        <button type="button" id="chat-widget-reply-cancel" class="chat-widget-reply-cancel" aria-label="Annuler la réponse">Annuler</button>
-                    </div>
-                    <button type="button" id="chat-widget-emote" class="chat-widget-emote-btn" title="Emotes" aria-label="Choisir un emote">
-                        <i class="fas fa-smile"></i>
-                    </button>
-                    <button type="button" id="chat-widget-gif" class="chat-widget-gif-btn" title="GIF" aria-label="Rechercher un GIF">
-                        <i class="fas fa-image"></i>
-                    </button>
-                    <div id="chat-widget-emote-picker" class="chat-widget-emote-picker" aria-hidden="true"></div>
-                    <div id="chat-widget-gif-picker" class="chat-widget-gif-picker" aria-hidden="true"></div>
-                    <input 
-                        type="text" 
-                        id="chat-widget-input" 
-                        placeholder="Votre message..."
-                        maxlength="500"
-                    />
-                    <div class="chat-widget-actions">
-                        <button id="chat-widget-send" title="Envoyer (Entrée)">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Emoji picker (bibliothèque avec catégories, recherche, thème) -->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.29.0/index.js"></script>
     <!-- SCRIPT PRINCIPAL -->
     <script type="module" src="./assets/js/global.js"></script>
     <script src="./app.js"></script>

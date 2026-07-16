@@ -4,10 +4,12 @@
  */
 
 .r-root {
-    --recep-page-bg: var(--blanc);
-    --recep-panel-bg: #ffffff;
-    --recep-panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --recep-panel-radius: 12px;
+    --recep-page-bg: #0c111b;
+    --recep-panel-bg: #131a26;
+    --recep-panel-bg-soft: #182131;
+    --recep-panel-border: rgba(255, 255, 255, 0.08);
+    --recep-panel-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+    --recep-panel-radius: 14px;
     --recep-gap: var(--unit-3);
     display: grid;
     /* minmax(0,1fr) : la colonne principale peut rétrécir sous la largeur du contenu (évite débordement à droite) */
@@ -20,28 +22,51 @@
     max-width: 100%;
     box-sizing: border-box;
     background-color: var(--recep-page-bg);
-    color: var(--text2);
+    color: #d7dfec;
 }
 
-/* ----- Sidebar (couleurs 3.1.8 : bleu2 fond nav, orange actif, jaune hover) ----- */
 .r-header {
     display: flex;
     flex-direction: column;
-    background-color: var(--bleu2);
-    color: var(--text);
-    box-shadow: var(--shadow-medium);
+    width: 272px;
+    background: linear-gradient(180deg, #101725 0%, #0d1420 100%);
+    color: #e8ecf4;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: var(--recep-panel-shadow);
     z-index: 10;
 }
 
 .r-brand {
     display: flex;
-    align-items: center;
-    gap: var(--unit-2);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
     margin: 0;
-    padding: var(--unit-3) var(--unit-3);
-    font: var(--font-subtitle);
-    color: var(--h1);
+    padding: var(--unit-4);
     flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.r-brand-kicker {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(124, 156, 255, 0.9);
+}
+
+.r-brand-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #f4f7fb;
+}
+
+.r-brand-subtitle {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: rgba(215, 223, 236, 0.64);
 }
 
 
@@ -49,7 +74,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--unit-3);
-    padding: var(--unit-2) var(--unit-1);
+    padding: var(--unit-3);
     flex: 1;
     overflow-y: auto;
 }
@@ -61,15 +86,13 @@
 }
 
 .r-nav-group-title {
-    padding: var(--unit-1) var(--unit-2);
+    padding: 0 var(--unit-1);
     margin-bottom: var(--unit-1);
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text);
-    border-bottom: 1px solid var(--orange);
-    opacity: 0.75;
+    letter-spacing: 0.1em;
+    color: rgba(215, 223, 236, 0.48);
 }
 
 .r-nav-item {
@@ -77,10 +100,12 @@
     align-items: center;
     gap: var(--unit-2);
     width: 100%;
-    padding: var(--unit-2) var(--unit-2);
+    min-height: 42px;
+    padding: 0 var(--unit-2);
     background: transparent;
-    border: none;
-    color: var(--text);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: rgba(232, 236, 244, 0.78);
     font: var(--font-text2);
     cursor: pointer;
     transition: var(--transition);
@@ -88,22 +113,27 @@
 }
 
 .r-nav-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--jaune);
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #f4f7fb;
 }
 
 .r-nav-item[aria-current="page"],
 .r-nav-item.active {
-    color: var(--orange);
+    background: rgba(124, 156, 255, 0.14);
+    border-color: rgba(124, 156, 255, 0.28);
+    color: #f4f7fb;
     font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(124, 156, 255, 0.05);
 }
 
 .r-nav-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--unit-3);
+    width: 18px;
     flex-shrink: 0;
+    color: rgba(124, 156, 255, 0.9);
 }
 
 .r-nav-text {
@@ -131,11 +161,12 @@
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: var(--unit-2);
-    padding: var(--unit-2) var(--unit-4);
-    background: var(--recep-panel-bg);
+    gap: var(--unit-3);
+    padding: var(--unit-3) var(--unit-4);
+    background: rgba(12, 17, 27, 0.92);
     flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
     min-width: 0;
     max-width: 100%;
     box-sizing: border-box;
@@ -144,8 +175,19 @@
 .r-main-header-text {
     display: flex;
     flex-direction: column;
-    gap: var(--unit-1);
+    gap: 6px;
     min-width: 0;
+}
+
+.r-main-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--unit-1);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(124, 156, 255, 0.9);
 }
 
 .r-main-title {
@@ -153,28 +195,27 @@
     align-items: center;
     gap: var(--unit-2);
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--h2);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #f4f7fb;
     letter-spacing: -0.01em;
 }
 
 .r-main-title-icon {
-    color: var(--bleu1);
+    color: rgba(124, 156, 255, 0.95);
     font-size: 1.125rem;
 }
 
 .r-main-desc {
     margin: 0;
-    font-size: 0.9375rem;
-    font-style: italic;
+    font-size: 0.875rem;
     line-height: 1.4;
-    color: var(--text2);
-    opacity: 0.9;
+    color: rgba(215, 223, 236, 0.72);
+    opacity: 1;
 }
 
 .r-main-desc i {
-    color: var(--bleu1);
+    color: rgba(124, 156, 255, 0.95);
     font-style: normal;
 }
 
@@ -199,6 +240,10 @@
     max-width: 100%;
     display: flex;
     flex-direction: column;
+    background:
+        radial-gradient(circle at top right, rgba(124, 156, 255, 0.08), transparent 28%),
+        radial-gradient(circle at left top, rgba(74, 222, 128, 0.05), transparent 24%),
+        var(--recep-page-bg);
 }
 
 html.reception-single-scroll,
@@ -251,7 +296,7 @@ body.reception-single-scroll main {
     }
 
     .r-brand {
-        border-top: 1px solid var(--orange);
+        border-top: 1px solid rgba(124, 156, 255, 0.3);
         border-right: none;
         border-bottom: none;
         padding: var(--unit-1) var(--unit-1);
@@ -264,6 +309,11 @@ body.reception-single-scroll main {
         transform: rotate(180deg);
         min-height: 3rem;
         justify-content: center;
+    }
+
+    .r-brand-kicker,
+    .r-brand-subtitle {
+        display: none;
     }
 
     .r-nav {

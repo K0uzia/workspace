@@ -3,10 +3,11 @@ menu {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    height: 45px;
-    padding: var(--unit-1) var(--unit-2);
-    background-color: var(--bleu1);
-    box-shadow: var(--shadow-small);
+    min-height: 56px;
+    padding: var(--unit-2) var(--unit-3);
+    background: linear-gradient(180deg, #0f1623 0%, #131d2c 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
     position: relative;
     z-index: 100;
 }
@@ -19,28 +20,54 @@ menu {
     flex-shrink: 0;
 }
 
-.nav-logo h1 {
-    font: var(--font-title);
-    color: var(--h1);
-    margin: 0;
+.nav-brand-mark {
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(124, 156, 255, 0.14);
+    border: 1px solid rgba(124, 156, 255, 0.22);
+}
+
+.nav-brand-link {
+    align-items: center;
+}
+
+.nav-brand-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.nav-brand-title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #f3f6fb;
 }
 
 .nav-logo .logo {
-    height: var(--unit-5);
-    width: var(--unit-5);
+    height: 20px;
+    width: 20px;
 }
 
 .nav-links {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: var(--unit-2);
+    gap: var(--unit-3);
+}
+
+.nav-primary {
+    display: flex;
+    align-items: center;
+    gap: var(--unit-1);
 }
 
 .nav-links a {
     display: flex;
     align-items: center;
-    color: var(--blanc);
+    color: var(--text-primary);
     text-decoration: none;
     padding: var(--unit-2) var(--unit-3);
     transition: var(--transition);
@@ -60,22 +87,38 @@ menu {
     display: flex;
     flex-direction: row;
     align-items: center;
-    background: none;
-    border: none;
-    color: var(--blanc);
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 var(--unit-2);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: rgba(232, 236, 244, 0.84);
     transition: var(--transition);
     gap: var(--unit-1);
     cursor: pointer;
-    font-size: 1rem;
-    padding: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .nav-btn i {
     transition: var(--transition);
+    color: rgba(124, 156, 255, 0.88);
 }
 
 .nav-btn:hover {
-    color: var(--jaune);
+    color: #f3f6fb;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.nav-reception {
+    background: rgba(124, 156, 255, 0.12);
+    border-color: rgba(124, 156, 255, 0.2);
+}
+
+.nav-reception:hover {
+    border-color: rgba(124, 156, 255, 0.4);
 }
 
 .nav-btn-option {
@@ -89,10 +132,14 @@ menu {
 
 .nav-action {
     position: relative;
+    padding-left: var(--unit-2);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.nav-profile {
+.nav-profile,
+.nav-settings {
     position: relative;
+    min-width: 40px;
 }
 
 .profile-update-ping {
@@ -133,12 +180,13 @@ menu {
     position: absolute;
     top: calc(100% + var(--unit-1));
     right: 0;
-    background-color: var(--bleu1);
-    border-radius: var(--radius-medium);
-    box-shadow: var(--shadow-medium);
+    background-color: #141d2a;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
     min-width: 200px;
     z-index: 200;
-    padding: var(--unit-1);
+    padding: var(--unit-2);
     display: flex;
     flex-direction: column;
 }
@@ -161,26 +209,29 @@ menu {
 .profile-username {
     padding: var(--unit-2);
     font-weight: bold;
-    color: var(--blanc);
-    text-align: center;
-    border-bottom: 2px solid var(--jaune);
+    color: #f3f6fb;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .profile-btn {
     margin-top: var(--unit-1);
-    padding: var(--unit-2);
-    border: none;
-    background-color: var(--bleu2);
-    color: var(--blanc);
-    border-radius: var(--radius-medium);
+    min-height: 38px;
+    padding: 0 var(--unit-2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.04);
+    color: rgba(232, 236, 244, 0.88);
+    border-radius: 10px;
     cursor: pointer;
     transition: var(--transition);
-    font-size: 1rem;
+    font-size: 0.9rem;
+    text-align: left;
 }
 
 .profile-btn:hover {
-    background-color: var(--bleu2);
-    color: var(--jaune);
+    background-color: rgba(124, 156, 255, 0.12);
+    border-color: rgba(124, 156, 255, 0.25);
+    color: #f3f6fb;
 }
 
 .profile-badge {
@@ -231,7 +282,7 @@ menu {
 .nav-burger span {
     width: var(--unit-3);
     height: calc(var(--unit) / 2);
-    background-color: var(--blanc);
+    background-color: var(--text-primary);
     border-radius: var(--radius-small);
     transition: all 0.3s ease;
     display: block;
@@ -270,24 +321,37 @@ menu {
 
 /* ========== RESPONSIVE MOBILE ========== */
 @media (max-width: 980px) {
+    menu {
+        min-height: 60px;
+        padding: var(--unit-2);
+    }
+
     .nav-links {
         position: fixed;
         top: 60px;
-        right: 0;
-        width: 30%;
+        right: var(--unit-2);
+        width: min(320px, calc(100% - var(--unit-4)));
         align-items: start;
         flex-direction: column;
-        background-color: var(--bleu1);
-        gap: 0;
+        background-color: #141d2a;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        gap: var(--unit-2);
         padding: 0;
         display: none;
-        box-shadow: var(--shadow-medium);
+        box-shadow: 0 22px 48px rgba(0, 0, 0, 0.3);
         overflow: visible;
     }
 
     .nav-links.active {
         display: flex;
         padding: var(--unit-2);
+    }
+
+    .nav-primary {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
         gap: var(--unit-1);
     }
 
@@ -310,31 +374,30 @@ menu {
         margin-left: var(--unit-1);
     }
 
-    /* Séparation entre les liens nav et le bloc Profil */
     .nav-action {
         position: relative;
-        margin-top: var(--unit-1);
+        margin-top: 0;
         padding-top: var(--unit-2);
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        padding-left: 0;
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    /* Dropdown profil : à gauche du menu, bas aligné sur le panneau burger */
     .nav-action .profile-dropdown {
         position: absolute;
         top: auto;
-        bottom: -16px;
-        right: 112%;
+        bottom: -12px;
+        right: calc(100% + var(--unit-1));
         margin-right: var(--unit-1);
-        background-color: var(--bleu1);
-        border-radius: 0;
-        box-shadow: none;
+        background-color: #141d2a;
+        border-radius: 14px;
+        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
         min-width: 200px;
-        min-height: 205px;
         z-index: 200;
-        padding: var(--unit-1);
+        padding: var(--unit-2);
     }
 
-    /* Affichage au survol de Profil (ou au clic) */
     .nav-action:hover .profile-dropdown {
         display: flex;
     }

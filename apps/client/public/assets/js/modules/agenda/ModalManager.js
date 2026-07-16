@@ -226,7 +226,7 @@ export default class ModalManager {
         form?.reset();
 
         const colorInput = document.getElementById('create_color');
-        if (colorInput) colorInput.value = '#3788d8';
+        if (colorInput) colorInput.value = '#5b7cfa';
 
         const allDayCheckbox = document.getElementById('create_all_day');
         if (allDayCheckbox) {
@@ -286,7 +286,7 @@ export default class ModalManager {
 
         document.getElementById('edit_description').value = ev.description || '';
 
-        const colorToSelect = ev.color || '#3788d8';
+        const colorToSelect = ev.color || '#5b7cfa';
         const editColor = document.getElementById('edit_color');
         if (editColor) editColor.value = colorToSelect;
 
@@ -351,7 +351,7 @@ export default class ModalManager {
         const startDate = document.getElementById('create_date')?.value || '';
         const endDate = document.getElementById('create_end_date')?.value || startDate;
         const title = document.getElementById('create_title')?.value || '';
-        const color = document.getElementById('create_color')?.value || '#3788d8';
+        const color = document.getElementById('create_color')?.value || '#5b7cfa';
         const description = document.getElementById('create_description')?.value || '';
 
         if (!title || !startDate || !endDate) {
@@ -387,7 +387,7 @@ export default class ModalManager {
         const isAllDay = document.getElementById('edit_all_day')?.checked || false;
         const startTime = isAllDay ? '00:00' : (document.getElementById('edit_start_time')?.value || '09:00');
         const endTime = isAllDay ? '23:59' : (document.getElementById('edit_end_time')?.value || '10:00');
-        const color = document.getElementById('edit_color')?.value || '#3788d8';
+        const color = document.getElementById('edit_color')?.value || '#5b7cfa';
         const description = document.getElementById('edit_description')?.value || '';
 
         if (typeof id === 'string' && id.startsWith('holiday:')) {

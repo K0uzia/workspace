@@ -1,116 +1,124 @@
 <section class="recep-page lot-page inventaire-container">
     <div class="lot-page__body">
-        <div class="lot-card lot-card--config">
-            <div class="lot-card__inner">
-                <div class="lot-config">
-                    <div class="lot-config__field">
-                        <label class="lot-config__label" for="filter-state"><i class="fa-solid fa-filter" aria-hidden="true"></i> État :</label>
-                        <select class="lot-config__input" id="filter-state">
-                            <option value="">Tous les états</option>
-                            <option value="Reconditionnés">Reconditionnés</option>
-                            <option value="Pour pièces">Pour pièces</option>
-                            <option value="HS">HS</option>
-                            <option value="Non défini">Non défini</option>
-                        </select>
-                    </div>
-                    <div class="lot-config__actions">
-                        <button type="button" class="lot-btn lot-btn--primary" id="btn-refresh-lots" title="Recharger la liste des lots">
-                            <i class="fa-solid fa-sync" aria-hidden="true"></i> Rafraîchir
-                        </button>
-                    </div>
-                </div>
+        <div class="recep-toolbar-compact" role="toolbar" aria-label="Filtres inventaire">
+            <div class="lot-config__field">
+                <label class="lot-config__label" for="filter-state"><i class="fa-solid fa-filter" aria-hidden="true"></i> État</label>
+                <select class="lot-config__input" id="filter-state">
+                    <option value="">Tous les états</option>
+                    <option value="Reconditionnés">Reconditionnés</option>
+                    <option value="Pour pièces">Pour pièces</option>
+                    <option value="HS">HS</option>
+                    <option value="Non défini">Non défini</option>
+                </select>
+            </div>
+            <div class="lot-config__actions">
+                <button type="button" class="lot-btn lot-btn--primary" id="btn-refresh-lots" title="Recharger la liste des lots">
+                    <i class="fa-solid fa-sync" aria-hidden="true"></i> Rafraîchir
+                </button>
             </div>
         </div>
 
         <div class="lot-card lot-card--list">
+            <div class="lot-card__inner lot-card__inner--list">
                 <div class="recep-list lots-list-inv" id="lots-list">
                     <div class="recep-loading loading">
                         <i class="fa-solid fa-spinner" aria-hidden="true"></i>
-                        <span>Chargement des lots...</span>
+                        <span>Chargement des lots…</span>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 </section>
 
-<dialog class="universal-modal" id="modal-edit-pc" data-modal-id="modal-edit-pc">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-computer"></i> Éditer PC</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-edit-pc" title="Fermer sans enregistrer" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal inventaire-edit-modal" id="modal-edit-pc" data-modal-id="modal-edit-pc">
+    <div class="modal-content lots-modal__content inventaire-edit-modal__content">
+        <div class="modal-header lots-modal__header inventaire-edit-modal__header">
+            <h2 id="modal-edit-pc-title"><i class="fa-solid fa-computer" aria-hidden="true"></i> Éditer le matériel</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-edit-pc" title="Fermer sans enregistrer" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
-            <div class="recep-info-box pc-info-box">
+        <div class="modal-body lots-modal__body inventaire-edit-modal__body">
+            <div class="recep-info-box pc-info-box inventaire-edit-meta">
                 <div class="recep-info-row info-row">
                     <span class="recep-info-label info-label">Entrée</span>
                     <span class="recep-info-value info-value" id="modal-pc-entry">-</span>
                 </div>
                 <div class="recep-info-row info-row">
-                    <span class="recep-info-label info-label">Date du changement</span>
+                    <span class="recep-info-label info-label">Dernier changement</span>
                     <span class="recep-info-value info-value" id="modal-pc-date-changed">-</span>
                 </div>
             </div>
-            <form id="form-edit-pc">
-                <div class="form-group">
-                    <label for="modal-pc-serial-input"><i class="fa-solid fa-barcode" aria-hidden="true"></i> Numéro de série</label>
-                    <input type="text" id="modal-pc-serial-input" name="serial_number" placeholder="S/N" autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="modal-pc-type-select"><i class="fa-solid fa-tag" aria-hidden="true"></i> Type</label>
-                    <select id="modal-pc-type-select" name="type">
-                        <option value="">-- Type --</option>
-                        <option value="portable">Portable</option>
-                        <option value="fixe">Fixe</option>
-                        <option value="ecran">Écran</option>
-                        <option value="__autre__">Autre</option>
-                    </select>
-                    <input type="text" id="modal-pc-type-other" name="type_other" placeholder="Précisez le type..." style="display:none; margin-top: var(--unit-1);" autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="modal-pc-marque-select"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</label>
-                    <select id="modal-pc-marque-select" name="marque">
-                        <option value="">-- Marque --</option>
-                    </select>
-                    <input type="text" id="modal-pc-marque-other" name="marque_other" placeholder="Précisez la marque..." style="display:none; margin-top: var(--unit-1);" autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="modal-pc-modele-select"><i class="fa-solid fa-cube" aria-hidden="true"></i> Modèle</label>
-                    <select id="modal-pc-modele-select" name="modele">
-                        <option value="">-- Modèle --</option>
-                    </select>
-                    <input type="text" id="modal-pc-modele-other" name="modele_other" placeholder="Précisez le modèle..." style="display:none; margin-top: var(--unit-1);" autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="modal-pc-state"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> État</label>
-                    <select id="modal-pc-state" name="state" required>
-                        <option value="Reconditionnés">Reconditionnés</option>
-                        <option value="Pour pièces">Pour pièces</option>
-                        <option value="HS">HS</option>
-                        <option value="autres">Autres</option>
-                    </select>
-                    <input type="text" id="modal-pc-state-other" name="state_other" placeholder="Précisez l'état..." style="display:none; margin-top: var(--unit-1);" autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="modal-pc-os-select"><i class="fa-solid fa-desktop" aria-hidden="true"></i> OS</label>
-                    <select id="modal-pc-os-select" name="os">
-                        <option value="linux" selected>Linux</option>
-                        <option value="windows">Windows</option>
-                        <option value="chrome">Chrome OS</option>
-                        <option value="apple">Apple</option>
-                        <option value="android">Android</option>
-                        <option value="bsd">BSD</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="modal-pc-technician"><i class="fa-solid fa-user" aria-hidden="true"></i> Technicien</label>
-                    <input type="text" id="modal-pc-technician" name="technician" placeholder="Prénom du technicien" autocomplete="off">
-                    <small class="form-help">Saisie libre du prénom</small>
-                </div>
+            <form id="form-edit-pc" class="inventaire-edit-form">
+                <fieldset class="recep-form-section inventaire-edit-section">
+                    <legend class="recep-form-section__title"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> Identité</legend>
+                    <div class="recep-form-section__grid inventaire-edit-grid">
+                        <div class="form-group inventaire-edit-field inventaire-edit-field--full">
+                            <label for="modal-pc-serial-input"><i class="fa-solid fa-barcode" aria-hidden="true"></i> Numéro de série</label>
+                            <input type="text" id="modal-pc-serial-input" name="serial_number" class="lots-modal__input" placeholder="Saisir le S/N…" autocomplete="off">
+                        </div>
+                        <div class="form-group inventaire-edit-field">
+                            <label for="modal-pc-type-select"><i class="fa-solid fa-tag" aria-hidden="true"></i> Type</label>
+                            <select id="modal-pc-type-select" name="type" class="lots-modal__input">
+                                <option value="">— Type —</option>
+                                <option value="portable">Portable</option>
+                                <option value="fixe">Fixe</option>
+                                <option value="ecran">Écran</option>
+                                <option value="__autre__">Autre</option>
+                            </select>
+                            <input type="text" id="modal-pc-type-other" name="type_other" class="lots-modal__input" placeholder="Précisez le type…" style="display:none; margin-top: var(--unit-1);" autocomplete="off">
+                        </div>
+                        <div class="form-group inventaire-edit-field">
+                            <label for="modal-pc-marque-select"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</label>
+                            <select id="modal-pc-marque-select" name="marque" class="lots-modal__input">
+                                <option value="">— Marque —</option>
+                            </select>
+                            <input type="text" id="modal-pc-marque-other" name="marque_other" class="lots-modal__input" placeholder="Précisez la marque…" style="display:none; margin-top: var(--unit-1);" autocomplete="off">
+                        </div>
+                        <div class="form-group inventaire-edit-field">
+                            <label for="modal-pc-modele-select"><i class="fa-solid fa-cube" aria-hidden="true"></i> Modèle</label>
+                            <select id="modal-pc-modele-select" name="modele" class="lots-modal__input">
+                                <option value="">— Modèle —</option>
+                            </select>
+                            <input type="text" id="modal-pc-modele-other" name="modele_other" class="lots-modal__input" placeholder="Précisez le modèle…" style="display:none; margin-top: var(--unit-1);" autocomplete="off">
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="recep-form-section inventaire-edit-section" id="modal-pc-suivi-section">
+                    <legend class="recep-form-section__title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Suivi</legend>
+                    <div class="recep-form-section__grid inventaire-edit-grid">
+                        <div class="form-group inventaire-edit-field">
+                            <label for="modal-pc-state"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> État</label>
+                            <select id="modal-pc-state" name="state" class="lots-modal__input">
+                                <option value="">— Non défini —</option>
+                                <option value="Reconditionnés">Reconditionnés</option>
+                                <option value="Pour pièces">Pour pièces</option>
+                                <option value="HS">HS</option>
+                                <option value="autres">Autres</option>
+                            </select>
+                            <input type="text" id="modal-pc-state-other" name="state_other" class="lots-modal__input" placeholder="Précisez l'état…" style="display:none; margin-top: var(--unit-1);" autocomplete="off">
+                        </div>
+                        <div class="form-group inventaire-edit-field">
+                            <label for="modal-pc-os-select"><i class="fa-solid fa-desktop" aria-hidden="true"></i> OS</label>
+                            <select id="modal-pc-os-select" name="os" class="lots-modal__input">
+                                <option value="linux" selected>Linux</option>
+                                <option value="windows">Windows</option>
+                                <option value="chrome">Chrome OS</option>
+                                <option value="apple">Apple</option>
+                                <option value="android">Android</option>
+                                <option value="bsd">BSD</option>
+                            </select>
+                        </div>
+                        <div class="form-group inventaire-edit-field inventaire-edit-field--full">
+                            <label for="modal-pc-technician"><i class="fa-solid fa-user" aria-hidden="true"></i> Technicien</label>
+                            <input type="text" id="modal-pc-technician" name="technician" class="lots-modal__input" placeholder="Prénom du technicien" autocomplete="off">
+                        </div>
+                    </div>
+                </fieldset>
             </form>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="modal-edit-pc" title="Annuler les modifications">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="btn-save-pc-edit" title="Enregistrer"><i class="fa-solid fa-save" aria-hidden="true"></i> Enregistrer</button>
+        <div class="modal-footer lots-modal__footer inventaire-edit-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-edit-pc" title="Annuler">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="btn-save-pc-edit" title="Enregistrer"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer</button>
         </div>
     </div>
 </dialog>

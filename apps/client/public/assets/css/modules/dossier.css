@@ -1,3 +1,48 @@
+/* Dossier — grille et blocs (alignés sur Home en thème sombre) */
+
+.dossier .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: var(--unit-3);
+    min-width: 0;
+}
+
+.dossier .grid-item {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    gap: var(--unit-2);
+}
+
+.dossier .block {
+    padding: var(--unit-3);
+    box-shadow: var(--shadow-small);
+    border-radius: var(--radius-large);
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+}
+
+.dossier .block-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--unit-1);
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .dossier .grid {
+        grid-template-columns: 1fr;
+        gap: var(--unit-2);
+    }
+}
+
 .folders-list {
     display: flex;
     flex-direction: column;

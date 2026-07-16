@@ -1,40 +1,43 @@
-<section class="recep-page lot-page entrer-page">
+<section class="recep-page lot-page entrer-page lots-saisie-page">
     <div class="lot-page__body">
-        <div class="lot-card lot-card--config">
-            <div class="lot-card__inner">
-                <div class="lot-config">
-                    <div class="lot-config__field">
-                        <label class="lot-config__label" for="disques-session-name"><i class="fa-solid fa-tag"></i> Nom du lot (optionnel)</label>
-                        <input class="lot-config__input" type="text" id="disques-session-name" name="session_name" placeholder="Ex: Session shred mars 2025" maxlength="255" autocomplete="off">
-                    </div>
-                    <div class="lot-config__actions">
-                        <button type="button" class="lot-btn lot-btn--secondary" id="disques-btn-add-marque" data-modal-open="disques-modal-add-marque" title="Ajouter une marque"><i class="fa-solid fa-plus"></i> marque</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="disques-btn-add-modele" data-modal-open="disques-modal-add-modele" title="Ajouter un modèle"><i class="fa-solid fa-plus"></i> modèle</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="disques-btn-add-line" title="Ajouter une ligne"><i class="fa-solid fa-plus"></i> ligne</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="disques-btn-lsblk" title="Détecter les disques (Linux)"><i class="fa-solid fa-memory"></i> Détection auto</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="disques-btn-new-session" title="Nouvelle session"><i class="fa-solid fa-arrow-rotate-right"></i>Nouveau lot</button>
-                        <button type="button" class="lot-btn lot-btn--primary" id="disques-btn-save" disabled title="Enregistrer"><i class="fa-solid fa-save"></i>Enregistrer</button>
-                    </div>
-                </div>
+        <div class="lot-toolbar" role="toolbar" aria-label="Actions session disques">
+            <input
+                class="lot-toolbar__name"
+                type="text"
+                id="disques-session-name"
+                name="session_name"
+                placeholder="Nom du lot (optionnel)"
+                maxlength="255"
+                autocomplete="off"
+                aria-label="Nom du lot"
+            >
+            <div class="lot-toolbar__actions">
+                <button type="button" class="lot-btn lot-btn--ghost" id="disques-btn-add-line" title="Ajouter une ligne"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ligne</button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="disques-btn-add-marque" data-modal-open="disques-modal-add-marque" title="Ajouter une marque"><i class="fa-solid fa-plus" aria-hidden="true"></i> Marque</button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="disques-btn-add-modele" data-modal-open="disques-modal-add-modele" title="Ajouter un modèle"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modèle</button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="disques-btn-lsblk" title="Détecter les disques (Linux)"><i class="fa-solid fa-memory" aria-hidden="true"></i> Détection</button>
+                <span class="lot-toolbar__sep" aria-hidden="true"></span>
+                <button type="button" class="lot-btn lot-btn--muted" id="disques-btn-new-session" title="Nouvelle session"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i> Nouveau</button>
+                <button type="button" class="lot-btn lot-btn--primary" id="disques-btn-save" disabled title="Enregistrer"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer</button>
             </div>
         </div>
 
-        <div class="lot-card lot-card--table">
+        <div class="lot-table-area">
             <div class="lot-table-wrap">
                 <table class="lot-table" id="disques-session-table">
                     <thead>
                         <tr>
                             <th class="lot-table__th--select" title="Tout sélectionner"><input type="checkbox" id="disques-select-all" title="Tout sélectionner" class="lot-checkbox"></th>
-                            <th class="lot-table__th--num"><i class="fa-solid fa-hashtag" aria-hidden="true"></i></th>
-                            <th class="lot-table__th--sn"><i class="fa-solid fa-barcode" aria-hidden="true"></i> S/N</th>
-                            <th class="lot-table__th--type"><i class="fa-solid fa-hard-drive" aria-hidden="true"></i> Type</th>
-                            <th class="lot-table__th--marque"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</th>
-                            <th class="lot-table__th--modele"><i class="fa-solid fa-cube" aria-hidden="true"></i> Modèle</th>
-                            <th class="lot-table__th--date"><i class="fa-solid fa-database" aria-hidden="true"></i> Taille</th>
-                            <th class="lot-table__th--entree"><i class="fa-solid fa-plug" aria-hidden="true"></i> Interface</th>
-                            <th class="lot-table__th--destroy" title="Destruction physique"><i class="fa-regular fa-square-check" aria-hidden="true"></i> D.phy</th>
-                            <th class="lot-table__th--shred"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Shred</th>
-                            <th class="lot-table__th--action" title="Action"><i class="fa-solid fa-trash" aria-hidden="true"></i></th>
+                            <th class="lot-table__th--num">#</th>
+                            <th class="lot-table__th--sn">S/N</th>
+                            <th class="lot-table__th--type">Type</th>
+                            <th class="lot-table__th--marque">Marque</th>
+                            <th class="lot-table__th--modele">Modèle</th>
+                            <th class="lot-table__th--date">Taille</th>
+                            <th class="lot-table__th--entree">Interface</th>
+                            <th class="lot-table__th--destroy" title="Destruction physique">D.phy</th>
+                            <th class="lot-table__th--shred">Shred</th>
+                            <th class="lot-table__th--action"></th>
                         </tr>
                     </thead>
                     <tbody id="disques-session-tbody"></tbody>
@@ -44,68 +47,64 @@
     </div>
 </section>
 
-<!-- Modales disques (lsblk, marque, modèle) -->
-<dialog class="universal-modal" id="modal-lsblk-disks" data-modal-id="modal-lsblk-disks">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-memory"></i> Disques détectés</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-lsblk-disks" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<!-- Modales disques (IDs conservés) -->
+<dialog class="universal-modal lots-modal" id="modal-lsblk-disks" data-modal-id="modal-lsblk-disks">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-memory" aria-hidden="true"></i> Disques détectés</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-lsblk-disks" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
-            <p class="modal-help">Sélectionnez les disques à ajouter à la session.</p>
+        <div class="modal-body lots-modal__body">
+            <p class="lots-modal__help">Sélectionnez les disques à ajouter à la session.</p>
             <div id="lsblk-disks-list" class="lsblk-disks-list"></div>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="recep-btn recep-btn-secondary" data-modal-close="modal-lsblk-disks">Fermer</button>
-            <button type="button" class="recep-btn recep-btn-primary" id="lsblk-btn-add-selected" title="Ajouter la sélection"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter la sélection</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-lsblk-disks">Fermer</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="lsblk-btn-add-selected" title="Ajouter la sélection"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter</button>
         </div>
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="disques-modal-add-marque" data-modal-id="disques-modal-add-marque">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-building"></i> Nouvelle Marque</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="disques-modal-add-marque" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="disques-modal-add-marque" data-modal-id="disques-modal-add-marque">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-building" aria-hidden="true"></i> Nouvelle marque</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="disques-modal-add-marque" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
-            <div class="modal-description">
-                <p>Ajoutez une nouvelle marque. Elle sera disponible dans la liste des disques.</p>
-            </div>
-            <div class="form-group">
-                <label for="disques-input-new-marque">Nom de la marque</label>
-                <input type="text" id="disques-input-new-marque" class="recep-input" placeholder="Ex: Samsung, WD, Seagate..." autocomplete="off" autofocus>
+        <div class="modal-body lots-modal__body">
+            <p class="lots-modal__help">Ajoutez une marque. Elle sera disponible dans les listes disques.</p>
+            <div class="form-group lots-modal__field">
+                <label for="disques-input-new-marque"><i class="fa-solid fa-tag" aria-hidden="true"></i> Nom de la marque</label>
+                <input type="text" id="disques-input-new-marque" class="lots-modal__input" placeholder="Ex : Samsung, WD, Seagate…" autocomplete="off" autofocus>
             </div>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="disques-modal-add-marque">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="disques-btn-submit-marque" title="Ajouter"><i class="fa-solid fa-check" aria-hidden="true"></i> Ajouter la marque</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="disques-modal-add-marque">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="disques-btn-submit-marque" title="Ajouter"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter</button>
         </div>
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="disques-modal-add-modele" data-modal-id="disques-modal-add-modele">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-laptop"></i> Nouveau Modèle</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="disques-modal-add-modele" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="disques-modal-add-modele" data-modal-id="disques-modal-add-modele">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-laptop" aria-hidden="true"></i> Nouveau modèle</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="disques-modal-add-modele" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
-            <div class="modal-description">
-                <p>Ajoutez un nouveau modèle pour une marque existante.</p>
+        <div class="modal-body lots-modal__body">
+            <p class="lots-modal__help">Associez le modèle à une marque existante.</p>
+            <div class="form-group lots-modal__field">
+                <label for="disques-select-marque-for-modele"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</label>
+                <select id="disques-select-marque-for-modele" class="lots-modal__input"><option value="">Sélectionner une marque</option></select>
             </div>
-            <div class="form-group">
-                <label for="disques-select-marque-for-modele">Marque</label>
-                <select id="disques-select-marque-for-modele" class="recep-input"><option value="">Sélectionner une marque</option></select>
-            </div>
-            <div class="form-group">
-                <label for="disques-input-new-modele">Nom du modèle</label>
-                <input type="text" id="disques-input-new-modele" class="recep-input" placeholder="Ex: 870 EVO, BarraCuda..." autocomplete="off">
+            <div class="form-group lots-modal__field">
+                <label for="disques-input-new-modele"><i class="fa-solid fa-cube" aria-hidden="true"></i> Nom du modèle</label>
+                <input type="text" id="disques-input-new-modele" class="lots-modal__input" placeholder="Ex : 870 EVO, BarraCuda…" autocomplete="off">
             </div>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="disques-modal-add-modele">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="disques-btn-submit-modele" title="Ajouter"><i class="fa-solid fa-check" aria-hidden="true"></i> Ajouter le modèle</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="disques-modal-add-modele">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="disques-btn-submit-modele" title="Ajouter"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter</button>
         </div>
     </div>
 </dialog>

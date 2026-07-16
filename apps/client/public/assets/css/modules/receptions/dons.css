@@ -96,10 +96,10 @@
     width: 100%;
     min-height: 40px;
     padding: var(--unit-1) var(--unit-2);
-    border: 1px solid rgba(13, 13, 13, 0.12);
+    border: 1px solid var(--border);
     border-radius: var(--radius-medium);
     font-size: 0.9375rem;
-    background: #fff;
+    background: var(--bg-surface-2);
     color: var(--text2);
     transition: var(--transition);
     box-sizing: border-box;
@@ -159,7 +159,7 @@
     padding: var(--unit-1) var(--unit-2);
     text-align: left;
     vertical-align: middle;
-    border-bottom: 1px solid rgba(13, 13, 13, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .dons-container .lot-table thead {
@@ -182,7 +182,7 @@
 
 .dons-container .lot-table tbody tr { transition: background 0.15s ease; }
 .dons-container .lot-table tbody tr:nth-child(even) { background: rgba(0, 0, 0, 0.02); }
-.dons-container .lot-table tbody tr:hover { background: #f5f5f5; }
+.dons-container .lot-table tbody tr:hover { background: rgba(124, 156, 255, 0.08); }
 
 /* Colonnes dons (largeurs raisonnables pour ne pas déborder) */
 .dons-container .lot-table__th--num { width: 5px; text-align: center; }
@@ -203,10 +203,10 @@
     min-width: 0;
     min-height: 32px;
     padding: var(--unit-1) var(--unit-2);
-    border: 1px solid rgba(13, 13, 13, 0.12);
+    border: 1px solid var(--border);
     border-radius: var(--radius-small);
     font-size: 0.8125rem;
-    background: #fff;
+    background: var(--bg-surface-2);
     color: var(--text2);
     box-sizing: border-box;
 }
@@ -250,7 +250,7 @@
     padding: 0;
     background-color: transparent;
     color: var(--text2);
-    border: 1px solid rgba(13, 13, 13, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: var(--radius-small);
     cursor: pointer;
     transition: var(--transition);
@@ -275,7 +275,7 @@
     text-align: center;
     font-size: 0.9375rem;
     color: var(--text2);
-    background: #f5f5f5;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 /* ---------- Responsive ---------- */
@@ -317,7 +317,7 @@
         gap: 0 var(--unit-3);
         margin-bottom: var(--unit-3);
         padding: var(--unit-3);
-        border: 1px solid rgba(13, 13, 13, 0.08);
+        border: 1px solid var(--border);
         border-radius: var(--radius-medium);
         background: var(--recep-panel-bg);
         box-shadow: var(--shadow-small);

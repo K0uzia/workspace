@@ -1,25 +1,21 @@
 <section class="recep-page lot-page commande-container">
     <div class="lot-page__body">
-        <div class="lot-card lot-card--config">
-            <div class="lot-card__inner">
-                <div class="lot-config">
-                    <div class="lot-config__field">
-                        <label class="lot-config__label" for="commande-name"><i class="fa-solid fa-file-lines"></i> Nom de la commande</label>
-                        <input class="lot-config__input" type="text" id="commande-name" placeholder="Ex : Commande fournitures mars 2025" maxlength="255" autocomplete="off">
-                    </div>
-                    <div class="lot-config__field">
-                        <label class="lot-config__label" for="commande-category"><i class="fa-solid fa-folder-tree"></i> Catégorie</label>
-                        <select class="lot-config__input" id="commande-category" required>
-                            <option value="">-- Catégorie --</option>
-                        </select>
-                    </div>
-                    <div class="lot-config__actions">
-                        <button type="button" class="lot-btn lot-btn--secondary" id="commande-btn-add-line" title="Ajouter une ligne">Ajouter une ligne</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="commande-btn-add-product" title="Ajouter un produit">Ajouter un produit</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="commande-btn-add-category" title="Ajouter une catégorie">Ajouter une catégorie</button>
-                        <button type="button" class="lot-btn lot-btn--primary" id="commande-btn-save-pdf" title="Enregistrer le PDF">Enregistrer</button>
-                    </div>
-                </div>
+        <div class="recep-toolbar-compact" role="toolbar" aria-label="Actions commande">
+            <div class="lot-config__field">
+                <label class="lot-config__label" for="commande-name"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Nom</label>
+                <input class="lot-config__input" type="text" id="commande-name" placeholder="Ex : Commande fournitures…" maxlength="255" autocomplete="off">
+            </div>
+            <div class="lot-config__field">
+                <label class="lot-config__label" for="commande-category"><i class="fa-solid fa-folder-tree" aria-hidden="true"></i> Catégorie</label>
+                <select class="lot-config__input" id="commande-category" required>
+                    <option value="">— Catégorie —</option>
+                </select>
+            </div>
+            <div class="lot-config__actions">
+                <button type="button" class="lot-btn lot-btn--ghost" id="commande-btn-add-line" title="Ajouter une ligne"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ligne</button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="commande-btn-add-product" title="Ajouter un produit"><i class="fa-solid fa-plus" aria-hidden="true"></i> Produit</button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="commande-btn-add-category" title="Ajouter une catégorie"><i class="fa-solid fa-plus" aria-hidden="true"></i> Catégorie</button>
+                <button type="button" class="lot-btn lot-btn--primary" id="commande-btn-save-pdf" title="Enregistrer le PDF"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer</button>
             </div>
         </div>
 
@@ -29,13 +25,13 @@
                     <table class="lot-table" id="commande-table">
                         <thead>
                             <tr>
-                                <th class="lot-table__th--num"><i class="fa-solid fa-hashtag" aria-hidden="true"></i> </th>
-                                <th class="lot-table__th--produit"><i class="fa-solid fa-box" aria-hidden="true"></i> Produit</th>
-                                <th class="lot-table__th--quantite"><i class="fa-solid fa-sort-numeric-up" aria-hidden="true"></i> Quantité</th>
-                                <th class="lot-table__th--prix"><i class="fa-solid fa-euro-sign" aria-hidden="true"></i> Prix (€)</th>
-                                <th class="lot-table__th--frais-port"><i class="fa-solid fa-truck" aria-hidden="true"></i> Frais de port (€)</th>
-                                <th class="lot-table__th--liens"><i class="fa-solid fa-link" aria-hidden="true"></i> Liens</th>
-                                <th class="lot-table__th--action"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i></th>
+                                <th class="lot-table__th--num">#</th>
+                                <th class="lot-table__th--produit">Produit</th>
+                                <th class="lot-table__th--quantite">Qté</th>
+                                <th class="lot-table__th--prix">Prix (€)</th>
+                                <th class="lot-table__th--frais-port">Port (€)</th>
+                                <th class="lot-table__th--liens">Lien</th>
+                                <th class="lot-table__th--action"></th>
                             </tr>
                         </thead>
                         <tbody id="commande-tbody">
@@ -44,7 +40,7 @@
                                 <td class="col-produit" data-label="Produit"><select class="commande-select-product recep-input" data-line="0"><option value="">— Produit —</option></select></td>
                                 <td class="col-quantite" data-label="Quantité"><input type="number" min="0" step="1" class="commande-input-quantite recep-input" data-line="0" placeholder="0"></td>
                                 <td class="col-prix" data-label="Prix (€)"><input type="number" min="0" step="0.01" class="commande-input-prix recep-input" data-line="0" placeholder="0,00"></td>
-                                <td class="col-frais-port" data-label="Frais de port (€)"><input type="number" min="0" step="0.01" class="commande-input-frais-port recep-input" data-line="0" placeholder="0,00 (opt.)"></td>
+                                <td class="col-frais-port" data-label="Frais de port (€)"><input type="number" min="0" step="0.01" class="commande-input-frais-port recep-input" data-line="0" placeholder="0,00"></td>
                                 <td class="col-liens" data-label="Liens"><input type="text" class="commande-input-lien recep-input" data-line="0" placeholder="URL"></td>
                                 <td class="col-actions" data-label="Action"><button type="button" class="recep-btn-icon btn-remove-line" data-line="0" title="Supprimer" disabled><i class="fas fa-trash" aria-hidden="true"></i></button></td>
                             </tr>
@@ -56,42 +52,42 @@
     </div>
 </section>
 
-<dialog class="universal-modal" id="commande-modal-add-product" data-modal-id="commande-modal-add-product">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-plus"></i> Ajouter un produit</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="commande-modal-add-product" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="commande-modal-add-product" data-modal-id="commande-modal-add-product">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-box" aria-hidden="true"></i> Ajouter un produit</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="commande-modal-add-product" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body lots-modal__body">
             <form id="commande-form-add-product">
-                <div class="form-group">
-                    <label for="commande-new-product-name">Nom du produit</label>
-                    <input type="text" id="commande-new-product-name" placeholder="Ex : Câble HDMI 2m" required autocomplete="off">
+                <div class="form-group lots-modal__field">
+                    <label for="commande-new-product-name"><i class="fa-solid fa-tag" aria-hidden="true"></i> Nom du produit</label>
+                    <input type="text" id="commande-new-product-name" class="lots-modal__input" placeholder="Ex : Câble HDMI 2m" required autocomplete="off">
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="recep-btn recep-btn-secondary" data-close-modal="commande-modal-add-product">Annuler</button>
-                    <button type="submit" class="recep-btn recep-btn-primary">Enregistrer</button>
+                <div class="modal-actions" style="display:flex;gap:var(--unit-2);justify-content:flex-end;margin-top:var(--unit-3);">
+                    <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-close-modal="commande-modal-add-product">Annuler</button>
+                    <button type="submit" class="lots-modal__btn lots-modal__btn--submit">Enregistrer</button>
                 </div>
             </form>
         </div>
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="commande-modal-add-category" data-modal-id="commande-modal-add-category">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-folder-plus"></i> Ajouter une catégorie</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="commande-modal-add-category" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="commande-modal-add-category" data-modal-id="commande-modal-add-category">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-folder-plus" aria-hidden="true"></i> Ajouter une catégorie</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="commande-modal-add-category" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body lots-modal__body">
             <form id="commande-form-add-category">
-                <div class="form-group">
-                    <label for="commande-new-category-name">Nom de la catégorie</label>
-                    <input type="text" id="commande-new-category-name" placeholder="Ex : RJ45" required autocomplete="off">
+                <div class="form-group lots-modal__field">
+                    <label for="commande-new-category-name"><i class="fa-solid fa-folder" aria-hidden="true"></i> Nom de la catégorie</label>
+                    <input type="text" id="commande-new-category-name" class="lots-modal__input" placeholder="Ex : RJ45" required autocomplete="off">
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="recep-btn recep-btn-secondary" data-close-modal="commande-modal-add-category">Annuler</button>
-                    <button type="submit" class="recep-btn recep-btn-primary">Enregistrer</button>
+                <div class="modal-actions" style="display:flex;gap:var(--unit-2);justify-content:flex-end;margin-top:var(--unit-3);">
+                    <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-close-modal="commande-modal-add-category">Annuler</button>
+                    <button type="submit" class="lots-modal__btn lots-modal__btn--submit">Enregistrer</button>
                 </div>
             </form>
         </div>

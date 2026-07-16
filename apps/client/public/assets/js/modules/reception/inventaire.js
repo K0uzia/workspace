@@ -6,7 +6,7 @@
 import api from '../../config/api.js';
 import getLogger from '../../config/Logger.js';
 import { showAppNotification } from '../../config/notifications.js';
-import { loadLotsWithItems } from './lotsApi.js';
+import { loadLotsWithItems, addLotItem, removeLotItem, restoreLotItem } from './lotsApi.js';
 import { getOsIcon, getOsLabel, getOsOption } from './osOptions.js';
 const logger = getLogger();
 
@@ -18,6 +18,7 @@ export default class InventaireManager {
         this.modalManager = modalManager;
         this.currentEditingItemId = null;
         this.currentEditingLotId = null;
+        this.modalMode = 'edit'; // 'edit' | 'add'
         this.lots = [];
         this.marques = [];
         this.modeles = [];
@@ -74,7 +75,18 @@ export default class InventaireManager {
      */
     async loadLots() {
         try {
+            const previousLocalPdf = new Map(
+                (this.lots || [])
+                    .filter(l => l?.id != null && this.isAllowedLocalPath(l.local_pdf_path || l.pdf_path))
+                    .map(l => [String(l.id), l.local_pdf_path || l.pdf_path])
+            );
             this.lots = await loadLotsWithItems({ status: 'active' });
+            this.lots.forEach(lot => {
+                const prev = previousLocalPdf.get(String(lot.id));
+                if (prev && !this.isAllowedLocalPath(lot.local_pdf_path || lot.pdf_path)) {
+                    lot.local_pdf_path = prev;
+                }
+            });
             logger.info('📦 Inventaire : ' + this.lots.length + ' lot(s) chargé(s)');
             this.renderLots();
         } catch (error) {
@@ -227,17 +239,29 @@ export default class InventaireManager {
                             <strong>${hs}</strong> HS
                         </span>
                         <span class="inventaire-stat inventaire-stat--total">
+                            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
                             <strong>${total}</strong> total
                         </span>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    <div class="inventaire-lot-progress">
+                        <span class="inventaire-lot-progress__label">Progression · ${progress}%</span>
+                        <div class="progress-bar recep-progress-wrap" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100" aria-label="Avancement du lot">
+                            <div class="progress-fill recep-progress-bar" style="width: ${progress}%"></div>
+                        </div>
                     </div>
-                    <button type="button" class="btn-generate-pdf-interim lot-btn lot-btn--secondary" data-lot-id="${lot.id}" title="Générer un PDF provisoire avec les données actuelles">
-                        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> PDF provisoire
-                    </button>
+                    <div class="inventaire-lot-pdf-actions">
+                        <button type="button" class="btn-generate-pdf-interim lot-btn lot-btn--secondary" data-lot-id="${lot.id}" title="Générer un PDF provisoire avec les données actuelles">
+                            <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> PDF provisoire
+                        </button>
+                        ${this.renderLotPdfActionButtons(lot)}
+                    </div>
                 </div>
                 <div class="lot-content" style="display: none;">
+                    <div class="inventaire-lot-toolbar">
+                        <button type="button" class="btn-add-pc-to-lot lot-btn lot-btn--secondary" data-lot-id="${lot.id}" title="Ajouter un PC / matériel à ce lot">
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter du matériel
+                        </button>
+                    </div>
                     <div class="lot-table-wrap">
                         <table class="lot-table">
                             <thead>
@@ -249,31 +273,36 @@ export default class InventaireManager {
                                     <th class="lot-table__th--modele"><i class="fa-solid fa-cube" aria-hidden="true"></i> Modèle</th>
                                     <th class="lot-table__th--os"><i class="fa-solid fa-desktop" aria-hidden="true"></i> OS</th>
                                     <th class="lot-table__th--state"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> État</th>
-                                    <th class="lot-table__th--date"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Date / Heure</th>
-                                    <th class="lot-table__th--technicien"><i class="fa-solid fa-user" aria-hidden="true"></i> Technicien</th>
+                                    <th class="lot-table__th--date"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Date</th>
+                                    <th class="lot-table__th--technicien"><i class="fa-solid fa-user" aria-hidden="true"></i> Tech.</th>
                                     <th class="lot-table__th--action"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${items.map((item, idx) => `
                                     <tr class="item-row item-${(item.state && item.state.trim() !== '') ? item.state.replace(/\s+/g, '-') : 'non-defini'}">
-                                        <td>${idx + 1}</td>
-                                        <td>${item.serial_number || '-'}</td>
-                                        <td>${item.type || '-'}</td>
-                                        <td>${item.marque_name || '-'}</td>
-                                        <td>${item.modele_name || '-'}</td>
+                                        <td class="col-num">${idx + 1}</td>
+                                        <td class="col-sn" title="${String(item.serial_number || '').replace(/"/g, '&quot;')}">${item.serial_number || '-'}</td>
+                                        <td class="col-type">${item.type || '-'}</td>
+                                        <td class="col-marque">${item.marque_name || '-'}</td>
+                                        <td class="col-modele">${item.modele_name || '-'}</td>
                                         <td class="col-os"><i class="fa-brands fa-${getOsIcon(item.os)}" title="${getOsLabel(item.os)}"></i></td>
-                                        <td>
+                                        <td class="col-state">
                                             <span class="state-badge state-${item.state ? item.state.replace(/\s+/g, '-') : 'non-defini'}">
                                                 ${item.state || 'Non défini'}
                                             </span>
                                         </td>
-                                        <td>${this.formatDateTime(item.state_changed_at) || '-'}</td>
-                                        <td>${item.technician || '-'}</td>
-                                        <td>
-                                            <button type="button" class="btn-edit-pc" data-item-id="${item.id}" title="Éditer ce PC (S/N, type, marque, modèle, état, technicien, OS)">
-                                                <i class="fa-solid fa-edit" aria-hidden="true"></i>
-                                            </button>
+                                        <td class="col-date">${this.formatDateTime(item.state_changed_at) || '-'}</td>
+                                        <td class="col-tech">${item.technician || '-'}</td>
+                                        <td class="col-action">
+                                            <div class="inventaire-row-actions">
+                                                <button type="button" class="btn-edit-pc" data-item-id="${item.id}" title="Éditer ce matériel">
+                                                    <i class="fa-solid fa-edit" aria-hidden="true"></i>
+                                                </button>
+                                                <button type="button" class="btn-remove-pc" data-item-id="${item.id}" data-lot-id="${lot.id}" title="Retirer du lot">
+                                                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -286,13 +315,34 @@ export default class InventaireManager {
     }
     
     /**
+     * Boutons « Ouvrir emplacement » / « Voir PDF » si un chemin PDF local est connu.
+     */
+    renderLotPdfActionButtons(lot) {
+        const localPath = this.getCandidatePdfPathFromItem(lot);
+        if (!this.isAllowedLocalPath(localPath)) return '';
+        const safeLocal = this.escapeHtml(String(localPath));
+        return `
+            <button type="button" class="btn-open-pdf-location-lot lot-btn lot-btn--pdf-location" data-lot-id="${lot.id}" title="Ouvrir le dossier du PDF provisoire">
+                <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Ouvrir emplacement
+            </button>
+            <button type="button" class="btn-view-pdf-lot lot-btn lot-btn--pdf-view" data-lot-id="${lot.id}" data-pdf-path="${safeLocal}" title="Ouvrir le PDF">
+                <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+            </button>
+        `;
+    }
+
+    /**
      * Attacher les événements aux lots
      */
     attachLotEventListeners() {
+        const isPdfAction = (el) => el.closest(
+            '.btn-edit-pc, .btn-remove-pc, .btn-add-pc-to-lot, .btn-generate-pdf-interim, .btn-open-pdf-location-lot, .btn-view-pdf-lot'
+        );
+
         // Toggle lot expansion
         document.querySelectorAll('.inventaire-lot-header').forEach(header => {
             header.addEventListener('click', (e) => {
-                if (e.target.closest('.btn-edit-pc') || e.target.closest('.btn-generate-pdf-interim')) return;
+                if (isPdfAction(e.target)) return;
                 
                 const card = header.closest('.inventaire-lot-card');
                 const content = card.querySelector('.lot-content');
@@ -317,11 +367,39 @@ export default class InventaireManager {
             });
         });
 
+        document.querySelectorAll('.btn-remove-pc').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removePCFromLot(btn.dataset.itemId, btn.dataset.lotId);
+            });
+        });
+
+        document.querySelectorAll('.btn-add-pc-to-lot').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openAddPCModal(btn.dataset.lotId);
+            });
+        });
+
         document.querySelectorAll('.btn-generate-pdf-interim').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const lotId = btn.dataset.lotId;
                 this.generateLotPdfInterim(lotId);
+            });
+        });
+
+        document.querySelectorAll('.btn-open-pdf-location-lot').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openLotPdfLocation(btn.dataset.lotId);
+            });
+        });
+
+        document.querySelectorAll('.btn-view-pdf-lot').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openLotPdf(btn.dataset.lotId, btn.dataset.pdfPath);
             });
         });
     }
@@ -465,8 +543,10 @@ export default class InventaireManager {
             return;
         }
 
+        this.modalMode = 'edit';
         this.currentEditingItemId = itemId;
         this.currentEditingLotId = foundLot.id;
+        this.updateModalChrome();
 
         const serialInput = document.getElementById('modal-pc-serial-input');
         if (serialInput) serialInput.value = item.serial_number || '';
@@ -510,17 +590,137 @@ export default class InventaireManager {
                     stateOtherInput.value = '';
                     stateOtherInput.style.display = 'none';
                 }
-            } else {
+            } else if (currentState) {
                 stateSelect.value = 'autres';
                 if (stateOtherInput) {
                     stateOtherInput.value = currentState;
                     stateOtherInput.style.display = 'block';
+                }
+            } else {
+                stateSelect.value = '';
+                if (stateOtherInput) {
+                    stateOtherInput.value = '';
+                    stateOtherInput.style.display = 'none';
                 }
             }
         }
         document.getElementById('modal-pc-technician').value = item.technician || '';
 
         this.modalManager.open('modal-edit-pc');
+    }
+
+    updateModalChrome() {
+        const title = document.getElementById('modal-edit-pc-title');
+        const saveBtn = document.getElementById('btn-save-pc-edit');
+        const infoBox = document.querySelector('#modal-edit-pc .pc-info-box');
+        const suiviSection = document.getElementById('modal-pc-suivi-section');
+        if (this.modalMode === 'add') {
+            if (title) title.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter du matériel';
+            if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter';
+            if (infoBox) infoBox.style.display = 'none';
+            if (suiviSection) suiviSection.style.display = '';
+        } else {
+            if (title) title.innerHTML = '<i class="fa-solid fa-computer" aria-hidden="true"></i> Éditer le matériel';
+            if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer';
+            if (infoBox) infoBox.style.display = '';
+            if (suiviSection) suiviSection.style.display = '';
+        }
+    }
+
+    /**
+     * Ouvre la modale d'ajout de matériel sur un lot.
+     */
+    openAddPCModal(lotId) {
+        const lot = this.lots.find(l => String(l.id) === String(lotId));
+        if (!lot) {
+            this.showNotification('Lot introuvable', 'error');
+            return;
+        }
+        this.modalMode = 'add';
+        this.currentEditingItemId = null;
+        this.currentEditingLotId = lot.id;
+        this.updateModalChrome();
+
+        const serialInput = document.getElementById('modal-pc-serial-input');
+        if (serialInput) serialInput.value = '';
+        const typeSelect = document.getElementById('modal-pc-type-select');
+        const typeOther = document.getElementById('modal-pc-type-other');
+        if (typeSelect) typeSelect.value = '';
+        if (typeOther) {
+            typeOther.value = '';
+            typeOther.style.display = 'none';
+        }
+        this.populateMarqueSelect('');
+        this.populateModeleSelect(null, '');
+        this.setupModalMaterialListeners();
+
+        const osSelect = document.getElementById('modal-pc-os-select');
+        if (osSelect) osSelect.value = 'linux';
+        const entryEl = document.getElementById('modal-pc-entry');
+        if (entryEl) entryEl.textContent = 'manual';
+        const dateEl = document.getElementById('modal-pc-date-changed');
+        if (dateEl) dateEl.textContent = '-';
+        const stateSelect = document.getElementById('modal-pc-state');
+        const stateOther = document.getElementById('modal-pc-state-other');
+        if (stateSelect) stateSelect.value = '';
+        if (stateOther) {
+            stateOther.value = '';
+            stateOther.style.display = 'none';
+        }
+        const tech = document.getElementById('modal-pc-technician');
+        if (tech) tech.value = '';
+
+        this.modalManager.open('modal-edit-pc');
+        setTimeout(() => serialInput?.focus(), 50);
+    }
+
+    /**
+     * Retirer un PC du lot (confirmation + toast undo).
+     */
+    async removePCFromLot(itemId, lotId) {
+        let item = null;
+        for (const lot of this.lots) {
+            item = (lot.items || []).find(i => String(i.id) === String(itemId));
+            if (item) break;
+        }
+        const label = item?.serial_number ? `S/N ${item.serial_number}` : `matériel #${itemId}`;
+        const ok = window.confirm(`Retirer ${label} de ce lot ?\nVous pourrez annuler via la notification.`);
+        if (!ok) return;
+
+        try {
+            await removeLotItem(itemId);
+            await this.loadLots();
+            // Rouvrir le lot si encore présent
+            const card = document.querySelector(`.inventaire-lot-card[data-lot-id="${lotId}"]`);
+            if (card) {
+                const content = card.querySelector('.lot-content');
+                const icon = card.querySelector('.expand-icon');
+                if (content) content.style.display = 'block';
+                if (icon) icon.style.transform = 'rotate(90deg)';
+            }
+            this.showNotification('Matériel retiré du lot', 'success', {
+                onUndo: async () => {
+                    try {
+                        await restoreLotItem(itemId);
+                        await this.loadLots();
+                        const c = document.querySelector(`.inventaire-lot-card[data-lot-id="${lotId}"]`);
+                        if (c) {
+                            const content = c.querySelector('.lot-content');
+                            const icon = c.querySelector('.expand-icon');
+                            if (content) content.style.display = 'block';
+                            if (icon) icon.style.transform = 'rotate(90deg)';
+                        }
+                        this.showNotification('Matériel restauré', 'success');
+                    } catch (err) {
+                        logger.error('Undo restore failed:', err);
+                        this.showNotification(err?.message || 'Impossible de restaurer', 'error');
+                    }
+                }
+            });
+        } catch (err) {
+            logger.error('Remove item failed:', err);
+            this.showNotification(err?.message || 'Erreur lors du retrait', 'error');
+        }
     }
 
     /**
@@ -571,10 +771,15 @@ export default class InventaireManager {
     }
 
     /**
-     * Sauvegarder l'édition d'un PC
+     * Sauvegarder l'édition d'un PC (ou ajout)
      */
     async savePCEdit() {
         try {
+            if (this.modalMode === 'add') {
+                await this.savePCAdd();
+                return;
+            }
+
             // Vérifier que l'itemId est défini
             if (!this.currentEditingItemId) {
                 this.showNotification('Erreur : ID de l\'item non défini', 'error');
@@ -748,6 +953,59 @@ export default class InventaireManager {
     }
 
     /**
+     * Ajoute un nouveau matériel au lot courant.
+     */
+    async savePCAdd() {
+        if (!this.currentEditingLotId) {
+            this.showNotification('Lot non identifié', 'error');
+            return;
+        }
+        const material = this.collectMaterialFieldsFromModal();
+        if (!material.serial_number) {
+            this.showNotification('Veuillez saisir un numéro de série', 'error');
+            return;
+        }
+
+        const stateSelectValue = document.getElementById('modal-pc-state')?.value || '';
+        const stateOtherValue = (document.getElementById('modal-pc-state-other')?.value || '').trim();
+        const stateRaw = stateSelectValue === 'autres' ? stateOtherValue : stateSelectValue;
+        const technician = (document.getElementById('modal-pc-technician')?.value || '').trim() || null;
+        const osValue = (document.getElementById('modal-pc-os-select')?.value || 'linux').trim();
+        const now = new Date();
+        const date = now.toISOString().slice(0, 10);
+        const time = now.toTimeString().slice(0, 8);
+
+        try {
+            await addLotItem(this.currentEditingLotId, {
+                serial_number: material.serial_number,
+                type: material.type,
+                marque_name: material.marque_name,
+                modele_name: material.modele_name,
+                entry_type: 'manual',
+                entry_date: date,
+                entry_time: time,
+                os: osValue || 'linux',
+                state: stateRaw || null,
+                technician
+            });
+            const lotId = this.currentEditingLotId;
+            this.modalManager.close('modal-edit-pc');
+            await this.loadLots();
+            const card = document.querySelector(`.inventaire-lot-card[data-lot-id="${lotId}"]`);
+            if (card) {
+                const content = card.querySelector('.lot-content');
+                const icon = card.querySelector('.expand-icon');
+                if (content) content.style.display = 'block';
+                if (icon) icon.style.transform = 'rotate(90deg)';
+            }
+            this.showNotification('Matériel ajouté au lot', 'success');
+        } catch (err) {
+            logger.error('Add item failed:', err);
+            this.showNotification(err?.message || 'Erreur lors de l\'ajout', 'error');
+        }
+    }
+
+    /**
      * Générer un PDF provisoire pour un lot en cours (données actuelles, lot non clôturé).
      */
     async generateLotPdfInterim(lotId) {
@@ -761,16 +1019,27 @@ export default class InventaireManager {
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Génération...';
         }
         try {
-            await this.generateLotPdf(lotId, {
+            const result = await this.generateLotPdf(lotId, {
                 finishedAt: null,
                 provisional: true,
                 uploadToServer: true
             });
-            this.showNotification('PDF provisoire généré', 'success');
+            const pdfPath = result?.pdf_path || '';
+            if (pdfPath) {
+                const lot = this.lots.find(l => String(l.id) === String(lotId));
+                if (lot) {
+                    lot.local_pdf_path = pdfPath;
+                    lot.pdf_path = pdfPath;
+                    lot.pdf_uploaded = true;
+                }
+                this.renderLots();
+                this.showNotification(`PDF provisoire généré : ${pdfPath}`, 'success');
+            } else {
+                this.showNotification('PDF provisoire généré', 'success');
+            }
         } catch (err) {
             logger.warn('Génération PDF provisoire:', err);
             this.showNotification('Erreur lors de la génération du PDF provisoire', 'error');
-        } finally {
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-file-pdf" aria-hidden="true"></i> PDF provisoire';
@@ -841,8 +1110,16 @@ export default class InventaireManager {
         const monthNum = parseInt(dateForFile.slice(5, 7), 10);
         const moisNoms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
         const monthName = monthNum >= 1 && monthNum <= 12 ? moisNoms[monthNum - 1] : dateForFile.slice(5, 7);
+        const dirPath = `${basePath}/${year}/${monthName}/`;
+        // Mémoriser le chemin local sur le lot en mémoire
+        const memLot = this.lots.find(l => String(l.id) === String(lotId));
+        if (memLot) {
+            memLot.local_pdf_path = result.pdf_path;
+            memLot.pdf_path = result.pdf_path;
+            memLot.pdf_uploaded = true;
+        }
         if (!provisional) {
-            this.showNotification(`PDF enregistré dans ${basePath}/${year}/${monthName}/`, 'success');
+            this.showNotification(`PDF enregistré dans ${dirPath}`, 'success');
         }
         return result;
     }
@@ -850,6 +1127,127 @@ export default class InventaireManager {
     /** @deprecated alias — utiliser generateLotPdf */
     async generateLotPdfOnFinished(lotId, finishedAt) {
         return this.generateLotPdf(lotId, { finishedAt, provisional: false });
+    }
+
+    escapeHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    getCandidatePdfPathFromItem(item) {
+        const candidates = [
+            item?.local_pdf_path,
+            item?.localPdfPath,
+            item?.pdf_path,
+            item?.pdfPath,
+            item?.path,
+            item?.document_path
+        ].filter(Boolean);
+        return candidates[0] || null;
+    }
+
+    isAllowedLocalPath(candidatePath) {
+        const p = String(candidatePath || '').trim();
+        if (!p) return false;
+        if (/^https?:\/\//i.test(p)) return false;
+        if (p.startsWith('/api/')) return false;
+        const normalized = p.replace(/\\/g, '/');
+        if (/\.\.(\/|$)/.test(normalized)) return false;
+        return normalized.startsWith('/mnt/team/');
+    }
+
+    toDirectoryPath(candidatePath) {
+        if (!candidatePath || /^https?:\/\//i.test(candidatePath)) return null;
+        const normalized = String(candidatePath).trim().replace(/\\/g, '/');
+        if (/\.pdf$/i.test(normalized)) {
+            return normalized.replace(/\/[^/]+$/i, '');
+        }
+        return normalized;
+    }
+
+    buildTracabiliteDir(dateStr) {
+        const raw = String(dateStr || '').trim();
+        const normalized = /^\d{4}-\d{2}-\d{2}/.test(raw)
+            ? raw.slice(0, 10)
+            : (() => {
+                const d = new Date(raw);
+                return Number.isNaN(d.getTime()) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
+            })();
+        const year = normalized.slice(0, 4);
+        const monthNum = parseInt(normalized.slice(5, 7), 10) || 1;
+        const moisNoms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        const monthName = moisNoms[Math.max(0, Math.min(11, monthNum - 1))];
+        return `/mnt/team/#TEAM/#TRAÇABILITÉ/${year}/${monthName}`;
+    }
+
+    async openPathOnDesktop(targetPath) {
+        if (!window.electron || typeof window.electron.invoke !== 'function') {
+            this.showNotification('Ouverture de dossier disponible uniquement dans l’application desktop', 'warning');
+            return;
+        }
+        try {
+            const result = await window.electron.invoke('open-path', { path: targetPath });
+            if (!result?.success) {
+                this.showNotification(result?.error || 'Impossible d’ouvrir le dossier', 'error');
+                return;
+            }
+            this.showNotification('Emplacement PDF ouvert', 'success');
+        } catch (err) {
+            logger.error('openPathOnDesktop:', err);
+            this.showNotification(err?.message || 'Impossible d’ouvrir le dossier', 'error');
+        }
+    }
+
+    async openLotPdfLocation(lotId) {
+        const lot = this.lots.find(l => String(l.id) === String(lotId));
+        if (!lot) {
+            this.showNotification('Lot introuvable', 'error');
+            return;
+        }
+        const candidate = this.getCandidatePdfPathFromItem(lot);
+        const explicit = this.isAllowedLocalPath(candidate) ? this.toDirectoryPath(candidate) : null;
+        const fallback = this.buildTracabiliteDir(lot.finished_at || lot.created_at || new Date().toISOString());
+        await this.openPathOnDesktop(explicit || fallback);
+    }
+
+    async openLotPdf(lotId, pdfPathAttr) {
+        const lot = this.lots.find(l => String(l.id) === String(lotId));
+        const localPath = this.isAllowedLocalPath(pdfPathAttr)
+            ? String(pdfPathAttr).trim()
+            : this.getCandidatePdfPathFromItem(lot);
+        if (this.isAllowedLocalPath(localPath)) {
+            if (!window.electron?.invoke) {
+                this.showNotification(`PDF : ${localPath}`, 'info');
+                return;
+            }
+            try {
+                const result = await window.electron.invoke('open-path', { path: localPath });
+                if (!result?.success) {
+                    this.showNotification(result?.error || 'Impossible d’ouvrir le PDF', 'error');
+                }
+            } catch (err) {
+                this.showNotification(err?.message || 'Impossible d’ouvrir le PDF', 'error');
+            }
+            return;
+        }
+        // Repli : PDF serveur
+        const url = `${api.getServerUrl()}/api/lots/${lotId}/pdf?v=${Date.now()}`;
+        if (window.electron?.invoke) {
+            try {
+                await window.electron.invoke('open-pdf-with-system-app', {
+                    url,
+                    token: localStorage.getItem('workspace_jwt') || '',
+                    suggestedFilename: `lot_${lotId}.pdf`
+                });
+            } catch (_) {
+                window.open(url, '_blank', 'noopener');
+            }
+            return;
+        }
+        window.open(url, '_blank', 'noopener');
     }
 
     /**

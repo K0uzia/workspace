@@ -112,7 +112,7 @@
     right: var(--unit-4);
     width: var(--chat-panel-width);
     height: var(--chat-panel-height);
-    background-color: var(--blanc);
+    background-color: var(--bg-surface);
     border-radius: var(--radius-medium);
     box-shadow: var(--shadow-strong);
     display: flex;
@@ -121,7 +121,7 @@
     transform: translateY(var(--unit-2)) scale(0.95);
     pointer-events: none;
     transition: var(--chat-panel-animation);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
     overflow: hidden;
 }
 

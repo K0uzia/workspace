@@ -128,10 +128,11 @@ dialog:has(.modal-content.modal-lg) {
     justify-content: space-between;
     align-items: center;
     padding: var(--unit-3);
-    border-bottom: 1px solid rgba(13, 13, 13, 0.1);
+    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
+    background: var(--bg-surface);
 }
 
 .modal-header h2 {
@@ -163,12 +164,12 @@ dialog:has(.modal-content.modal-lg) {
 }
 
 .modal-close-btn:hover {
-    background-color: rgba(13, 13, 13, 0.05);
-    color: var(--noir);
+    background-color: rgba(124, 156, 255, 0.1);
+    color: var(--text-primary);
 }
 
 .modal-close-btn:active {
-    background-color: rgba(13, 13, 13, 0.1);
+    background-color: rgba(124, 156, 255, 0.16);
 }
 
 /* Body */
@@ -229,21 +230,21 @@ dialog:has(.modal-content.modal-lg) {
 .form-group textarea,
 .form-group select {
     padding: var(--unit-1) var(--unit-2);
-    border: 1px solid rgba(13, 13, 13, 0.15);
+    border: 1px solid var(--border);
     border-radius: var(--radius-medium);
     font: var(--font-text);
     font-family: inherit;
     transition: var(--transition);
-    background-color: var(--blanc);
-    color: var(--text2);
+    background-color: var(--bg-surface-2);
+    color: var(--text-primary);
 }
 
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
     outline: none;
-    border-color: var(--bleu1);
-    box-shadow: 0 0 0 3px rgba(62, 59, 140, 0.1);
+    border-color: rgba(124, 156, 255, 0.45);
+    box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.16);
 }
 
 .form-group textarea {

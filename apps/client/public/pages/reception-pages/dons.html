@@ -1,19 +1,15 @@
 <section class="recep-page lot-page dons-container">
     <div class="lot-page__body">
-        <div class="lot-card lot-card--config">
-            <div class="lot-card__inner">
-                <div class="lot-config">
-                    <div class="lot-config__field">
-                        <label class="lot-config__label" for="dons-lot-name"><i class="fa-solid fa-tag"></i> Nom de lot (optionnel)</label>
-                        <input class="lot-config__input" type="text" id="dons-lot-name" placeholder="Ex : Don stagiaires mars 2025" maxlength="255" autocomplete="off">
-                    </div>
-                    <div class="lot-config__actions">
-                        <button type="button" class="lot-btn lot-btn--secondary" id="dons-btn-add-marque" data-modal-open="modal-add-marque" title="Ajouter une marque">Ajouter une marque</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="dons-btn-add-modele" data-modal-open="modal-add-modele" title="Ajouter un modèle">Ajouter un modèle</button>
-                        <button type="button" class="lot-btn lot-btn--secondary" id="dons-btn-add-line" title="Ajouter une ligne">Ajouter une ligne</button>
-                        <button type="button" class="lot-btn lot-btn--primary" id="dons-btn-save-pdf" title="Enregistrer le certificat">Enregistrer</button>
-                    </div>
-                </div>
+        <div class="recep-toolbar-compact" role="toolbar" aria-label="Actions dons">
+            <div class="lot-config__field">
+                <label class="lot-config__label" for="dons-lot-name"><i class="fa-solid fa-tag" aria-hidden="true"></i> Nom du lot</label>
+                <input class="lot-config__input" type="text" id="dons-lot-name" placeholder="Ex : Don stagiaires…" maxlength="255" autocomplete="off">
+            </div>
+            <div class="lot-config__actions">
+                <button type="button" class="lot-btn lot-btn--ghost" id="dons-btn-add-line" title="Ajouter une ligne"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ligne</button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="dons-btn-add-marque" data-modal-open="modal-add-marque" title="Ajouter une marque"><i class="fa-solid fa-plus" aria-hidden="true"></i> Marque</button>
+                <button type="button" class="lot-btn lot-btn--secondary" id="dons-btn-add-modele" data-modal-open="modal-add-modele" title="Ajouter un modèle"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modèle</button>
+                <button type="button" class="lot-btn lot-btn--primary" id="dons-btn-save-pdf" title="Enregistrer le certificat"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer</button>
             </div>
         </div>
 
@@ -23,14 +19,14 @@
                     <table class="lot-table" id="dons-table">
                         <thead>
                             <tr>
-                                <th class="lot-table__th--num"><i class="fa-solid fa-hashtag" aria-hidden="true"></i> </th>
-                                <th class="lot-table__th--type"><i class="fa-solid fa-laptop" aria-hidden="true"></i> Type</th>
-                                <th class="lot-table__th--marque"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</th>
-                                <th class="lot-table__th--modele"><i class="fa-solid fa-cube" aria-hidden="true"></i> Modèle</th>
-                                <th class="lot-table__th--sn"><i class="fa-solid fa-barcode" aria-hidden="true"></i> S/N</th>
-                                <th class="lot-table__th--date"><i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Date</th>
-                                <th class="lot-table__th--stagiaire"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i> Stagiaire AFPA</th>
-                                <th class="lot-table__th--action"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i></th>
+                                <th class="lot-table__th--num">#</th>
+                                <th class="lot-table__th--type">Type</th>
+                                <th class="lot-table__th--marque">Marque</th>
+                                <th class="lot-table__th--modele">Modèle</th>
+                                <th class="lot-table__th--sn">S/N</th>
+                                <th class="lot-table__th--date">Date</th>
+                                <th class="lot-table__th--stagiaire">Stagiaire AFPA</th>
+                                <th class="lot-table__th--action"></th>
                             </tr>
                         </thead>
                         <tbody id="dons-tbody"></tbody>
@@ -41,48 +37,48 @@
     </div>
 </section>
 
-<dialog class="universal-modal" id="modal-add-marque" data-modal-id="modal-add-marque">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-building"></i> Nouvelle marque</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-add-marque" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="modal-add-marque" data-modal-id="modal-add-marque">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-building" aria-hidden="true"></i> Nouvelle marque</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-add-marque" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body lots-modal__body">
             <form id="form-add-marque">
-                <div class="form-group">
-                    <label for="input-new-marque">Nom de la marque</label>
-                    <input type="text" id="input-new-marque" name="marque" placeholder="Ex: Dell, HP..." required autocomplete="off">
+                <div class="form-group lots-modal__field">
+                    <label for="input-new-marque"><i class="fa-solid fa-tag" aria-hidden="true"></i> Nom de la marque</label>
+                    <input type="text" id="input-new-marque" name="marque" class="lots-modal__input" placeholder="Ex : Dell, HP…" required autocomplete="off">
                 </div>
             </form>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="modal-add-marque">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="btn-submit-marque"><i class="fa-solid fa-check" aria-hidden="true"></i> Ajouter</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-add-marque">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="btn-submit-marque"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter</button>
         </div>
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-add-modele" data-modal-id="modal-add-modele">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-laptop"></i> Nouveau modèle</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-add-modele" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="modal-add-modele" data-modal-id="modal-add-modele">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-laptop" aria-hidden="true"></i> Nouveau modèle</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-add-modele" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body lots-modal__body">
             <form id="form-add-modele">
-                <div class="form-group">
-                    <label for="select-marque-for-modele">Marque</label>
-                    <select id="select-marque-for-modele" name="marqueId" required><option value="">— Choisir —</option></select>
+                <div class="form-group lots-modal__field">
+                    <label for="select-marque-for-modele"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</label>
+                    <select id="select-marque-for-modele" name="marqueId" class="lots-modal__input" required><option value="">— Choisir —</option></select>
                 </div>
-                <div class="form-group">
-                    <label for="input-new-modele">Nom du modèle</label>
-                    <input type="text" id="input-new-modele" name="modele" placeholder="Ex: Latitude 5410..." required autocomplete="off">
+                <div class="form-group lots-modal__field">
+                    <label for="input-new-modele"><i class="fa-solid fa-cube" aria-hidden="true"></i> Nom du modèle</label>
+                    <input type="text" id="input-new-modele" name="modele" class="lots-modal__input" placeholder="Ex : Latitude 5410…" required autocomplete="off">
                 </div>
             </form>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="modal-add-modele">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="btn-submit-modele"><i class="fa-solid fa-check" aria-hidden="true"></i> Ajouter</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-add-modele">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="btn-submit-modele"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter</button>
         </div>
     </div>
 </dialog>

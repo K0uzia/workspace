@@ -226,7 +226,8 @@ ALTER TABLE IF EXISTS lot_items
   ADD COLUMN IF NOT EXISTS state VARCHAR(50),
   ADD COLUMN IF NOT EXISTS technician VARCHAR(255),
   ADD COLUMN IF NOT EXISTS state_changed_at TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
 
 -- Add category_id to shortcuts if missing (for existing deployments)
 ALTER TABLE IF EXISTS shortcuts

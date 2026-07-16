@@ -6,6 +6,8 @@
     overflow-y: auto;
     overflow-x: hidden;
     box-sizing: border-box;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
 
     & button {
         display: flex;
@@ -38,7 +40,9 @@
     gap: var(--unit-2);
     padding: var(--unit-3);
     border-radius: var(--radius-medium);
-    box-shadow: var(--shadow-medium);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-small);
 }
 
 .section-title p {

@@ -1,55 +1,71 @@
 /* ========== GRID MAIN ========== */
+/* Breakpoints : 1200px (2 col.), 768px (1 col.) */
 
-.grid {
+.home .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
-    gap: var(--unit-2);
+    gap: var(--unit-3);
     height: auto;
+    min-width: 0;
 }
 
-.grid-item {
+.home .grid-item {
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-width: 0;
     height: auto;
     gap: var(--unit-2);
 }
 
 /* ========== TIME BLOCK ========== */
 
-.time-block {
-    padding: var(--unit-3);
-    box-shadow: var(--shadow-medium);
-    border-radius: var(--radius-medium);
+.home .time-block {
+    padding: var(--unit-4);
+    box-shadow: var(--shadow-small);
+    border-radius: var(--radius-large);
     display: flex;
     flex-direction: column;
     align-items: center;
-    
+    justify-content: center;
+    min-height: 120px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+
     & #current-date {
-        font: var(--font-text);
-        color: var(--h2);
+        font: var(--font-text2);
+        color: var(--text-secondary);
+        opacity: 0.85;
     }
-    
+
     & #current-time {
         margin: 0 0 var(--unit-1) 0;
         font: var(--font-subtitle);
-        color: var(--h2);
+        color: var(--text-primary);
+        line-height: 1.2;
     }
-
 }
 
 /* ========== BLOCK TITLE ========== */
 
-.block {
+.home .block {
     padding: var(--unit-3);
-    box-shadow: var(--shadow-medium);
-    border-radius: var(--radius-medium);
+    box-shadow: var(--shadow-small);
+    border-radius: var(--radius-large);
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
 
     & .block-content {
         display: flex;
         flex-direction: column;
         gap: var(--unit-1);
+        flex: 1;
+        min-width: 0;
     }
 }
 
@@ -59,8 +75,10 @@
     display: flex;
     justify-content: center;
     padding: var(--unit-2);
-    box-shadow: var(--shadow-medium);
+    box-shadow: var(--shadow-small);
     border-radius: var(--radius-medium);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
 
     & a {
         display: flex;
@@ -131,10 +149,17 @@
 }
 
 .home-event-item {
-    padding: 0.75rem;
-    border-radius: 4px;
+    padding: var(--unit-2);
+    border-radius: var(--radius-medium);
+    border: 1px solid var(--border);
+    background: var(--bg-surface-2);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.home-event-item:hover {
+    background-color: rgba(124, 156, 255, 0.08);
+    box-shadow: var(--shadow-small);
 }
 
 .home-event-item-title {
@@ -144,35 +169,55 @@
 
 .home-event-item-time {
     font-size: 0.85rem;
-    color: #666;
+    color: var(--text-secondary);
+    opacity: 0.85;
 }
 
 .home-event-item-description {
     font-size: 0.8rem;
-    color: #888;
+    color: var(--text-muted);
     margin-top: 0.25rem;
 }
 
 .home-event-item-empty {
-    color: #999;
+    color: var(--text-muted);
     font-style: italic;
+}
+
+.home .block .nav-btn {
+    align-self: flex-start;
+    margin-top: var(--unit-2);
 }
 
 
 
-@media (max-width: 980px) {
-    .grid {
-        grid-template-columns: 1fr;
-    }
-    .left-contain,
-    .right-contain {
-        min-width: 100%;
-        max-width: 100%;
-        height: auto;
+@media (max-width: 1200px) {
+    .home .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .right-contain {
-        order: -1;
+    .home .grid-item:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .home .grid {
+        grid-template-columns: 1fr;
+        gap: var(--unit-2);
+    }
+
+    .home .grid-item:last-child {
+        grid-column: auto;
+    }
+
+    .home .time-block {
+        padding: var(--unit-3);
+        min-height: auto;
+    }
+
+    .home .block {
+        padding: var(--unit-2) var(--unit-3);
     }
 }
 

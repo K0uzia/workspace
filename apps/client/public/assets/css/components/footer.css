@@ -9,8 +9,9 @@
     align-items: center;
     flex-wrap: wrap;
     padding: var(--unit-1) var(--unit-2);
-    background-color: var(--bleu1);
-    color: var(--text);
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
     gap: var(--unit-4);
     min-height: 0;
     box-sizing: border-box;

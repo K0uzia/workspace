@@ -1,6 +1,7 @@
 /**
  * RECEP-COMMON.CSS – Design dashboard SaaS (sobre, pro)
  * Panneaux, grille, boutons, tableaux. Variables : variables.css
+ * Breakpoints : 1200px (desktop étroit), 980px (tablette), 768px (cartes), 480px (mobile)
  */
 
 /* ========== Layout page ========== */
@@ -8,10 +9,10 @@
     width: 100%;
     max-width: min(1280px, 100%);
     margin: 0 auto;
-    padding: var(--unit-2);
+    padding: var(--unit-3);
     display: flex;
     flex-direction: column;
-    gap: var(--unit-4);
+    gap: var(--unit-3);
     min-width: 0;
     flex: 1;
     min-height: 0;
@@ -46,22 +47,23 @@
 
 /* ========== Panneau (card SaaS) ========== */
 .recep-panel {
-    background: var(--recep-panel-bg, #fff);
-    border-radius: var(--recep-panel-radius, 12px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    background: var(--recep-panel-bg);
+    border-radius: var(--recep-panel-radius);
+    border: 1px solid var(--recep-panel-border);
+    box-shadow: var(--recep-panel-shadow);
     overflow: hidden;
 }
 
 .recep-panel-header {
-    padding: var(--unit-3) var(--unit-4);
-    border-bottom: 1px solid rgba(13, 13, 13, 0.06);
+    padding: var(--unit-2) var(--unit-3);
+    border-bottom: 1px solid var(--recep-panel-border, rgba(255, 255, 255, 0.08));
     font-weight: 600;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     color: var(--h2);
 }
 
 .recep-panel-body {
-    padding: var(--unit-4);
+    padding: var(--unit-3);
 }
 
 /* ========== Toolbar (barre d’actions) ========== */
@@ -69,10 +71,10 @@
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
-    gap: var(--unit-3);
-    padding: var(--unit-3) var(--unit-4);
-    background: rgba(62, 59, 140, 0.04);
-    border-bottom: 1px solid rgba(62, 59, 140, 0.12);
+    gap: var(--unit-2);
+    padding: var(--unit-2) var(--unit-3);
+    background: var(--recep-panel-bg-soft, rgba(62, 59, 140, 0.04));
+    border-bottom: 1px solid var(--recep-panel-border, rgba(62, 59, 140, 0.12));
 }
 
 .recep-toolbar-field,
@@ -89,7 +91,7 @@
     gap: var(--unit-1);
     font-weight: 600;
     font-size: 0.8125rem;
-    color: var(--bleu2);
+    color: rgba(124, 156, 255, 0.95);
 }
 
 .recep-toolbar-field .recep-label i,
@@ -115,9 +117,9 @@
     align-items: center;
     justify-content: center;
     gap: var(--unit-2);
-    min-height: 38px;
-    padding: var(--unit-2) var(--unit-3);
-    border-radius: var(--radius-medium);
+    min-height: 36px;
+    padding: 0 var(--unit-3);
+    border-radius: 10px;
     font-weight: 500;
     font-size: 0.875rem;
     cursor: pointer;
@@ -131,9 +133,9 @@
 }
 
 .recep-btn-primary {
-    background: linear-gradient(180deg, var(--bleu1) 0%, var(--bleu2) 100%);
-    color: var(--btn-text);
-    box-shadow: 0 2px 4px rgba(62, 59, 140, 0.25);
+    background: linear-gradient(180deg, #90adff 0%, #6f91ff 100%);
+    color: #0d1420;
+    box-shadow: 0 8px 18px rgba(111, 145, 255, 0.2);
 }
 
 .recep-btn-primary:hover {
@@ -142,15 +144,15 @@
 }
 
 .recep-btn-secondary {
-    background: #fff;
-    color: var(--bleu2);
-    border: 1px solid rgba(62, 59, 140, 0.25);
+    background: var(--recep-panel-bg-soft);
+    color: var(--text-secondary);
+    border: 1px solid var(--recep-panel-border);
 }
 
 .recep-btn-secondary:hover {
-    background: rgba(62, 59, 140, 0.08);
-    border-color: var(--bleu1);
-    color: var(--bleu1);
+    background: rgba(124, 156, 255, 0.12);
+    border-color: rgba(124, 156, 255, 0.28);
+    color: #f4f7fb;
 }
 
 .reception-btn-refresh {
@@ -166,24 +168,24 @@
 /* ========== Champs ========== */
 .recep-label {
     font: var(--block-subtitle-h4);
-    color: var(--h2);
+    color: #edf2fa;
 }
 
 .recep-input {
     min-height: 38px;
     padding: 0 var(--unit-2);
-    border: 1px solid rgba(13, 13, 13, 0.12);
-    border-radius: var(--radius-medium);
+    border: 1px solid var(--recep-panel-border);
+    border-radius: 10px;
     font-size: 0.9375rem;
-    background: #fff;
-    color: var(--text2);
+    background: var(--recep-panel-bg-soft);
+    color: var(--text-primary);
     transition: var(--transition);
 }
 
 .recep-input:focus {
     outline: none;
-    border-color: var(--bleu1);
-    box-shadow: 0 0 0 3px rgba(62, 59, 140, 0.15);
+    border-color: rgba(124, 156, 255, 0.45);
+    box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.16);
 }
 
 .recep-checkbox {
@@ -254,7 +256,7 @@
     padding: var(--unit-2) var(--unit-4);
     text-align: left;
     vertical-align: middle;
-    border-bottom: 1px solid rgba(13, 13, 13, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .recep-table thead {
@@ -264,14 +266,14 @@
 }
 
 .recep-table th {
-    background: linear-gradient(180deg, rgba(62, 59, 140, 0.1) 0%, rgba(62, 59, 140, 0.06) 100%);
-    color: var(--bleu2);
+    background: #182131;
+    color: #9db5ff;
     font-weight: 600;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     white-space: nowrap;
-    border-bottom: 2px solid var(--bleu1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .recep-table th i {
@@ -284,11 +286,11 @@
 }
 
 .recep-table tbody tr:nth-child(even) {
-    background: rgba(13, 13, 13, 0.02);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .recep-table tbody tr:hover {
-    background: rgba(62, 59, 140, 0.08);
+    background: rgba(124, 156, 255, 0.08);
 }
 
 .recep-table tbody td {
@@ -363,13 +365,13 @@
 
 .recep-info-label.info-label {
     font: var(--font-text2);
-    color: var(--text2);
+    color: rgba(215, 223, 236, 0.62);
     opacity: 0.8;
 }
 
 .recep-info-value.info-value {
     font: var(--font-text2);
-    color: var(--h2);
+    color: #f4f7fb;
     font-weight: 500;
 }
 
@@ -637,6 +639,189 @@
     color: var(--h2);
 }
 
+/* ========== Regroupement formulaires / barre d’outils ========== */
+.recep-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--unit-2);
+    margin: 0 0 var(--unit-3);
+    padding: 0 0 var(--unit-3);
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.recep-form-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.recep-form-section__title {
+    display: flex;
+    align-items: center;
+    gap: var(--unit-1);
+    margin: 0 0 var(--unit-2);
+    padding: 0 0 calc(var(--unit-1) / 2);
+    font: var(--block-subtitle-h4);
+    color: var(--bleu2);
+    border-bottom: 2px solid var(--orange);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.recep-form-section__title i {
+    color: var(--bleu1);
+    opacity: 0.9;
+}
+
+.recep-form-section__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    gap: var(--unit-2) var(--unit-3);
+}
+
+.recep-form-section .form-group {
+    margin-bottom: 0;
+}
+
+/* Barre config lots (Entrer, Disques, Inventaire) */
+.lot-config {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--unit-3);
+}
+
+.lot-config__main {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.lot-config__groups {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--unit-3);
+    flex: 2 1 480px;
+    min-width: 0;
+}
+
+.lot-config__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--unit-1);
+    min-width: 0;
+}
+
+.lot-config__group-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bleu2);
+    opacity: 0.75;
+}
+
+.lot-config__group-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--unit-2);
+}
+
+/* Compatibilité pages non encore regroupées (Disques, etc.) */
+.lot-config__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--unit-2);
+    margin-left: auto;
+}
+
+.lot-config__field {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--unit-1);
+}
+
+.lot-config__label {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: var(--bleu2);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--unit-1);
+}
+
+.lot-config__label i {
+    color: var(--bleu1);
+    opacity: 0.95;
+}
+
+.lot-config__input {
+    width: 100%;
+    min-height: 40px;
+    padding: var(--unit-1) var(--unit-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-medium);
+    font-size: 0.9375rem;
+    background: var(--bg-surface-2);
+    color: var(--text-primary);
+    transition: var(--transition);
+    box-sizing: border-box;
+}
+
+.lot-config__input:focus {
+    outline: none;
+    border-color: rgba(124, 156, 255, 0.45);
+    box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.16);
+}
+
+.lot-card__section-title {
+    margin: 0 0 var(--unit-2);
+    padding: 0 var(--unit-4);
+    padding-top: var(--unit-3);
+    font: var(--block-subtitle-h4);
+    color: var(--bleu2);
+    display: flex;
+    align-items: center;
+    gap: var(--unit-1);
+}
+
+.lot-card__section-title i {
+    color: var(--bleu1);
+}
+
+@media (max-width: 980px) {
+    .lot-config {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lot-config__groups {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lot-config__group-actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .lot-config__group-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lot-config__group-actions .lot-btn {
+        width: 100%;
+        max-width: none;
+    }
+}
+
 /* Lot details info grid (historique modal) */
 .lot-details-info {
     margin-bottom: var(--unit-3);
@@ -686,173 +871,4 @@
     }
 }
 
-/* Boutons de modales - module Réception (style harmonisé) */
-.r-root .universal-modal .modal-cancel-btn,
-.r-root .universal-modal .modal-submit-btn {
-    border-radius: var(--radius-medium);
-    font: var(--font-btn);
-}
-
-.r-root .universal-modal .modal-cancel-btn {
-    background: rgba(198, 40, 40, 0.12);
-    color: #7a1818;
-    border: 1px solid rgba(198, 40, 40, 0.45);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.r-root .universal-modal .modal-cancel-btn:hover {
-    background: rgba(198, 40, 40, 0.2);
-    border-color: rgba(198, 40, 40, 0.65);
-    color: #5a1010;
-}
-
-.r-root .universal-modal .modal-submit-btn {
-    background: rgba(0, 128, 0, 0.14);
-    color: #1f5e20;
-    border: 1px solid rgba(0, 128, 0, 0.45);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.r-root .universal-modal .modal-submit-btn:hover {
-    background: rgba(0, 128, 0, 0.24);
-    color: #124013;
-    border-color: rgba(0, 128, 0, 0.65);
-}
-
-.r-root .universal-modal .modal-actions .recep-btn-secondary {
-    background: rgba(198, 40, 40, 0.12);
-    color: #7a1818;
-    border: 1px solid rgba(198, 40, 40, 0.45);
-    border-radius: var(--radius-medium);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.r-root .universal-modal .modal-actions .recep-btn-secondary:hover {
-    background: rgba(198, 40, 40, 0.2);
-    color: #5a1010;
-    border-color: rgba(198, 40, 40, 0.65);
-}
-
-.r-root .universal-modal .modal-actions .recep-btn-primary {
-    background: rgba(0, 128, 0, 0.14);
-    color: #1f5e20;
-    border: 1px solid rgba(0, 128, 0, 0.45);
-    border-radius: var(--radius-medium);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.r-root .universal-modal .modal-actions .recep-btn-primary:hover {
-    background: rgba(0, 128, 0, 0.24);
-    color: #124013;
-    border-color: rgba(0, 128, 0, 0.65);
-}
-
-.r-root .recep-page .lot-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--unit-1);
-    max-width: 155px;
-    min-height: 40px;
-    padding: var(--unit-1) var(--unit-2);
-    border-radius: var(--radius-medium);
-    font-weight: 500;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: var(--transition);
-    border: none;
-    white-space: nowrap;
-}
-
-.r-root .recep-page .lot-card__inner .lot-btn--primary {
-    background: rgba(0, 128, 0, 0.14);
-    color: #1f5e20;
-    border: 1px solid rgba(0, 128, 0, 0.45);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.r-root .recep-page .lot-card__inner .lot-btn--primary:hover {
-    background: rgba(0, 128, 0, 0.24);
-    color: #124013;
-    border-color: rgba(0, 128, 0, 0.65);
-}
-
-.r-root .recep-page .lot-card__inner .lot-btn--secondary {
-    background: rgba(62, 59, 140, 0.14);
-    color: var(--bleu2);
-    border: 1px solid rgba(62, 59, 140, 0.45);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.r-root .recep-page .lot-card__inner .lot-btn--secondary:hover {
-    background: rgba(62, 59, 140, 0.06);
-    color: var(--bleu1);
-    border-color: var(--bleu1);
-}
-
-.r-root .recep-page .lot-card__inner #btn-add-manual,
-.r-root .recep-page .lot-card__inner #disques-btn-add-line,
-.r-root .recep-page .lot-card__inner #commande-btn-add-line,
-.r-root .recep-page .lot-card__inner #dons-btn-add-line {
-    background: rgba(242, 130, 65, 0.16);
-    color: #8a3e12;
-    border-color: rgba(242, 130, 65, 0.4);
-}
-
-.r-root .recep-page .lot-card__inner #btn-add-manual:hover,
-.r-root .recep-page .lot-card__inner #disques-btn-add-line:hover,
-.r-root .recep-page .lot-card__inner #commande-btn-add-line:hover,
-.r-root .recep-page .lot-card__inner #dons-btn-add-line:hover {
-    background: rgba(242, 130, 65, 0.24);
-    color: #6f300d;
-    border-color: rgba(242, 130, 65, 0.6);
-}
-
-.r-root .recep-page .lot-card__inner #btn-cancel-lot,
-.r-root .recep-page .lot-card__inner #disques-btn-new-session {
-    background: rgba(242, 188, 27, 0.2);
-    color: #6a5200;
-    border-color: rgba(242, 188, 27, 0.5);
-}
-
-.r-root .recep-page .lot-card__inner #btn-cancel-lot:hover,
-.r-root .recep-page .lot-card__inner #disques-btn-new-session:hover {
-    background: rgba(242, 188, 27, 0.3);
-    color: #4d3b00;
-    border-color: rgba(242, 188, 27, 0.7);
-}
-
-.recep-page .lot-card-actions .btn-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--unit-1);
-    min-height: 36px;
-    padding: var(--unit-1) var(--unit-2);
-    background: #fff;
-    color: var(--bleu2);
-    border: 1px solid rgba(62, 59, 140, 0.25);
-    border-radius: var(--radius-medium);
-    font: var(--font-btn);
-    cursor: pointer;
-    transition: var(--transition);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.recep-page .lot-card-actions .btn-action:hover {
-    background: rgba(62, 59, 140, 0.06);
-    border-color: var(--bleu1);
-    color: var(--bleu1);
-}
-
-.recep-page .lot-card-actions .btn-action i {
-    color: currentColor;
-    opacity: 0.95;
-}
-
-.recep-page .lot-card-actions .btn-action:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
+/* =============================================================================

@@ -100,10 +100,10 @@
     width: 100%;
     min-height: 40px;
     padding: var(--unit-1) var(--unit-2);
-    border: 1px solid rgba(13, 13, 13, 0.12);
+    border: 1px solid var(--border);
     border-radius: var(--radius-medium);
     font-size: 0.9375rem;
-    background: #fff;
+    background: var(--bg-surface-2);
     color: var(--text2);
     box-sizing: border-box;
 }
@@ -133,7 +133,7 @@
     font-size: 0.875rem;
     cursor: pointer;
     border: 1px solid rgba(62, 59, 140, 0.25);
-    background: #fff;
+    background: var(--bg-surface-2);
     color: var(--bleu2);
 }
 
@@ -151,8 +151,8 @@
 }
 
 .historique-lot-card {
-    background: var(--recep-panel-bg, #fff);
-    border: 1px solid rgba(13, 13, 13, 0.06);
+    background: var(--recep-panel-bg);
+    border: 1px solid var(--border);
     border-radius: var(--recep-panel-radius, 12px);
     box-shadow: var(--shadow-small);
     overflow: hidden;
@@ -244,8 +244,10 @@
 .historique-lot-actions .btn-edit-don-items-hist,
 .historique-lot-actions .btn-view-commande-details-hist,
 .historique-lot-actions .btn-edit-commande-name-hist,
-.historique-lot-actions .btn-edit-commande-items-hist {
-    background: #fff;
+.historique-lot-actions .btn-edit-commande-items-hist,
+.historique-lot-actions .btn-view-pret-details-hist,
+.historique-lot-actions .btn-action {
+    background: var(--bg-surface-2);
     color: var(--bleu2);
     border: 1px solid rgba(62, 59, 140, 0.25);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -262,7 +264,9 @@
 .historique-lot-actions .btn-edit-don-items-hist:hover,
 .historique-lot-actions .btn-view-commande-details-hist:hover,
 .historique-lot-actions .btn-edit-commande-name-hist:hover,
-.historique-lot-actions .btn-edit-commande-items-hist:hover {
+.historique-lot-actions .btn-edit-commande-items-hist:hover,
+.historique-lot-actions .btn-view-pret-details-hist:hover,
+.historique-lot-actions .btn-action:hover {
     background: rgba(62, 59, 140, 0.06);
     border-color: var(--bleu1);
     color: var(--bleu1);
@@ -270,14 +274,14 @@
 
 .historique-lot-actions .btn-to-recover {
     background: rgba(0, 128, 0, 0.14);
-    color: #1f5e20;
+    color: #86efac;
     border: 1px solid rgba(0, 128, 0, 0.45);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .historique-lot-actions .btn-to-recover:hover:not(:disabled) {
     background: rgba(0, 128, 0, 0.24);
-    color: #124013;
+    color: #bbf7d0;
     border-color: rgba(0, 128, 0, 0.65);
 }
 .historique-lot-actions .btn-to-recover.disabled { opacity: 0.6; cursor: not-allowed; }
@@ -285,8 +289,15 @@
 .historique-lot-actions .btn-recovered {
     background-color: rgba(13, 13, 13, 0.08);
     color: var(--text2);
-    border: 1px solid rgba(13, 13, 13, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     cursor: default;
+}
+
+.historique-lot-actions .text-muted {
+    color: var(--text2);
+    font: var(--font-caption);
+    opacity: 0.85;
+    align-self: center;
 }
 
 .historique-disque-card .historique-lot-stats { margin-left: 0; }
@@ -397,10 +408,10 @@
     width: 100%;
     min-height: 34px;
     padding: 4px 8px;
-    border: 1px solid rgba(13, 13, 13, 0.16);
+    border: 1px solid var(--border);
     border-radius: var(--radius-small);
     font-size: 0.8125rem;
-    background: #fff;
+    background: var(--bg-surface-2);
     box-sizing: border-box;
 }
 
@@ -422,9 +433,9 @@
     flex-direction: column;
     gap: var(--unit-3);
     padding: var(--unit-3);
-    border: 1px solid rgba(13, 13, 13, 0.08);
+    border: 1px solid var(--border);
     border-radius: var(--radius-medium);
-    background: #fff;
+    background: var(--bg-surface-2);
 }
 
 #modal-lot-details .historique-lot-detail__top {
@@ -455,7 +466,7 @@
 }
 
 #modal-lot-details .historique-lot-detail__meta-item {
-    border: 1px solid rgba(13, 13, 13, 0.08);
+    border: 1px solid var(--border);
     border-radius: var(--radius-small);
     padding: var(--unit-2);
     background: rgba(13, 13, 13, 0.02);
@@ -476,7 +487,7 @@
 }
 
 #modal-lot-details .historique-lot-detail__health {
-    border-top: 1px solid rgba(13, 13, 13, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     padding-top: var(--unit-2);
 }
 

@@ -1,35 +1,22 @@
 <menu>
     <div class="nav-logo">
-        <button class="nav-btn" data-page="home"><img class="logo" src="./src/icons/logo.svg" alt="" class="logo"></button>
-        <button class="nav-btn" data-page="home"><h1>Workspace</h1></button>
+        <button class="nav-btn nav-brand-mark" data-page="agenda"><img class="logo" src="./src/icons/logo.svg" alt=""></button>
+        <button class="nav-btn nav-brand-link" data-page="agenda">
+            <span class="nav-brand-copy">
+                <span class="nav-brand-title">Workspace</span>
+            </span>
+        </button>
     </div>
     <nav class="nav-links" id="navLinks">
-        <!-- Boutons de navigation avec data-page -->
-        <button class="nav-btn" data-page="home"><i class="fas fa-home"></i> Accueil</button>
-        <button class="nav-btn" data-page="agenda"><i class="fas fa-calendar-alt"></i> Agenda</button>
-        <button class="nav-btn" data-page="dossier"><i class="fas fa-folder"></i> Dossier</button>
-        <button class="nav-btn nav-reception" data-page="reception"><i class="fas fa-bell"></i> Réception</button>
+        <div class="nav-primary">
+            <button class="nav-btn" data-page="agenda"><i class="fas fa-calendar-alt"></i> Agenda</button>
+            <button class="nav-btn nav-reception" data-page="reception"><i class="fas fa-bell"></i> Reception</button>
+        </div>
         <div class="nav-action">
-            <button class="nav-btn nav-profile" id="navProfile">
-                <i class="fa-solid fa-user"></i><span class="profile-text">Profil</span>
+            <button class="nav-btn nav-settings" id="navSettings" title="Paramètres">
+                <i class="fa-solid fa-gear"></i><span class="profile-text">Paramètres</span>
                 <span class="profile-update-ping hidden" id="profileUpdatePing" aria-hidden="true"></span>
             </button>
-            <div class="profile-dropdown hidden" id="profileDropdown">
-                <div class="profile-auth" id="profileAuth">
-                    <button class="profile-btn" id="btnSettingsGuest" title="Config (ex. clé Giphy)">
-                        Paramètres <span class="profile-badge hidden" id="profileUpdateBadgeGuest">MAJ</span>
-                    </button>
-                    <button class="profile-btn" id="btnLogin">Se connecter</button>
-                    <button class="profile-btn" id="btnRegister">Créer un compte</button>
-                </div>
-                <div class="profile-user hidden" id="profileUser">
-                    <div class="profile-username" id="profileUsername"></div>
-                    <button class="profile-btn" id="btnSettings">
-                        Paramètres <span class="profile-badge hidden" id="profileUpdateBadge">MAJ</span>
-                    </button>
-                    <button class="profile-btn" id="btnLogout">Déconnexion</button>
-                </div>
-            </div>
         </div>
     </nav>
     <button class="nav-burger" id="navBurger" aria-label="Ouvrir menu">

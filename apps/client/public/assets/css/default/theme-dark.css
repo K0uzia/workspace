@@ -1,0 +1,156 @@
+/**
+ * Thème sombre SaaS — défaut application
+ * Tokens dans variables.css ; ce fichier applique surfaces, formulaires et selects.
+ */
+
+html {
+    color-scheme: dark;
+}
+
+html[data-theme-dark="0"] {
+    color-scheme: light;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+}
+
+main {
+    background-color: var(--bg-base);
+}
+
+/* ---------- Selects / dropdowns (lisibilité globale) ---------- */
+
+select,
+.form-group select,
+.feedback-type-group select,
+.recep-input,
+.lot-config__input,
+.lot-table td select,
+.lot-table td input[type="text"],
+.edit-items-table select,
+.edit-items-table input,
+.recep-toolbar select,
+.recep-filter-group select,
+.recep-form-section select,
+.settings-modal select,
+.auth-modal select,
+.modal-body select {
+    min-height: 38px;
+    padding: 0 var(--unit-2);
+    background-color: var(--bg-surface-2);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    transition: var(--transition);
+    box-sizing: border-box;
+}
+
+select option,
+select optgroup {
+    background-color: var(--bg-surface-2);
+    color: var(--text-primary);
+}
+
+select:focus,
+.form-group select:focus,
+.recep-input:focus,
+.lot-config__input:focus,
+.lot-table td select:focus {
+    outline: none;
+    border-color: rgba(124, 156, 255, 0.45);
+    box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.16);
+}
+
+select:disabled,
+.recep-input:disabled,
+.lot-config__input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Flèche native select (WebKit) */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: calc(var(--unit-2) + 18px);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23b5bfd3' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--unit-2) center;
+    background-size: 12px 8px;
+    cursor: pointer;
+}
+
+html[data-theme-dark="0"] select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%234a5568' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+}
+
+/* Inputs texte harmonisés */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="search"],
+textarea {
+    background-color: var(--bg-surface-2);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+/* Réception — champs tableaux et survols (override pages legacy) */
+.r-root .lot-table td input,
+.r-root .lot-table td select,
+.r-root .lot-table td input[type="number"],
+.r-root .lot-table td input[type="date"],
+.r-root .edit-items-table select,
+.r-root .edit-items-table input {
+    background-color: var(--bg-surface-2);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+.r-root .lot-table tbody tr:hover {
+    background: rgba(124, 156, 255, 0.08);
+}
+
+.r-root .lot-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.r-root .recep-input,
+.r-root .lot-config__input {
+    background-color: var(--bg-surface-2);
+    color: var(--text-primary);
+}
+
+/* Réception — contraste labels / états vides / hover tableaux */
+.r-root .lot-config__label,
+.r-root .recep-label {
+    color: #9db5ff;
+}
+
+.r-root .lot-table tbody tr:hover,
+.r-root .recep-table tbody tr:hover {
+    background: rgba(124, 156, 255, 0.08);
+}
+
+.r-root .empty-state,
+.r-root .recep-empty-state,
+.r-root .recep-empty-msg {
+    color: var(--text-secondary);
+}
+
+.r-root .modal-footer {
+    border-top-color: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.12);
+}

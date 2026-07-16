@@ -27,18 +27,60 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: var(--unit-4);
+    gap: var(--unit-3);
     min-width: 0;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
 }
 
+.inventaire-overview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--unit-2);
+    padding: var(--unit-3);
+    background: var(--recep-panel-bg);
+    border: 1px solid var(--recep-panel-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--recep-panel-radius);
+    box-shadow: var(--recep-panel-shadow);
+}
+
+.inventaire-overview__lead {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.inventaire-overview__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--unit-1);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #9db5ff;
+}
+
+.inventaire-overview__title {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #f4f7fb;
+}
+
+.inventaire-overview__hint {
+    font-size: 0.85rem;
+    color: rgba(215, 223, 236, 0.68);
+}
+
 /* ---------- Cartes ---------- */
 .inventaire-container .lot-card {
     background: var(--recep-panel-bg);
     border-radius: var(--recep-panel-radius);
-    box-shadow: var(--shadow-small);
+    border: 1px solid var(--recep-panel-border, rgba(255, 255, 255, 0.08));
+    box-shadow: var(--recep-panel-shadow);
     overflow: hidden;
     min-width: 0;
     width: 100%;
@@ -47,72 +89,18 @@
 }
 
 .inventaire-container .lot-card__inner {
-    padding: var(--unit-2);
+    padding: var(--unit-2) var(--unit-3);
 }
 
 /* Liste des lots : pas de scroll interne tronqué — tout le bloc défile avec la page */
 .inventaire-container .lot-card__inner--list {
-    padding: var(--unit-4);
+    padding: var(--unit-3);
     overflow: visible;
     display: block;
 }
 
-.inventaire-container .lot-config {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--unit-2);
-}
-
-.inventaire-container .lot-config__field {
-    min-width: 0;
-    max-width: 220px;
-    display: flex;
-    flex-direction: row;
-    gap: var(--unit-1);
-}
-
-.inventaire-container .lot-config__label {
-    font-weight: 600;
-    font-size: 0.9375rem;
-    color: var(--bleu2);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--unit-1);
-    white-space: nowrap;
-}
-
-.inventaire-container .lot-config__label i {
-    color: var(--bleu1);
-    opacity: 0.95;
-    font-size: 1.15em;
-}
-
-.inventaire-container .lot-config__input {
-    width: 100%;
-    min-height: 40px;
-    padding: var(--unit-1) var(--unit-2);
-    border: 1px solid rgba(13, 13, 13, 0.12);
-    border-radius: var(--radius-medium);
-    font-size: 0.9375rem;
-    background: #fff;
-    color: var(--text2);
-    transition: var(--transition);
-    box-sizing: border-box;
-}
-
-.inventaire-container .lot-config__input:focus {
-    outline: none;
-    border-color: var(--bleu1);
-    box-shadow: 0 0 0 3px rgba(62, 59, 140, 0.2);
-}
-
-.inventaire-container .lot-config__actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--unit-2);
+.inventaire-container .lot-config__main .lot-config__field {
+    max-width: 260px;
 }
 
 .inventaire-container .lot-btn {
@@ -120,9 +108,9 @@
     align-items: center;
     justify-content: center;
     gap: var(--unit-1);
-    max-width: 155px;
-    min-height: 40px;
-    padding: var(--unit-1) var(--unit-2);
+    max-width: none;
+    min-height: 36px;
+    padding: 0 var(--unit-2);
     border-radius: var(--radius-medium);
     font-weight: 500;
     font-size: 0.875rem;
@@ -145,19 +133,19 @@
 }
 
 #btn-refresh-lots {
-    background: #fff;
-    color: var(--bleu2);
-    border: 1px solid rgba(62, 59, 140, 0.25);
-    border-radius: var(--radius-medium);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    background: var(--recep-panel-bg-soft, #182131);
+    color: #dbe4f3;
+    border: 1px solid var(--recep-panel-border, rgba(62, 59, 140, 0.25));
+    border-radius: 10px;
+    box-shadow: none;
 }
 
 #btn-refresh-lots:hover {
-    background: rgba(62, 59, 140, 0.06);
-    border-color: var(--bleu1);
-    color: var(--bleu1);
+    background: rgba(124, 156, 255, 0.12);
+    border-color: rgba(124, 156, 255, 0.28);
+    color: #f4f7fb;
     filter: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    box-shadow: none;
 }
 
 /* ---------- Liste des lots ---------- */
@@ -168,22 +156,25 @@
 }
 
 .inventaire-container .inventaire-lot-card {
-    background: var(--recep-panel-bg, #fff);
-    border: 1px solid rgba(13, 13, 13, 0.06);
+    background: var(--recep-panel-bg);
+    border: 1px solid var(--recep-panel-border, rgba(255, 255, 255, 0.08));
     border-radius: var(--recep-panel-radius, 12px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
     overflow: visible;
 }
 
 .inventaire-container .inventaire-lot-header {
-    padding: var(--unit-3) var(--unit-4);
-    background-color: rgba(13, 13, 13, 0.02);
-    border-bottom: 1px solid transparent;
+    padding: var(--unit-3);
+    background-color: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--recep-panel-border, rgba(255, 255, 255, 0.08));
     transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    gap: var(--unit-2);
 }
 
 .inventaire-container .inventaire-lot-header:hover {
-    background-color: rgba(62, 59, 140, 0.04);
+    background-color: rgba(124, 156, 255, 0.05);
 }
 
 .inventaire-container .inventaire-lot-title {
@@ -191,7 +182,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--unit-2);
-    margin-bottom: var(--unit-2);
+    margin-bottom: 0;
 }
 
 .inventaire-container .inventaire-lot-title .expand-icon {
@@ -200,27 +191,33 @@
     flex-shrink: 0;
 }
 
-/* Couleurs par stat : icône + chiffre (pas le libellé) */
+/* Couleurs par stat : icône + chiffre lisibles sur fond sombre */
+.inventaire-container .inventaire-stat strong {
+    font-weight: 700;
+    font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+}
 .inventaire-container .inventaire-stat--pending i,
 .inventaire-container .inventaire-stat--pending strong {
-    color: var(--orange);
+    color: #ffb074;
 }
 .inventaire-container .inventaire-stat--recond i,
 .inventaire-container .inventaire-stat--recond strong {
-    color: var(--valid);
+    color: #86efac;
 }
 .inventaire-container .inventaire-stat--hs i,
 .inventaire-container .inventaire-stat--hs strong {
-    color: var(--error);
+    color: #fca5a5;
 }
+.inventaire-container .inventaire-stat--total i,
 .inventaire-container .inventaire-stat--total strong {
-    color: var(--bleu2);
+    color: #c5d4ff;
 }
 
 .inventaire-container .inventaire-lot-title h3 {
     margin: 0;
     font: var(--block-title-h3);
-    color: var(--h2);
+    color: #f4f7fb;
     flex: 1;
     min-width: 0;
 }
@@ -228,101 +225,205 @@
 .inventaire-container .inventaire-lot-title .badge-created {
     padding: var(--unit-1) var(--unit-2);
     font: var(--font-text2);
-    font-size: 0.85rem;
-    background-color: #e3f2fd;
-    color: var(--bleu1);
-    border-radius: var(--radius-small);
+    font-size: 0.8125rem;
+    background-color: rgba(124, 156, 255, 0.12);
+    color: #9db5ff;
+    border-radius: 999px;
+    white-space: nowrap;
 }
 
 .inventaire-container .inventaire-lot-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--unit-3);
-    margin-bottom: var(--unit-2);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: var(--unit-2);
+    margin-bottom: 0;
 }
 
 .inventaire-container .inventaire-stat {
     display: inline-flex;
     align-items: center;
-    gap: calc(var(--unit-1) / 2);
+    gap: var(--unit-1);
+    padding: var(--unit-1) var(--unit-2);
     font: var(--font-text2);
-    color: var(--text2);
+    font-size: 0.8125rem;
+    color: rgba(215, 223, 236, 0.82);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-medium);
+    min-width: 0;
 }
 
 .inventaire-container .inventaire-stat i {
     opacity: 0.95;
 }
 
-.inventaire-container .inventaire-lot-header .progress-bar {
-    height: 6px;
-    background-color: rgba(13, 13, 13, 0.1);
-    border-radius: 3px;
+.inventaire-container .inventaire-lot-progress {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--unit-1) / 2);
+}
+
+.inventaire-container .inventaire-lot-progress__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9db5ff;
+    opacity: 0.8;
+}
+
+.inventaire-container .inventaire-lot-header .progress-bar,
+.inventaire-container .inventaire-lot-header .recep-progress-wrap {
+    height: 10px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
     overflow: hidden;
 }
 
-.inventaire-container .inventaire-lot-header .progress-fill {
+.inventaire-container .inventaire-lot-header .progress-fill,
+.inventaire-container .inventaire-lot-header .recep-progress-bar {
     height: 100%;
-    background: var(--bleu1);
-    border-radius: 3px;
-    transition: width 0.3s ease;
+    background: linear-gradient(90deg, var(--bleu1) 0%, var(--valid) 100%);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+    min-width: 0;
 }
 
-.inventaire-container .inventaire-lot-header .btn-generate-pdf-interim {
-    margin-top: 0.5rem;
+.inventaire-container .inventaire-stat--pending {
+    border-color: rgba(255, 176, 116, 0.4);
+    background: rgba(242, 130, 65, 0.14);
+}
+
+.inventaire-container .inventaire-stat--recond {
+    border-color: rgba(134, 239, 172, 0.35);
+    background: rgba(74, 222, 128, 0.12);
+}
+
+.inventaire-container .inventaire-stat--hs {
+    border-color: rgba(252, 165, 165, 0.4);
+    background: rgba(239, 68, 68, 0.14);
+}
+
+.inventaire-container .inventaire-stat--total {
+    border-color: rgba(124, 156, 255, 0.45);
+    background: rgba(124, 156, 255, 0.16);
+}
+
+.inventaire-container .inventaire-lot-pdf-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--unit-2);
+    margin-top: 0;
+}
+
+.inventaire-container .inventaire-lot-header .btn-generate-pdf-interim,
+.inventaire-container .inventaire-lot-header .btn-open-pdf-location-lot,
+.inventaire-container .inventaire-lot-header .btn-view-pdf-lot {
+    margin-top: 0;
     align-self: flex-start;
 }
 
-/* ---------- Tableau (même visuel que entrer, avec colonne OS) ---------- */
+.inventaire-container .lot-btn--secondary {
+    background: rgba(124, 156, 255, 0.12);
+    color: #a8c0ff;
+    border: 1px solid rgba(124, 156, 255, 0.32);
+}
+
+.inventaire-container .lot-btn--secondary:hover:not(:disabled) {
+    background: rgba(124, 156, 255, 0.22);
+    color: #c5d4ff;
+    border-color: rgba(124, 156, 255, 0.5);
+}
+
+.inventaire-container .lot-btn--pdf-location {
+    background: rgba(251, 146, 60, 0.14);
+    color: #fdba74;
+    border: 1px solid rgba(251, 146, 60, 0.35);
+}
+
+.inventaire-container .lot-btn--pdf-location:hover:not(:disabled) {
+    background: rgba(251, 146, 60, 0.24);
+    color: #ffd4a8;
+    border-color: rgba(251, 146, 60, 0.5);
+}
+
+.inventaire-container .lot-btn--pdf-view {
+    background: rgba(124, 156, 255, 0.16);
+    color: #a8c0ff;
+    border: 1px solid rgba(124, 156, 255, 0.4);
+}
+
+.inventaire-container .lot-btn--pdf-view:hover:not(:disabled) {
+    background: rgba(124, 156, 255, 0.28);
+    color: #c5d4ff;
+    border-color: rgba(124, 156, 255, 0.55);
+}
+
+/* ---------- Tableau responsive (sans scroll horizontal moche) ---------- */
+.inventaire-container .lot-content {
+    min-width: 0;
+    max-width: 100%;
+    padding: var(--unit-2) var(--unit-3) var(--unit-3);
+    box-sizing: border-box;
+}
+
+.inventaire-container .inventaire-lot-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--unit-2);
+    margin-bottom: var(--unit-2);
+}
+
 .inventaire-container .lot-content .lot-table-wrap {
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     min-width: 0;
     max-height: 360px;
     max-width: 100%;
+    width: 100%;
     border-radius: var(--radius-medium, 8px);
-    border: 1px solid rgba(13, 13, 13, 0.08);
+    border: 1px solid var(--recep-panel-border, rgba(255, 255, 255, 0.08));
 }
 
 .inventaire-container .lot-content .lot-table-wrap::-webkit-scrollbar {
-    height: 10px;
+    height: 8px;
+    width: 8px;
 }
 
 .inventaire-container .lot-content .lot-table-wrap::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.06);
+    background: rgba(0, 0, 0, 0.12);
     border-radius: 4px;
 }
 
 .inventaire-container .lot-content .lot-table-wrap::-webkit-scrollbar-thumb {
-    background: var(--bleu1);
+    background: rgba(124, 156, 255, 0.45);
     border-radius: 4px;
-}
-
-.inventaire-container .lot-content .lot-table-wrap::-webkit-scrollbar-thumb:hover {
-    background: var(--bleu2);
 }
 
 .inventaire-container .lot-content .lot-table {
     width: 100%;
-    min-width: 640px;
+    max-width: 100%;
+    min-width: 0;
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 0.875rem;
-    color: var(--text2);
-    line-height: 1.45;
+    font-size: 0.8125rem;
+    color: rgba(215, 223, 236, 0.88);
+    line-height: 1.4;
 }
 
-.inventaire-container .lot-content .lot-table th {
-    padding: var(--unit-2) var(--unit-3);
+.inventaire-container .lot-content .lot-table th,
+.inventaire-container .lot-content .lot-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0.5rem 0.55rem;
     text-align: left;
     vertical-align: middle;
-    border-bottom: 1px solid rgba(13, 13, 13, 0.06);
-}
-
-.inventaire-container .lot-content .lot-table td {
-    padding: var(--unit-1);
-    text-align: center;
-    vertical-align: middle;
-    border-bottom: 1px solid rgba(13, 13, 13, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .inventaire-container .lot-content .lot-table thead {
@@ -331,60 +432,64 @@
     z-index: 1;
 }
 
-.inventaire-container .lot-content .lot-table thead th:first-child {
-    border-top-left-radius: var(--radius-medium, 8px);
-}
-
-.inventaire-container .lot-content .lot-table thead th:last-child {
-    border-top-right-radius: var(--radius-medium, 8px);
-}
-
 .inventaire-container .lot-content .lot-table th {
-    background-color: var(--bleu2);
-    color: var(--text);
+    background-color: #182131;
+    color: #9db5ff;
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    white-space: nowrap;
 }
 
 .inventaire-container .lot-content .lot-table th i {
-    margin-right: var(--unit-1);
+    margin-right: 4px;
     opacity: 0.9;
 }
 
-.inventaire-container .lot-content .lot-table tbody tr {
-    transition: background 0.15s ease;
-}
-
 .inventaire-container .lot-content .lot-table tbody tr:nth-child(even) {
-    background: rgba(0, 0, 0, 0.02);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .inventaire-container .lot-content .lot-table tbody tr:hover {
-    background: #f5f5f5;
+    background: rgba(124, 156, 255, 0.06);
 }
 
-/* Colonnes (inventaire : plus compact pour voir les infos + scroll horizontal) */
-.inventaire-container .lot-content .lot-table__th--num { width: 5px; text-align: center; }
-.inventaire-container .lot-content .lot-table tbody td:nth-child(1) { text-align: center; }
-.inventaire-container .lot-content .lot-table__th--sn { width: 120px; }
-.inventaire-container .lot-content .lot-table__th--type { width: 72px; }
+.inventaire-container .lot-content .lot-table__th--num,
+.inventaire-container .lot-content .lot-table .col-num { width: 2.25rem; text-align: center; }
+.inventaire-container .lot-content .lot-table__th--sn,
+.inventaire-container .lot-content .lot-table .col-sn { width: 18%; }
+.inventaire-container .lot-content .lot-table__th--type,
+.inventaire-container .lot-content .lot-table .col-type { width: 9%; }
 .inventaire-container .lot-content .lot-table__th--marque,
-.inventaire-container .lot-content .lot-table__th--modele {text-align: start; }
-.inventaire-container .lot-content .lot-table__th--os { width: 52px; text-align: center; }
-.inventaire-container .lot-content .lot-table .col-os { text-align: center; }
-.inventaire-container .lot-content .lot-table__th--state { width: 88px; }
-.inventaire-container .lot-content .lot-table__th--date { width: 100px; }
-.inventaire-container .lot-content .lot-table__th--technicien { width: 80px; }
-.inventaire-container .lot-content .lot-table__th--action { width: 24px; text-align: center; }
+.inventaire-container .lot-content .lot-table .col-marque { width: 12%; }
+.inventaire-container .lot-content .lot-table__th--modele,
+.inventaire-container .lot-content .lot-table .col-modele { width: 14%; }
+.inventaire-container .lot-content .lot-table__th--os,
+.inventaire-container .lot-content .lot-table .col-os { width: 3.5rem; text-align: center; }
+.inventaire-container .lot-content .lot-table__th--state,
+.inventaire-container .lot-content .lot-table .col-state { width: 12%; }
+.inventaire-container .lot-content .lot-table__th--date,
+.inventaire-container .lot-content .lot-table .col-date { width: 11%; }
+.inventaire-container .lot-content .lot-table__th--technicien,
+.inventaire-container .lot-content .lot-table .col-tech { width: 9%; }
+.inventaire-container .lot-content .lot-table__th--action,
+.inventaire-container .lot-content .lot-table .col-action { width: 4.5rem; text-align: center; }
+
+.inventaire-container .inventaire-row-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
 
 .inventaire-container .state-badge {
     display: inline-block;
-    padding: calc(var(--unit-1) / 2) var(--unit-2);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 2px 8px;
     border-radius: var(--radius-small);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 500;
 }
 
@@ -392,31 +497,219 @@
 .inventaire-container .state-badge.state-Pour-pièces { background-color: rgba(242, 130, 65, 0.2); color: var(--orange); }
 .inventaire-container .state-badge.state-HS { background-color: rgba(198, 40, 40, 0.15); color: var(--error); }
 .inventaire-container .state-badge.state-Non-défini,
-.inventaire-container .state-badge.state-non-defini { background-color: rgba(13, 13, 13, 0.1); color: var(--text2); }
+.inventaire-container .state-badge.state-non-defini { background-color: rgba(255, 255, 255, 0.08); color: rgba(215, 223, 236, 0.7); }
 
-.inventaire-container .lot-content .btn-edit-pc {
+.inventaire-container .lot-content .btn-edit-pc,
+.inventaire-container .lot-content .btn-remove-pc {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: var(--unit-4);
-    height: var(--unit-4);
+    width: 1.75rem;
+    height: 1.75rem;
     padding: 0;
-    background: #fff;
-    color: var(--bleu2);
-    border: 1px solid rgba(62, 59, 140, 0.25);
+    background: var(--recep-panel-bg-soft, #182131);
+    color: #dbe4f3;
+    border: 1px solid var(--recep-panel-border, rgba(62, 59, 140, 0.25));
     border-radius: var(--radius-medium);
     cursor: pointer;
     transition: var(--transition);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .inventaire-container .lot-content .btn-edit-pc:hover {
-    background: rgba(62, 59, 140, 0.06);
-    border-color: var(--bleu1);
-    color: var(--bleu1);
+    background: rgba(124, 156, 255, 0.12);
+    border-color: rgba(124, 156, 255, 0.28);
+    color: #f4f7fb;
 }
 
-/* ---------- États vides / chargement ---------- */
+.inventaire-container .lot-content .btn-remove-pc {
+    color: #fca5a5;
+    border-color: rgba(198, 40, 40, 0.35);
+    background: rgba(198, 40, 40, 0.1);
+}
+
+.inventaire-container .lot-content .btn-remove-pc:hover {
+    background: rgba(198, 40, 40, 0.22);
+    border-color: rgba(198, 40, 40, 0.55);
+    color: #fecaca;
+}
+
+/* Masquer colonnes secondaires selon largeur */
+@media (max-width: 1100px) {
+    .inventaire-container .lot-content .lot-table__th--date,
+    .inventaire-container .lot-content .lot-table .col-date,
+    .inventaire-container .lot-content .lot-table__th--os,
+    .inventaire-container .lot-content .lot-table .col-os {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .inventaire-container .lot-content .lot-table__th--type,
+    .inventaire-container .lot-content .lot-table .col-type,
+    .inventaire-container .lot-content .lot-table__th--technicien,
+    .inventaire-container .lot-content .lot-table .col-tech {
+        display: none;
+    }
+}
+
+@media (max-width: 720px) {
+    .inventaire-container .lot-content .lot-table__th--modele,
+    .inventaire-container .lot-content .lot-table .col-modele {
+        display: none;
+    }
+}
+
+/* ---------- Modale édition / ajout matériel ---------- */
+#modal-edit-pc.inventaire-edit-modal .inventaire-edit-modal__content {
+    max-width: 520px;
+    background: #141c2a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+#modal-edit-pc .inventaire-edit-modal__header {
+    padding: 1rem 1.15rem;
+    background: linear-gradient(180deg, #1a2436 0%, #151d2b 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#modal-edit-pc .inventaire-edit-modal__header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 650;
+    color: #f3f6fb;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#modal-edit-pc .inventaire-edit-modal__header h2 i {
+    color: #9db5ff;
+}
+
+#modal-edit-pc .inventaire-edit-modal__body {
+    padding: 1rem 1.15rem 0.5rem;
+    background: #141c2a;
+}
+
+#modal-edit-pc .inventaire-edit-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 0.9rem;
+    padding: 0.7rem 0.85rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+}
+
+#modal-edit-pc .inventaire-edit-meta .info-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(157, 181, 255, 0.85);
+}
+
+#modal-edit-pc .inventaire-edit-meta .info-value {
+    font-size: 0.85rem;
+    color: #e8eef8;
+    text-align: right;
+}
+
+#modal-edit-pc .inventaire-edit-section {
+    margin: 0 0 0.85rem;
+    padding: 0.75rem 0.85rem 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#modal-edit-pc .inventaire-edit-section .recep-form-section__title {
+    margin: 0 0 0.65rem;
+    padding: 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9db5ff;
+    border: none;
+}
+
+#modal-edit-pc .inventaire-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem 0.75rem;
+}
+
+#modal-edit-pc .inventaire-edit-field--full {
+    grid-column: 1 / -1;
+}
+
+#modal-edit-pc .inventaire-edit-field label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(215, 223, 236, 0.85);
+}
+
+#modal-edit-pc .inventaire-edit-field input,
+#modal-edit-pc .inventaire-edit-field select {
+    width: 100%;
+    min-height: 38px;
+    box-sizing: border-box;
+    background: #0f1623;
+    color: #f3f6fb;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+}
+
+#modal-edit-pc .inventaire-edit-field input:focus,
+#modal-edit-pc .inventaire-edit-field select:focus {
+    border-color: rgba(124, 156, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.15);
+    outline: none;
+}
+
+#modal-edit-pc .inventaire-edit-modal__footer {
+    padding: 0.85rem 1.15rem;
+    background: #121a27;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
+#modal-edit-pc .lots-modal__btn--cancel {
+    background: rgba(255, 255, 255, 0.04);
+    color: #d7dfec;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#modal-edit-pc .lots-modal__btn--cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+#modal-edit-pc .lots-modal__btn--submit {
+    background: rgba(124, 156, 255, 0.18);
+    color: #c5d4ff;
+    border: 1px solid rgba(124, 156, 255, 0.4);
+}
+
+#modal-edit-pc .lots-modal__btn--submit:hover {
+    background: rgba(124, 156, 255, 0.28);
+    color: #e8eeff;
+}
+
+@media (max-width: 520px) {
+    #modal-edit-pc .inventaire-edit-meta,
+    #modal-edit-pc .inventaire-edit-grid {
+        grid-template-columns: 1fr;
+    }
+}
 .inventaire-container .recep-loading.loading {
     display: flex;
     align-items: center;
@@ -444,7 +737,7 @@
     color: var(--text2);
     opacity: 0.9;
     border-radius: var(--recep-panel-radius, 12px);
-    border: 1px dashed rgba(13, 13, 13, 0.12);
+    border: 1px dashed rgba(255, 255, 255, 0.12);
 }
 
 .inventaire-container .empty-state i {
@@ -462,98 +755,20 @@
 .inventaire-container .btn-retry-lots {
     margin-top: var(--unit-3);
     padding: var(--unit-2) var(--unit-3);
-    background: #fff;
-    color: var(--bleu2);
-    border: 1px solid rgba(62, 59, 140, 0.25);
+    background: var(--bg-surface-2);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
     border-radius: var(--radius-medium);
     cursor: pointer;
     font: var(--font-btn);
     transition: var(--transition);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    box-shadow: none;
 }
 
 .inventaire-container .btn-retry-lots:hover {
     background: rgba(62, 59, 140, 0.06);
     border-color: var(--bleu1);
     color: var(--bleu1);
-}
-
-#modal-edit-pc .modal-cancel-btn,
-#modal-edit-pc .modal-submit-btn {
-    border-radius: var(--radius-medium);
-    font: var(--font-btn);
-    min-height: 38px;
-    padding: var(--unit-1) var(--unit-3);
-}
-
-#modal-edit-pc .modal-cancel-btn {
-    background: rgba(198, 40, 40, 0.12);
-    color: #7a1818;
-    border: 1px solid rgba(198, 40, 40, 0.45);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-#modal-edit-pc .modal-cancel-btn:hover {
-    background: rgba(198, 40, 40, 0.2);
-    border-color: rgba(198, 40, 40, 0.65);
-    color: #5a1010;
-}
-
-#modal-edit-pc .modal-submit-btn {
-    background: rgba(0, 128, 0, 0.14);
-    color: #1f5e20;
-    border: 1px solid rgba(0, 128, 0, 0.45);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-#modal-edit-pc .modal-submit-btn:hover {
-    background: rgba(0, 128, 0, 0.24);
-    color: #124013;
-    border-color: rgba(0, 128, 0, 0.65);
-}
-
-/* ---------- Modale édition PC : infos en ligne (label | valeur), formulaire inchangé ---------- */
-#modal-edit-pc .pc-info-box {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--unit-2);
-    margin-bottom: var(--unit-4);
-    padding: var(--unit-3);
-    background: rgba(62, 59, 140, 0.05);
-    border-radius: var(--radius-medium);
-}
-
-#modal-edit-pc .pc-info-box .recep-info-row,
-#modal-edit-pc .pc-info-box .info-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--unit-2);
-    min-width: 0;
-}
-
-#modal-edit-pc .pc-info-box .recep-info-label,
-#modal-edit-pc .pc-info-box .info-label {
-    flex-shrink: 0;
-    font-weight: 600;
-    font-size: 0.8125rem;
-    color: var(--bleu2);
-}
-
-#modal-edit-pc .pc-info-box .recep-info-value,
-#modal-edit-pc .pc-info-box .info-value {
-    text-align: right;
-    font-size: 0.875rem;
-    color: var(--h2);
-    word-break: break-word;
-}
-
-@media (max-width: 520px) {
-    #modal-edit-pc .pc-info-box {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* ---------- Responsive ---------- */
@@ -566,22 +781,21 @@
     .inventaire-container .lot-card__inner--list {
         padding: var(--unit-3);
     }
-    .inventaire-container .lot-config {
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--unit-3);
+    .inventaire-container .lot-config__main .lot-config__field {
+        max-width: none;
     }
-    .inventaire-container .lot-config__field { max-width: none; }
-    .inventaire-container .lot-config__actions { flex-wrap: wrap; justify-content: center; }
-    .inventaire-container .lot-btn { min-height: 40px; flex: 1 1 auto; }
 }
 
 @media (max-width: 768px) {
     .inventaire-container .inventaire-lot-header {
         padding: var(--unit-2) var(--unit-3);
     }
+    .inventaire-container .inventaire-lot-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
     .inventaire-container .lot-content .lot-table-wrap {
         padding: var(--unit-2) var(--unit-2) var(--unit-3);
+        max-height: none;
     }
     .inventaire-container .lot-content .lot-table th,
     .inventaire-container .lot-content .lot-table td {
@@ -591,6 +805,7 @@
 }
 
 @media (max-width: 480px) {
-    .inventaire-container .lot-config__actions { flex-direction: column; }
-    .inventaire-container .lot-btn { width: 100%; }
+    .inventaire-container .inventaire-lot-stats {
+        grid-template-columns: 1fr;
+    }
 }

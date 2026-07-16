@@ -1,9 +1,13 @@
 <div class="r-root" role="application" aria-label="Réception">
     <header class="r-header" aria-label="Navigation réception">
-        <h1 class="r-brand" id="r-brand">Réception</h1>
+        <div class="r-brand" id="r-brand">
+            <span class="r-brand-kicker">Workspace</span>
+            <h1 class="r-brand-title">Reception</h1>
+            <span class="r-brand-subtitle">Flux, suivi et archives</span>
+        </div>
         <nav class="r-nav" aria-label="Sections réception">
             <div class="r-nav-group">
-                <div class="r-nav-group-title">Lots & documents</div>
+                <div class="r-nav-group-title">Flux</div>
                 <button type="button" class="r-nav-item" data-page="entrer" data-reception-page="true" title="Nouveaux lots (PC)">
                     <span class="r-nav-icon" aria-hidden="true"><i class="fa-solid fa-boxes-stacked"></i></span>
                     <span class="r-nav-text">Lots</span>
@@ -26,18 +30,14 @@
                 </button>
             </div>
             <div class="r-nav-group">
-                <div class="r-nav-group-title">Suivi & traçabilité</div>
+                <div class="r-nav-group-title">Suivi</div>
                 <button type="button" class="r-nav-item" data-page="inventaire" data-reception-page="true" title="Inventaire lots en cours">
                     <span class="r-nav-icon" aria-hidden="true"><i class="fa-solid fa-clipboard-list"></i></span>
                     <span class="r-nav-text">Inventaire</span>
                 </button>
-                <button type="button" class="r-nav-item" data-page="historique" data-reception-page="true" title="Historique des lots">
-                    <span class="r-nav-icon" aria-hidden="true"><i class="fa-solid fa-history"></i></span>
+                <button type="button" class="r-nav-item" data-page="historique" data-reception-page="true" title="Historique et traçabilité (archives, PDF)">
+                    <span class="r-nav-icon" aria-hidden="true"><i class="fa-solid fa-clock-rotate-left"></i></span>
                     <span class="r-nav-text">Historique</span>
-                </button>
-                <button type="button" class="r-nav-item" data-page="tracabilite" data-reception-page="true" title="Traçabilité">
-                    <span class="r-nav-icon" aria-hidden="true"><i class="fa-solid fa-link"></i></span>
-                    <span class="r-nav-text">Traçabilité</span>
                 </button>
             </div>
         </nav>
@@ -45,7 +45,8 @@
     <main class="r-main">
         <header class="r-main-header">
             <div class="r-main-header-text">
-                <h2 class="r-main-title"><i class="fa-solid fa-folder-open r-main-title-icon" aria-hidden="true"></i> <span id="reception-page-title">Réception</span></h2>
+                <span class="r-main-kicker">Module Reception</span>
+                <h2 class="r-main-title"><i class="fa-solid fa-folder-open r-main-title-icon" aria-hidden="true"></i> <span id="reception-page-title">Reception</span></h2>
                 <p class="r-main-desc" id="reception-page-desc"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> <span id="reception-page-desc-text"></span></p>
             </div>
             <div class="r-main-actions" aria-hidden="true"></div>

@@ -1,6 +1,7 @@
 /**
  * HISTORIQUE - MODULE JS
- * Affiche les lots terminés et les sessions disques shreddés (icône PC vs disque)
+ * Archives unifiées : lots terminés, disques, commandes, dons, prêts
+ * + actions PDF / régénération (ex-traçabilité)
  */
 
 import api from '../../config/api.js';
@@ -9,6 +10,7 @@ import { showAppNotification } from '../../config/notifications.js';
 import { loadLotsWithItems } from './lotsApi.js';
 import { getSessions, getSession, getSessionPdfUrl, updateSession } from './disquesApi.js';
 import { OS_OPTIONS, getOsIcon, getOsLabel, getOsOption } from './osOptions.js';
+import TracabiliteManager from './tracabilite.js';
 const logger = getLogger();
 
 
@@ -27,14 +29,46 @@ export default class HistoriqueManager {
         this.prets = [];
         this.marques = [];
         this.modeles = [];
+        // Pont vers la logique PDF (ex-module traçabilité)
+        this.pdf = new TracabiliteManager(modalManager, { skipInit: true });
         this.init();
     }
 
     async init() {
-        logger.debug('🚀 Initialisation HistoriqueManager');
+        logger.debug('🚀 Initialisation HistoriqueManager (historique + traçabilité)');
+        this.fillYearSelect();
         await this.loadData();
         this.setupEventListeners();
         logger.debug('✅ HistoriqueManager prêt');
+    }
+
+    fillYearSelect() {
+        const select = document.getElementById('filter-year-historique');
+        if (!select) return;
+        const currentYear = new Date().getFullYear();
+        const startYear = currentYear - 10;
+        select.innerHTML = '';
+        const optAll = document.createElement('option');
+        optAll.value = 'tous';
+        optAll.textContent = 'Toutes';
+        select.appendChild(optAll);
+        for (let y = currentYear; y >= startYear; y--) {
+            const opt = document.createElement('option');
+            opt.value = String(y);
+            opt.textContent = String(y);
+            if (y === currentYear) opt.selected = true;
+            select.appendChild(opt);
+        }
+    }
+
+    syncPdfBridge() {
+        if (!this.pdf) return;
+        this.pdf.lots = this.lots;
+        this.pdf.sessionsDisques = this.sessionsDisques;
+        this.pdf.commandes = this.commandes;
+        this.pdf.dons = this.dons;
+        this.pdf.prets = this.prets;
+        this.pdf.modalManager = this.modalManager;
     }
 
     /**
@@ -113,6 +147,7 @@ export default class HistoriqueManager {
             }
 
             logger.info('📦 Historique : ' + this.lots.length + ' lot(s), ' + this.sessionsDisques.length + ' session(s) disques, ' + this.commandes.length + ' commande(s), ' + this.dons.length + ' don(s), ' + this.prets.length + ' prêt(s)');
+            this.syncPdfBridge();
             this.renderLots();
         } catch (error) {
             logger.error('❌ Erreur chargement historique:', error);
@@ -121,6 +156,7 @@ export default class HistoriqueManager {
             this.commandes = [];
             this.dons = [];
             this.prets = [];
+            this.syncPdfBridge();
             this.renderLotsError(error);
         }
     }
@@ -187,6 +223,7 @@ export default class HistoriqueManager {
 
         const searchText = (document.getElementById('filter-search-historique')?.value || '').trim().toLowerCase();
         const typeFilter = (document.getElementById('filter-type-historique')?.value || 'tous').trim();
+        const yearFilter = (document.getElementById('filter-year-historique')?.value || 'tous').trim();
 
         const merged = [
             ...this.lots.map(lot => ({ type: 'lot', date: lot.finished_at || lot.created_at, item: lot })),
@@ -197,6 +234,12 @@ export default class HistoriqueManager {
         ].sort((a, b) => this.parseFlexibleDate(b.date) - this.parseFlexibleDate(a.date));
 
         let toRender = merged.filter(({ type }) => typeFilter === 'tous' || type === typeFilter);
+        if (yearFilter && yearFilter !== 'tous') {
+            toRender = toRender.filter(({ date }) => {
+                const y = this.parseFlexibleDate(date).getFullYear().toString();
+                return y === yearFilter;
+            });
+        }
         if (searchText) {
             toRender = toRender.filter(({ type, item }) => {
                 // Recherche sur le texte affiché dans le titre (h3) de la carte
@@ -234,11 +277,12 @@ export default class HistoriqueManager {
         }
 
         if (toRender.length === 0) {
+            const yearHint = yearFilter && yearFilter !== 'tous' ? ` pour ${yearFilter}` : '';
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fa-solid fa-inbox"></i>
-                    <p>${merged.length === 0 ? 'Aucun élément' : 'Aucun résultat'}</p>
-                    <small>${merged.length === 0 ? 'Lots, disques, dons, prêts matériel et commandes apparaîtront ici' : 'Modifiez la recherche ou le filtre type'}</small>
+                    <p>${merged.length === 0 ? 'Aucun élément' : 'Aucun résultat'}${yearHint}</p>
+                    <small>${merged.length === 0 ? 'Lots, disques, dons, prêts matériel et commandes apparaîtront ici' : 'Modifiez l’année, la recherche ou le filtre type'}</small>
                 </div>
             `;
             return;
@@ -282,6 +326,7 @@ export default class HistoriqueManager {
                         <button type="button" class="btn-edit-don-items-hist" data-don-id="${this.escapeHtml(String(don.id || ''))}" title="Éditer le matériel du don">
                             <i class="fa-solid fa-list-check" aria-hidden="true"></i> Éditer matériel
                         </button>
+                        ${this.buildDonPdfActions(don)}
                     </div>
                 </div>
             </div>
@@ -307,6 +352,7 @@ export default class HistoriqueManager {
                         <button type="button" class="btn-view-pret-details-hist" data-pret-id="${this.escapeHtml(String(pret.id || ''))}" title="Voir les détails du prêt">
                             <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir détails
                         </button>
+                        ${this.buildPretPdfActions(pret)}
                     </div>
                 </div>
             </div>
@@ -339,6 +385,7 @@ export default class HistoriqueManager {
                         <button type="button" class="btn-edit-commande-items-hist" data-commande-id="${this.escapeHtml(String(commande.id || ''))}" title="Éditer le matériel de la commande">
                             <i class="fa-solid fa-list-check" aria-hidden="true"></i> Éditer matériel
                         </button>
+                        ${this.buildCommandePdfActions(commande)}
                     </div>
                 </div>
             </div>
@@ -426,9 +473,7 @@ export default class HistoriqueManager {
                         <button type="button" class="btn-edit-items" data-lot-id="${lot.id}" title="Modifier le matériel (état, technicien par PC)">
                             <i class="fa-solid fa-list-check" aria-hidden="true"></i> Éditer matériel
                         </button>
-                        <button type="button" class="btn-regenerate-lot-pdf" data-lot-id="${lot.id}" title="Régénérer le PDF avec les données actuelles">
-                            <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Régénérer PDF
-                        </button>
+                        ${this.buildLotPdfActions(lot)}
                         <button type="button" class="${recoveryButtonClass}" data-lot-id="${lot.id}" ${recoveryButtonDisabled ? 'disabled' : ''} title="${!canRecover && !isRecovered ? 'Tous les items doivent avoir un état et un technicien' : 'Marquer le lot comme récupéré'}">
                             ${recoveryButtonText}
                         </button>
@@ -631,6 +676,7 @@ export default class HistoriqueManager {
                         <button type="button" class="btn-edit-disque-items" data-session-id="${session.id}" title="Modifier S/N, marque, modèle des disques">
                             <i class="fa-solid fa-list-check" aria-hidden="true"></i> Éditer matériel
                         </button>
+                        ${this.buildDisquePdfActions(session)}
                         <button type="button" class="${recoveryButtonClass}" data-session-id="${session.id}" ${isRecovered ? 'disabled' : ''} title="Marquer comme récupéré (traçabilité uniquement, pas les PDF)">
                             ${recoveryButtonText}
                         </button>
@@ -648,6 +694,180 @@ export default class HistoriqueManager {
 
     escapeAttr(s) {
         return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    /**
+     * Actions PDF lot (voir / télécharger / emplacement / régénérer)
+     */
+    buildLotPdfActions(lot) {
+        const pdfPath = lot.pdf_path || lot.pdf_url || lot.pdfPath || lot.path || lot.document_path || '';
+        const pdfPathStr = String(pdfPath || '').trim();
+        const lotLocalPdfAttr = pdfPathStr && this.pdf.isAllowedLocalPath(pdfPathStr)
+            ? ` data-local-pdf-path="${this.escapeHtml(pdfPathStr)}"`
+            : '';
+        const dateForFile = lot.finished_at
+            ? this.pdf.formatDateForFilename(lot.finished_at)
+            : this.pdf.formatDateForFilename(new Date().toISOString());
+        const sanitizedName = (lot.lot_name || lot.name || '').replace(/[\s]+/g, '_').replace(/[\\/:*?"<>|]/g, '').trim() || `Lot_${lot.id}`;
+        const downloadFileName = `${sanitizedName}_${dateForFile}.pdf`;
+        if (pdfPath) {
+            return `
+                <button type="button" class="btn-action btn-open-pdf-location-lot" data-lot-id="${lot.id}" title="Ouvrir le dossier du PDF">
+                    <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Emplacement PDF
+                </button>
+                <button type="button" class="btn-action btn-view-pdf" data-pdf-url="${(api.getServerUrl() + '/api/lots/' + lot.id + '/pdf?v=' + Date.now()).replace(/"/g, '&quot;')}" data-download-filename="${downloadFileName.replace(/"/g, '&quot;')}"${lotLocalPdfAttr} title="Ouvrir le PDF">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+                </button>
+                <button type="button" class="btn-action btn-download-pdf" data-lot-id="${lot.id}" data-pdf-path="/api/lots/${lot.id}/pdf" data-download-filename="${downloadFileName.replace(/"/g, '&quot;')}" title="Télécharger le PDF">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+                </button>
+                <button type="button" class="btn-action btn-regenerate-pdf" data-lot-id="${lot.id}" title="Régénérer le PDF">
+                    <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Régénérer PDF
+                </button>
+            `;
+        }
+        return `
+            <button type="button" class="btn-action btn-generate-pdf" data-lot-id="${lot.id}" title="Générer le PDF du lot">
+                <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Générer PDF
+            </button>
+        `;
+    }
+
+    buildDisquePdfActions(session) {
+        const hasPdf = session.pdf_path != null && session.pdf_path !== '';
+        if (!hasPdf) return '<span class="text-muted">PDF non généré</span>';
+        const sessionPdfLocal = String(session.pdf_path || '').trim();
+        const disqueLocalPdfAttr = sessionPdfLocal && this.pdf.isAllowedLocalPath(sessionPdfLocal)
+            ? ` data-local-pdf-path="${this.escapeHtml(sessionPdfLocal)}"`
+            : '';
+        const basePdfUrl = getSessionPdfUrl(session.id);
+        const pdfUrl = `${basePdfUrl}${basePdfUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+        return `
+            <button type="button" class="btn-action btn-open-pdf-location-disque" data-session-id="${session.id}" title="Ouvrir le dossier du PDF">
+                <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Emplacement PDF
+            </button>
+            <button type="button" class="btn-action btn-view-pdf-disque" data-pdf-url="${pdfUrl.replace(/"/g, '&quot;')}" data-download-filename="disques-session-${session.id}.pdf"${disqueLocalPdfAttr} title="Ouvrir le PDF">
+                <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+            </button>
+            <button type="button" class="btn-action btn-download-pdf-disque" data-session-id="${session.id}" data-pdf-url="${pdfUrl.replace(/"/g, '&quot;')}" data-download-filename="disques-session-${session.id}.pdf" title="Télécharger le PDF">
+                <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+            </button>
+            <button type="button" class="btn-action btn-regenerate-pdf-disque" data-session-id="${session.id}" title="Régénérer le PDF">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Régénérer PDF
+            </button>
+        `;
+    }
+
+    buildCommandePdfActions(commande) {
+        const name = (commande.commande_name || commande.name || '').trim() || 'Commande';
+        const dateStr = String(commande.date || commande.created_at || '').trim();
+        const rawPdfPath = String(commande.pdf_path || '').trim();
+        const isLocalPath = rawPdfPath.startsWith('/mnt/') || rawPdfPath.startsWith('/home/') || rawPdfPath.startsWith('/Users/');
+        const remotePdfUrl = commande.pdf_url || (rawPdfPath && !isLocalPath ? (api.getServerUrl() + (rawPdfPath.startsWith('/') ? rawPdfPath : '/' + rawPdfPath)) : '');
+        const hasPdf = (isLocalPath && rawPdfPath) || (remotePdfUrl && remotePdfUrl.length > 0);
+        if (!hasPdf) return '<span class="text-muted">PDF non disponible</span>';
+        const safeUrl = remotePdfUrl ? (remotePdfUrl + (remotePdfUrl.includes('?') ? '&' : '?') + 'v=' + Date.now()).replace(/"/g, '&quot;') : '';
+        const safeDate = this.pdf.normalizeDateForPath(dateStr || new Date().toISOString().slice(0, 10));
+        const safeName = (name.replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '') || 'commande');
+        const downloadFilename = `${safeName}_${safeDate}.pdf`;
+        return `
+            <button type="button" class="btn-action btn-open-pdf-location-commande" data-commande-id="${this.escapeHtml(String(commande.id || ''))}" title="Ouvrir le dossier du PDF">
+                <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Emplacement PDF
+            </button>
+            ${isLocalPath ? `
+                <button type="button" class="btn-action btn-view-local-pdf-commande" data-pdf-path="${this.escapeHtml(rawPdfPath)}" title="Ouvrir le PDF">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+                </button>
+                <button type="button" class="btn-action btn-download-local-pdf-commande" data-pdf-path="${this.escapeHtml(rawPdfPath)}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Télécharger">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+                </button>
+            ` : `
+                <button type="button" class="btn-action btn-view-pdf-commande" data-pdf-url="${safeUrl}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Ouvrir le PDF">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+                </button>
+                <button type="button" class="btn-action btn-download-pdf-commande" data-pdf-url="${safeUrl}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Télécharger">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+                </button>
+            `}
+            <button type="button" class="btn-action btn-regenerate-pdf-commande" data-commande-id="${this.escapeHtml(String(commande.id || ''))}" title="Régénérer le PDF">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Régénérer PDF
+            </button>
+        `;
+    }
+
+    buildDonPdfActions(don) {
+        const lotName = (don.lot_name || don.name || '').trim();
+        const dateStr = String(don.date || (don.created_at || '')).trim();
+        const rawPdfPath = String(don.pdf_path || '').trim();
+        const isLocalPath = rawPdfPath.startsWith('/mnt/') || rawPdfPath.startsWith('/home/') || rawPdfPath.startsWith('/Users/');
+        const pdfUrl = don.pdf_url || (rawPdfPath && !isLocalPath ? (api.getServerUrl() + (rawPdfPath.startsWith('/') ? rawPdfPath : '/' + rawPdfPath)) : '');
+        const hasPdf = (isLocalPath && rawPdfPath) || (pdfUrl && pdfUrl.length > 0);
+        if (!hasPdf) return '<span class="text-muted">Certificat non disponible</span>';
+        const safeUrl = pdfUrl ? (pdfUrl + (pdfUrl.includes('?') ? '&' : '?') + 'v=' + Date.now()).replace(/"/g, '&quot;') : '';
+        const safeDate = this.pdf.normalizeDateForPath(dateStr || new Date().toISOString().slice(0, 10));
+        const safeName = (lotName ? lotName.replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '') : 'don');
+        const downloadFilename = `${safeName}_${safeDate}.pdf`;
+        return `
+            <button type="button" class="btn-action btn-open-pdf-location-don" data-don-id="${this.escapeHtml(String(don.id || ''))}" title="Ouvrir le dossier du PDF">
+                <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Emplacement PDF
+            </button>
+            ${isLocalPath ? `
+                <button type="button" class="btn-action btn-view-local-pdf-don" data-pdf-path="${this.escapeHtml(rawPdfPath)}" title="Ouvrir le certificat">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+                </button>
+                <button type="button" class="btn-action btn-download-local-pdf-don" data-pdf-path="${this.escapeHtml(rawPdfPath)}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Télécharger">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+                </button>
+            ` : `
+                <button type="button" class="btn-action btn-view-pdf-don" data-pdf-url="${safeUrl}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Ouvrir le certificat">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+                </button>
+                <button type="button" class="btn-action btn-download-pdf-don" data-pdf-url="${safeUrl}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Télécharger">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+                </button>
+            `}
+            <button type="button" class="btn-action btn-regenerate-pdf-don" data-don-id="${this.escapeHtml(String(don.id || ''))}" title="Régénérer le PDF">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Régénérer PDF
+            </button>
+        `;
+    }
+
+    buildPretPdfActions(pret) {
+        const ref = (pret.reference || pret.title || pret.lot_name || pret.name || '').trim();
+        const rawPdfPath = String(pret.pdf_path || '').trim();
+        const isLocalPath = rawPdfPath.startsWith('/mnt/') || rawPdfPath.startsWith('/home/') || rawPdfPath.startsWith('/Users/');
+        const pdfUrl = pret.pdf_url || (rawPdfPath && !isLocalPath ? (api.getServerUrl() + (rawPdfPath.startsWith('/') ? rawPdfPath : '/' + rawPdfPath)) : '');
+        const hasPdf = (isLocalPath && rawPdfPath) || (pdfUrl && pdfUrl.length > 0);
+        if (!hasPdf) return '<span class="text-muted">PDF non disponible</span>';
+        const safeUrl = pdfUrl ? (pdfUrl + (pdfUrl.includes('?') ? '&' : '?') + 'v=' + Date.now()).replace(/"/g, '&quot;') : '';
+        const safeDate = this.pdf.normalizeDateForPath(this.getPretSortDateHist(pret) || new Date().toISOString().slice(0, 10));
+        const sanitize = (s) => String(s ?? '').trim().replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '').slice(0, 80) || '';
+        const borrowerRaw = String(pret.borrower_name || pret.emprunteur || '').trim();
+        const safeName = sanitize(ref) || sanitize(borrowerRaw) || 'pret';
+        const downloadFilename = `${safeName}_${safeDate}.pdf`;
+        return `
+            <button type="button" class="btn-action btn-open-pdf-location-pret" data-pret-id="${this.escapeHtml(String(pret.id || ''))}" title="Ouvrir le dossier du PDF">
+                <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Emplacement PDF
+            </button>
+            ${isLocalPath ? `
+                <button type="button" class="btn-action btn-view-local-pdf-pret" data-pdf-path="${this.escapeHtml(rawPdfPath)}" title="Ouvrir le PDF">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+                </button>
+                <button type="button" class="btn-action btn-download-local-pdf-pret" data-pdf-path="${this.escapeHtml(rawPdfPath)}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Télécharger">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+                </button>
+            ` : `
+                <button type="button" class="btn-action btn-view-pdf-pret" data-pdf-url="${safeUrl}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Ouvrir le PDF">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Voir PDF
+                </button>
+                <button type="button" class="btn-action btn-download-pdf-pret" data-pdf-url="${safeUrl}" data-download-filename="${this.escapeHtml(downloadFilename)}" title="Télécharger">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+                </button>
+            `}
+            <button type="button" class="btn-action btn-regenerate-pdf-pret" data-pret-id="${this.escapeHtml(String(pret.id || ''))}" title="Régénérer le PDF">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Régénérer PDF
+            </button>
+        `;
     }
 
     /**
@@ -796,6 +1016,104 @@ export default class HistoriqueManager {
                 e.stopPropagation();
                 this.viewPretDetails(btn.dataset.pretId);
             });
+        });
+
+        this.attachPdfEventListeners();
+    }
+
+    /**
+     * Actions PDF / emplacement (ex-traçabilité)
+     */
+    attachPdfEventListeners() {
+        const pdf = this.pdf;
+        if (!pdf) return;
+        this.syncPdfBridge();
+
+        const on = (selector, handler) => {
+            document.querySelectorAll(selector).forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handler(btn, e);
+                });
+            });
+        };
+
+        on('.btn-open-pdf-location-lot', (btn) => pdf.openLotPdfLocation(btn.dataset.lotId));
+        on('.btn-open-pdf-location-disque', (btn) => pdf.openDisquePdfLocation(btn.dataset.sessionId));
+        on('.btn-open-pdf-location-commande', (btn) => pdf.openCommandePdfLocation(btn.dataset.commandeId));
+        on('.btn-open-pdf-location-don', (btn) => pdf.openDonPdfLocation(btn.dataset.donId));
+        on('.btn-open-pdf-location-pret', (btn) => pdf.openPretPdfLocation(btn.dataset.pretId));
+
+        on('.btn-generate-pdf', async (btn) => {
+            await pdf.generatePDF(btn.dataset.lotId);
+            await this.loadData();
+        });
+        on('.btn-regenerate-pdf', async (btn) => {
+            await pdf.generatePDF(btn.dataset.lotId);
+            await this.loadData();
+        });
+        on('.btn-view-pdf', (btn) => {
+            const url = (btn.dataset.pdfUrl || '').replace(/&quot;/g, '"');
+            const filename = (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'lot.pdf';
+            const localPdf = (btn.dataset.localPdfPath || '').trim();
+            pdf.openPdfWithSystemApp(url, filename, localPdf || undefined);
+        });
+        on('.btn-download-pdf', (btn) => {
+            pdf.downloadPDF(btn.dataset.lotId, btn.dataset.pdfPath, (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || undefined);
+        });
+
+        on('.btn-view-pdf-disque', (btn) => {
+            const url = (btn.dataset.pdfUrl || '').replace(/&quot;/g, '"');
+            const filename = (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'disques-session.pdf';
+            const localPdf = (btn.dataset.localPdfPath || '').trim();
+            pdf.openPdfWithSystemApp(url, filename, localPdf || undefined);
+        });
+        on('.btn-download-pdf-disque', (btn) => {
+            const url = (btn.dataset.pdfUrl || '').replace(/&quot;/g, '"');
+            pdf.downloadDisquePdf(url, btn.dataset.downloadFilename || 'disques-session.pdf');
+        });
+        on('.btn-regenerate-pdf-disque', async (btn) => {
+            await pdf.regenerateDisquePdf(btn.dataset.sessionId);
+            await this.loadData();
+        });
+
+        on('.btn-view-pdf-commande', (btn) => {
+            pdf.openPdfWithSystemApp((btn.dataset.pdfUrl || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'commande.pdf');
+        });
+        on('.btn-download-pdf-commande', (btn) => {
+            pdf.downloadDisquePdf((btn.dataset.pdfUrl || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'commande.pdf');
+        });
+        on('.btn-view-local-pdf-commande', (btn) => pdf.openPathOnDesktop((btn.dataset.pdfPath || '').replace(/&quot;/g, '"')));
+        on('.btn-download-local-pdf-commande', (btn) => pdf.downloadLocalPdf((btn.dataset.pdfPath || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'commande.pdf'));
+        on('.btn-regenerate-pdf-commande', async (btn) => {
+            await pdf.regenerateCommandePdf(btn.dataset.commandeId);
+            await this.loadData();
+        });
+
+        on('.btn-view-pdf-don', (btn) => {
+            pdf.openPdfWithSystemApp((btn.dataset.pdfUrl || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'don.pdf');
+        });
+        on('.btn-download-pdf-don', (btn) => {
+            pdf.downloadDisquePdf((btn.dataset.pdfUrl || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'don.pdf');
+        });
+        on('.btn-view-local-pdf-don', (btn) => pdf.openPathOnDesktop((btn.dataset.pdfPath || '').replace(/&quot;/g, '"')));
+        on('.btn-download-local-pdf-don', (btn) => pdf.downloadLocalPdf((btn.dataset.pdfPath || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'don.pdf'));
+        on('.btn-regenerate-pdf-don', async (btn) => {
+            await pdf.regenerateDonPdf(btn.dataset.donId);
+            await this.loadData();
+        });
+
+        on('.btn-view-pdf-pret', (btn) => {
+            pdf.openPdfWithSystemApp((btn.dataset.pdfUrl || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'pret.pdf');
+        });
+        on('.btn-download-pdf-pret', (btn) => {
+            pdf.downloadDisquePdf((btn.dataset.pdfUrl || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'pret.pdf');
+        });
+        on('.btn-view-local-pdf-pret', (btn) => pdf.openPathOnDesktop((btn.dataset.pdfPath || '').replace(/&quot;/g, '"')));
+        on('.btn-download-local-pdf-pret', (btn) => pdf.downloadLocalPdf((btn.dataset.pdfPath || '').replace(/&quot;/g, '"'), (btn.dataset.downloadFilename || '').replace(/&quot;/g, '"') || 'pret.pdf'));
+        on('.btn-regenerate-pdf-pret', async (btn) => {
+            await pdf.regeneratePretPdf(btn.dataset.pretId);
+            await this.loadData();
         });
     }
 
@@ -1745,6 +2063,10 @@ export default class HistoriqueManager {
         if (typeSelect) {
             typeSelect.addEventListener('change', () => this.renderLots());
         }
+        const yearSelect = document.getElementById('filter-year-historique');
+        if (yearSelect) {
+            yearSelect.addEventListener('change', () => this.renderLots());
+        }
 
         // Bouton appliquer les modifications des items
         const applyBtn = document.getElementById('btn-apply-item-edits');
@@ -2384,5 +2706,9 @@ export default class HistoriqueManager {
         this.commandes = [];
         this.dons = [];
         this.prets = [];
+        if (this.pdf) {
+            this.pdf.destroy();
+            this.pdf = null;
+        }
     }
 }

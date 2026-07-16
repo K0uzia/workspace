@@ -5,113 +5,47 @@
             <button class="settings-modal-close" id="settingsModalClose" type="button" aria-label="Fermer">
                 <i class="fas fa-times"></i>
             </button>
-            <h2 class="settings-modal-title"><i class="fas fa-user-cog"></i> Paramètres du compte</h2>
+            <h2 class="settings-modal-title"><i class="fas fa-gear"></i> Paramètres</h2>
         </div>
         <div class="settings-modal-body">
-        
-        <details class="settings-dropdown" id="settingsDropdownAccount">
-            <summary class="settings-dropdown__summary">
-                <span class="settings-dropdown__title"><i class="fas fa-user-cog"></i> Paramètres compte</span>
-                <span class="settings-dropdown__chevron" aria-hidden="true">▾</span>
-            </summary>
-            <div class="settings-dropdown__content">
-                <div class="settings-section settings-auth-only">
-                    <h3>Changer le pseudo</h3>
-                    <form id="settingsFormUsername" class="settings-form">
-                        <div class="form-group">
-                            <label for="settingsNewUsername">Nouveau pseudo</label>
-                            <input type="text" id="settingsNewUsername" name="username" minlength="3" maxlength="20" pattern="^[a-zA-Z0-9_-]+$" placeholder="3-20 caractères (lettres, chiffres, _ et -)">
-                        </div>
-                        <div class="settings-error hidden" id="settingsUsernameError"></div>
-                        <button type="submit" class="btn btn-primary">Enregistrer le pseudo</button>
-                    </form>
+            <section class="settings-update-card" aria-labelledby="settingsUpdateHeading">
+                <header class="settings-update-card__header">
+                    <div class="settings-update-card__icon" aria-hidden="true">
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                    </div>
+                    <div class="settings-update-card__titles">
+                        <h3 id="settingsUpdateHeading">Mise à jour</h3>
+                        <p class="settings-update-card__subtitle">Vérifiez et installez la dernière version de Workspace.</p>
+                    </div>
+                </header>
+
+                <div class="settings-update-status-block">
+                    <span class="settings-update-status-label">État</span>
+                    <div class="settings-update-status" id="settingsUpdateStatus">Vérification…</div>
                 </div>
 
-                <div class="settings-section settings-auth-only">
-                    <h3>Changer le mot de passe</h3>
-                    <form id="settingsFormPassword" class="settings-form">
-                        <div class="form-group">
-                            <label for="settingsCurrentPassword">Mot de passe actuel</label>
-                            <input type="password" id="settingsCurrentPassword" name="currentPassword" required minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label for="settingsNewPassword">Nouveau mot de passe</label>
-                            <input type="password" id="settingsNewPassword" name="newPassword" required minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label for="settingsNewPasswordConfirm">Confirmer le nouveau mot de passe</label>
-                            <input type="password" id="settingsNewPasswordConfirm" name="newPasswordConfirm" required minlength="6">
-                        </div>
-                        <div class="settings-error hidden" id="settingsPasswordError"></div>
-                        <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
-                    </form>
+                <div class="settings-update-actions">
+                    <button type="button" id="settingsBtnCheckUpdate" class="settings-btn settings-btn--ghost">
+                        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Vérifier
+                    </button>
+                    <button type="button" id="settingsBtnDownloadUpdate" class="settings-btn settings-btn--primary hidden" disabled>
+                        <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger &amp; préparer
+                    </button>
                 </div>
 
-<!--         <div class="settings-section">
-            <h3>Thème</h3>
-            <div class="form-group">
-                <label for="settingsThemeDarkToggle">Thème sombre</label>
-                <button
-                    type="button"
-                    id="settingsThemeDarkToggle"
-                    name="themeDarkToggle"
-                    class="btn btn-secondary"
-                    role="switch"
-                    aria-checked="false">
-                    <span id="settingsThemeDarkToggleText">OFF</span>
-                </button>
-                <input type="hidden" id="settingsThemeDark" name="themeDark" value="0">
-            </div>
-        </div> -->
-
-                <div class="settings-section settings-section-danger settings-auth-only">
-                    <h3>Supprimer le compte</h3>
-                    <p class="settings-warning">Cette action est irréversible. Toutes vos données seront supprimées.</p>
-                    <button type="button" id="settingsBtnDeleteAccount" class="btn btn-danger">Supprimer mon compte</button>
-                    <div class="settings-error hidden" id="settingsDeleteError"></div>
+                <div class="settings-update-progress hidden" id="settingsUpdateProgress">
+                    <div class="settings-update-progress-bar">
+                        <div class="settings-update-progress-fill" id="settingsUpdateProgressFill" style="width:0%"></div>
+                    </div>
+                    <div class="settings-update-progress-text" id="settingsUpdateProgressText">0%</div>
                 </div>
 
-                <div id="settingsDeleteConfirm" class="settings-delete-confirm hidden">
-                    <p>Êtes-vous sûr de vouloir supprimer votre compte ? Saisissez votre mot de passe pour confirmer.</p>
-                    <div class="form-group">
-                        <label for="settingsDeletePassword">Mot de passe</label>
-                        <input type="password" id="settingsDeletePassword" placeholder="Votre mot de passe">
-                    </div>
-                    <div class="settings-error hidden" id="settingsDeleteConfirmError"></div>
-                    <div class="settings-delete-actions">
-                        <button type="button" id="settingsDeleteConfirmBtn" class="btn btn-danger">Confirmer la suppression</button>
-                        <button type="button" id="settingsDeleteCancelBtn" class="btn btn-secondary">Annuler</button>
-                    </div>
+                <div class="settings-update-hint hidden" id="settingsUpdateHint">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                    <span>Mise à jour téléchargée. <strong>Redémarrez l’application</strong> pour l’appliquer.</span>
                 </div>
-            </div>
-        </details>
-        
-        <details class="settings-dropdown" id="settingsDropdownUpdate">
-            <summary class="settings-dropdown__summary">
-                <span class="settings-dropdown__title"><i class="fa-solid fa-cloud-arrow-down"></i> Mise à jour</span>
-                <span class="settings-dropdown__chevron" aria-hidden="true">▾</span>
-            </summary>
-            <div class="settings-dropdown__content">
-                <div class="settings-section">
-                    <h3>Mise à jour de l’application</h3>
-                    <div class="settings-update-row">
-                        <div class="settings-update-status" id="settingsUpdateStatus">Vérification…</div>
-                        <button type="button" id="settingsBtnCheckUpdate" class="btn btn-secondary">Vérifier</button>
-                        <button type="button" id="settingsBtnDownloadUpdate" class="btn btn-primary hidden" disabled>Télécharger & préparer</button>
-                    </div>
-                    <div class="settings-update-progress hidden" id="settingsUpdateProgress">
-                        <div class="settings-update-progress-bar">
-                            <div class="settings-update-progress-fill" id="settingsUpdateProgressFill" style="width:0%"></div>
-                        </div>
-                        <div class="settings-update-progress-text" id="settingsUpdateProgressText">0%</div>
-                    </div>
-                    <div class="settings-update-hint hidden" id="settingsUpdateHint">
-                        Mise à jour téléchargée. <strong>Redémarre l’application</strong> pour l’appliquer.
-                    </div>
-                    <div class="settings-error hidden" id="settingsUpdateError"></div>
-                </div>
-            </div>
-        </details>
+                <div class="settings-error hidden" id="settingsUpdateError"></div>
+            </section>
         </div>
     </div>
 </div>

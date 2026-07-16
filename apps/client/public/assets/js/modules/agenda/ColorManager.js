@@ -1,7 +1,7 @@
 export default class ColorManager {
     constructor() {
         this.storageKey = 'agenda_favorite_colors';
-        this.defaultColors = ['#3788d8', '#43c466', '#fdb544'];
+        this.defaultColors = ['#5b7cfa', '#4ade80', '#fb923c'];
         this.initializeFavorites();
     }
 

@@ -1,64 +1,56 @@
 <section class="recep-page lot-page tracabilite-container">
     <div class="lot-page__body">
-        <div class="lot-card lot-card--config">
-            <div class="lot-card__inner">
-                <div class="lot-config tracabilite-filters">
-                    <div class="lot-config__field">
-                        <label class="lot-config__label" for="filter-tracabilite-year"><i class="fa-solid fa-calendar" aria-hidden="true"></i> Année</label>
-                        <select class="lot-config__input" id="filter-tracabilite-year"></select>
-                    </div>
-                    <div class="lot-config__field">
-                        <label class="lot-config__label" for="filter-tracabilite-type"><i class="fa-solid fa-filter" aria-hidden="true"></i> Type</label>
-                        <select class="lot-config__input" id="filter-tracabilite-type">
-                            <option value="tous">Tous</option>
-                            <option value="lots">Lot</option>
-                            <option value="disques">Disque</option>
-                            <option value="commandes">Commande</option>
-                            <option value="dons">Don</option>
-                            <option value="prets">Prêt matériel</option>
-                        </select>
-                    </div>
-                    <div class="lot-config__actions">
-                        <button type="button" class="lot-btn lot-btn--secondary" id="btn-refresh-tracabilite" title="Recharger">
-                            <i class="fa-solid fa-sync" aria-hidden="true"></i> Rafraîchir
-                        </button>
-                    </div>
-                </div>
+        <div class="recep-toolbar-compact tracabilite-filters" role="toolbar" aria-label="Filtres traçabilité">
+            <div class="lot-config__field">
+                <label class="lot-config__label" for="filter-tracabilite-year"><i class="fa-solid fa-calendar" aria-hidden="true"></i> Année</label>
+                <select class="lot-config__input" id="filter-tracabilite-year"></select>
+            </div>
+            <div class="lot-config__field">
+                <label class="lot-config__label" for="filter-tracabilite-type"><i class="fa-solid fa-filter" aria-hidden="true"></i> Type</label>
+                <select class="lot-config__input" id="filter-tracabilite-type">
+                    <option value="tous">Tous</option>
+                    <option value="lots">Lot</option>
+                    <option value="disques">Disque</option>
+                    <option value="commandes">Commande</option>
+                    <option value="dons">Don</option>
+                    <option value="prets">Prêt matériel</option>
+                </select>
+            </div>
+            <div class="lot-config__actions">
+                <button type="button" class="lot-btn lot-btn--secondary" id="btn-refresh-tracabilite" title="Recharger">
+                    <i class="fa-solid fa-sync" aria-hidden="true"></i> Rafraîchir
+                </button>
             </div>
         </div>
-        <div class="lot-card lot-card--table">
-            <div class="lot-card__inner">
-                <div class="tracabilite-content-wrapper">
-                    <div id="tracabilite-grouped" class="tracabilite-grouped"></div>
-                </div>
-            </div>
+        <div class="tracabilite-content-wrapper">
+            <div id="tracabilite-grouped" class="tracabilite-grouped"></div>
         </div>
     </div>
 </section>
 
-<dialog class="universal-modal" id="modal-send-email" data-modal-id="modal-send-email">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fa-solid fa-envelope"></i> Envoyer le PDF par email</h2>
-            <button type="button" class="modal-close-btn" data-modal-close="modal-send-email" title="Fermer" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+<dialog class="universal-modal lots-modal" id="modal-send-email" data-modal-id="modal-send-email">
+    <div class="modal-content lots-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2><i class="fa-solid fa-envelope" aria-hidden="true"></i> Envoyer le PDF par email</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-send-email" title="Fermer" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body lots-modal__body">
             <form id="form-send-email">
-                <div class="form-group">
-                    <label for="email-recipient">Adresse email</label>
-                    <input type="email" id="email-recipient" name="recipient" placeholder="exemple@mail.com" required autocomplete="off" autofocus>
-                    <small class="form-help">L'adresse email du destinataire</small>
+                <div class="form-group lots-modal__field">
+                    <label for="email-recipient"><i class="fa-solid fa-at" aria-hidden="true"></i> Adresse email</label>
+                    <input type="email" id="email-recipient" name="recipient" class="lots-modal__input" placeholder="exemple@mail.com" required autocomplete="off" autofocus>
+                    <small class="form-help">Adresse du destinataire</small>
                 </div>
-                <div class="form-group">
-                    <label for="email-message">Message (optionnel)</label>
-                    <textarea id="email-message" name="message" placeholder="Message personnalisé…" rows="4" autocomplete="off"></textarea>
+                <div class="form-group lots-modal__field">
+                    <label for="email-message"><i class="fa-solid fa-message" aria-hidden="true"></i> Message (optionnel)</label>
+                    <textarea id="email-message" name="message" class="lots-modal__input" placeholder="Message personnalisé…" rows="4" autocomplete="off"></textarea>
                     <small class="form-help">Maximum 500 caractères</small>
                 </div>
             </form>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-cancel-btn" data-modal-close="modal-send-email">Annuler</button>
-            <button type="button" class="modal-submit-btn" id="btn-confirm-send-email" title="Envoyer"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Envoyer</button>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-send-email">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--submit" id="btn-confirm-send-email" title="Envoyer"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Envoyer</button>
         </div>
     </div>
 </dialog>

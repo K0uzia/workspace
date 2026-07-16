@@ -1,40 +1,36 @@
 <section class="recep-page lot-page historique-container">
     <div class="lot-page__body">
-        <div class="lot-card lot-card--config">
-            <div class="lot-card__inner">
-                <div class="lot-config historique-filters">
-                    <div class="lot-config__field lot-config__field--search">
-                        <label class="lot-config__label" for="filter-search-historique"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Recherche</label>
-                        <input class="lot-config__input" type="text" id="filter-search-historique" placeholder="Rechercher par nom du lot…" autocomplete="off">
-                    </div>
-                    <div class="lot-config__field lot-config__field--type">
-                        <label class="lot-config__label" for="filter-type-historique"><i class="fa-solid fa-filter" aria-hidden="true"></i> Type</label>
-                        <select class="lot-config__input" id="filter-type-historique">
-                            <option value="tous">Tous</option>
-                            <option value="lot">Lot</option>
-                            <option value="disque">Disque</option>
-                            <option value="don">Don</option>
-                            <option value="pret">Prêt matériel</option>
-                            <option value="commande">Commande</option>
-                        </select>
-                    </div>
-                    <div class="lot-config__actions">
-                        <button type="button" class="lot-btn lot-btn--secondary" id="btn-refresh-historique" title="Recharger l'historique">
-                            <i class="fa-solid fa-sync" aria-hidden="true"></i> Rafraîchir
-                        </button>
-                    </div>
-                </div>
+        <div class="recep-toolbar-compact historique-filters" role="toolbar" aria-label="Filtres historique et traçabilité">
+            <div class="lot-config__field">
+                <label class="lot-config__label" for="filter-year-historique"><i class="fa-solid fa-calendar" aria-hidden="true"></i> Année</label>
+                <select class="lot-config__input" id="filter-year-historique"></select>
+            </div>
+            <div class="lot-config__field lot-config__field--search">
+                <label class="lot-config__label" for="filter-search-historique"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Recherche</label>
+                <input class="lot-config__input" type="text" id="filter-search-historique" placeholder="Rechercher par nom…" autocomplete="off">
+            </div>
+            <div class="lot-config__field lot-config__field--type">
+                <label class="lot-config__label" for="filter-type-historique"><i class="fa-solid fa-filter" aria-hidden="true"></i> Type</label>
+                <select class="lot-config__input" id="filter-type-historique">
+                    <option value="tous">Tous</option>
+                    <option value="lot">Lot</option>
+                    <option value="disque">Disque</option>
+                    <option value="don">Don</option>
+                    <option value="pret">Prêt matériel</option>
+                    <option value="commande">Commande</option>
+                </select>
+            </div>
+            <div class="lot-config__actions">
+                <button type="button" class="lot-btn lot-btn--secondary" id="btn-refresh-historique" title="Recharger l'historique">
+                    <i class="fa-solid fa-sync" aria-hidden="true"></i> Rafraîchir
+                </button>
             </div>
         </div>
-        <div class="lot-card lot-card--table">
-            <div class="lot-card__inner">
-                <div class="historique-list-wrap">
-                    <div class="recep-list lots-list" id="historique-list">
-                        <div class="recep-loading loading">
-                            <i class="fa-solid fa-spinner" aria-hidden="true"></i>
-                            <span>Chargement de l'historique...</span>
-                        </div>
-                    </div>
+        <div class="historique-list-wrap">
+            <div class="recep-list lots-list" id="historique-list">
+                <div class="recep-loading loading">
+                    <i class="fa-solid fa-spinner" aria-hidden="true"></i>
+                    <span>Chargement de l'historique…</span>
                 </div>
             </div>
         </div>
@@ -42,7 +38,7 @@
 </section>
 
 <!-- Modales historique (détails lot, éditer items, éditer nom, disques, etc.) - IDs conservés pour le JS -->
-<dialog class="universal-modal" id="modal-lot-details" data-modal-id="modal-lot-details">
+<dialog class="universal-modal lots-modal" id="modal-lot-details" data-modal-id="modal-lot-details">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-boxes-stacked"></i> Détails lot</h2>
@@ -116,7 +112,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-edit-lot-items" data-modal-id="modal-edit-lot-items">
+<dialog class="universal-modal lots-modal" id="modal-edit-lot-items" data-modal-id="modal-edit-lot-items">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-list-check"></i> Éditer matériel – Lot #<span id="modal-edit-lot-number">-</span></h2>
@@ -149,7 +145,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-edit-lot-name" data-modal-id="modal-edit-lot-name">
+<dialog class="universal-modal lots-modal" id="modal-edit-lot-name" data-modal-id="modal-edit-lot-name">
     <div class="modal-content modal-md">
         <div class="modal-header">
             <h2><i class="fa-solid fa-edit"></i> Éditer le nom du lot</h2>
@@ -168,7 +164,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-edit-disque-name" data-modal-id="modal-edit-disque-name">
+<dialog class="universal-modal lots-modal" id="modal-edit-disque-name" data-modal-id="modal-edit-disque-name">
     <div class="modal-content modal-md">
         <div class="modal-header">
             <h2><i class="fa-solid fa-edit"></i> Éditer le nom de la session</h2>
@@ -187,7 +183,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-edit-disque-items" data-modal-id="modal-edit-disque-items">
+<dialog class="universal-modal lots-modal" id="modal-edit-disque-items" data-modal-id="modal-edit-disque-items">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-list-check"></i> Éditer matériel – <span id="modal-edit-disque-session-title">Lot disques</span></h2>
@@ -219,7 +215,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-disque-details" data-modal-id="modal-disque-details">
+<dialog class="universal-modal lots-modal" id="modal-disque-details" data-modal-id="modal-disque-details">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-hard-drive"></i> <span id="modal-disque-title">Lot disques</span></h2>
@@ -257,7 +253,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-commande-details" data-modal-id="modal-commande-details">
+<dialog class="universal-modal lots-modal" id="modal-commande-details" data-modal-id="modal-commande-details">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-file-invoice"></i> <span id="modal-commande-title">Commande</span></h2>
@@ -303,7 +299,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-don-details" data-modal-id="modal-don-details">
+<dialog class="universal-modal lots-modal" id="modal-don-details" data-modal-id="modal-don-details">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-hand-holding-heart"></i> <span id="modal-don-title">Don</span></h2>
@@ -350,7 +346,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-pret-details" data-modal-id="modal-pret-details">
+<dialog class="universal-modal lots-modal" id="modal-pret-details" data-modal-id="modal-pret-details">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-handshake"></i> <span id="modal-pret-title">Prêt</span></h2>
@@ -404,7 +400,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-edit-commande-hist" data-modal-id="modal-edit-commande-hist">
+<dialog class="universal-modal lots-modal" id="modal-edit-commande-hist" data-modal-id="modal-edit-commande-hist">
     <div class="modal-content modal-md">
         <div class="modal-header">
             <h2><i class="fa-solid fa-pen-to-square"></i> Éditer nom commande</h2>
@@ -427,7 +423,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-edit-don-hist" data-modal-id="modal-edit-don-hist">
+<dialog class="universal-modal lots-modal" id="modal-edit-don-hist" data-modal-id="modal-edit-don-hist">
     <div class="modal-content modal-md">
         <div class="modal-header">
             <h2><i class="fa-solid fa-pen-to-square"></i> Éditer nom don</h2>
@@ -446,7 +442,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-edit-commande-items-hist" data-modal-id="modal-edit-commande-items-hist">
+<dialog class="universal-modal lots-modal" id="modal-edit-commande-items-hist" data-modal-id="modal-edit-commande-items-hist">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-list-check"></i> Éditer matériel commande</h2>
@@ -476,7 +472,7 @@
     </div>
 </dialog>
 
-<dialog class="universal-modal" id="modal-edit-don-items-hist" data-modal-id="modal-edit-don-items-hist">
+<dialog class="universal-modal lots-modal" id="modal-edit-don-items-hist" data-modal-id="modal-edit-don-items-hist">
     <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2><i class="fa-solid fa-list-check"></i> Éditer matériel don</h2>

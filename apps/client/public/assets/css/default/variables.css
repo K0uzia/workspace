@@ -1,45 +1,66 @@
 :root {
-    /* COULEUR */
+    /* Couleurs marque */
     --jaune: #F2BC1B;
     --orange: #F28241;
     --bleu1: #3E3B8C;
     --bleu2: #2D3073;
-    --blanc: #f2f2f2;
-    --noir: #0D0D0D;
-    --error: #c62828;
-    --valid: #008000;
+    --error: #ef5350;
+    --valid: #4caf50;
 
-    /* COULEUR ELEMENTS */
-    --text: var(--blanc);
-    --text2: var(--noir);
-    --h1: var(--blanc);
-    --h2: var(--noir);
+    /* Thème sombre SaaS (défaut) */
+    --bg-base: #0b0d10;
+    --bg-elevated: #111317;
+    --bg-surface: #151922;
+    --bg-surface-2: #1b2130;
+    --accent: #7c9cff;
+    --text-primary: #f5f7fb;
+    --text-secondary: #b5bfd3;
+    --text-muted: #7f8aa3;
+    --border: rgba(255, 255, 255, 0.08);
+
+    /* Alias legacy */
+    --blanc: var(--bg-surface);
+    --noir: var(--text-primary);
+    --text: var(--text-secondary);
+    --text2: var(--text-primary);
+    --h1: var(--text-primary);
+    --h2: var(--text-primary);
     --link: var(--jaune);
-    --btn: var(--bleu1);
-    --btn-hover: var(--bleu2);
-    --btn-text: var(--blanc);
-    --scrollbar-color: var(--orange);
+    --btn: #4f63d9;
+    --btn-hover: #6378e8;
+    --btn-text: var(--text-primary);
+    --scrollbar-color: var(--accent);
 
-    /* Option Taille */
+    /* Gris / utilitaires */
+    --gris: var(--text-muted);
+    --gris-light: var(--border);
+    --gris-clair: var(--bg-surface-2);
+
+    /* Agenda (alias SSA) */
+    --ssa-gris: var(--text-secondary);
+    --ssa-blanc: var(--bg-surface);
+    --ssa-vert: var(--accent);
+
+    /* Réception (héritées par .r-root, disponibles globalement) */
+    --recep-page-bg: var(--bg-base);
+    --recep-panel-bg: var(--bg-surface);
+    --recep-panel-bg-soft: var(--bg-surface-2);
+    --recep-panel-border: var(--border);
+    --recep-panel-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+    --recep-panel-radius: 14px;
+
+    /* Espacement 4 / 8 / 16 / 24 / 32 */
     --unit: 8px;
-    --unit-1: calc(var(--unit)*1);
-    /* 8px */
-    --unit-2: calc(var(--unit)*2);
-    /* 16px */
-    --unit-3: calc(var(--unit)*3);
-    /* 24px */
-    --unit-4: calc(var(--unit)*4);
-    /* 32px */
-    --unit-5: calc(var(--unit)*5);
-    /* 40px */
-    --unit-6: calc(var(--unit)*6);
-    /* 48px */
-    --unit-7: calc(var(--unit)*7);
-    /* 56px */
-    --unit-8: calc(var(--unit)*8);
-    /* 64px */
+    --unit-1: calc(var(--unit) * 1);   /* 8px */
+    --unit-2: calc(var(--unit) * 2);   /* 16px */
+    --unit-3: calc(var(--unit) * 3);   /* 24px */
+    --unit-4: calc(var(--unit) * 4);   /* 32px */
+    --unit-5: calc(var(--unit) * 5);
+    --unit-6: calc(var(--unit) * 6);
+    --unit-7: calc(var(--unit) * 7);
+    --unit-8: calc(var(--unit) * 8);
 
-    /* Font Size */
+    /* Typographie */
     --font-btn: 0.98rem system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     --font-text: 400 1.2rem system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     --font-text2: 400 1rem system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -50,82 +71,79 @@
     --block-title-h2: 400 1.2rem system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     --block-title-h3: 500 1.5rem system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 
-    /* BORDER RADIUS */
+    /* Border radius */
     --radius-small: calc(var(--unit) / 2);
-    /* 4px */
     --radius-medium: var(--unit);
-    /* 8px */
     --radius-large: calc(var(--unit) * 1.5);
-    /* 12px */
 
-    /* Configuration des boutons */
-    /* PRIMARY */
+    /* Boutons */
     --btn-primary-padding: var(--unit-1) var(--unit-3);
     --btn-primary-border-radius: var(--radius-small);
     --btn-primary-text-size: var(--font-btn);
-    /* SECONDARY */
     --btn-secondary-padding: var(--unit-1) var(--unit-3);
     --btn-secondary-border-radius: var(--radius-small);
     --btn-secondary-text-size: var(--font-btn);
 
-    /* Configuration Effect */
-    --shadow-small: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-    --shadow-medium: rgba(0, 0, 0, 0.25) 0px 14px 28px, rgba(0, 0, 0, 0.22) 0px 10px 10px;
-    --shadow-large:rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    /* Ombres (adaptées au sombre) */
+    --shadow-small: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.4);
+    --shadow-strong: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --shadow-large: 0 24px 48px rgba(0, 0, 0, 0.5);
     --transition: all 0.3s ease;
-    --error-border: 3px solid #f44336;
+    --error-border: 3px solid var(--error);
 
-    /* WIDGET CHAT - CONFIGURATION */
-    /* Bouton flottant */
+    /* Widget chat */
     --chat-btn-size: calc(var(--unit-2) * 3.75);
-    /* 60px */
     --chat-btn-size-mobile: calc(var(--unit-2) * 3.125);
-    /* 50px */
     --chat-btn-icon-size: calc(var(--unit-2) * 0.9375);
-    /* 1.5rem/15px */
     --chat-btn-padding: 0;
-    --chat-btn-shadow: 0 var(--unit-1) calc(var(--unit-1) * 3) rgba(62, 59, 140, 0.3);
-    --chat-btn-shadow-hover: 0 calc(var(--unit-1) * 0.75) var(--unit-2) rgba(62, 59, 140, 0.4);
-
-    /* Panel */
+    --chat-btn-shadow: 0 var(--unit-1) calc(var(--unit-1) * 3) rgba(79, 99, 217, 0.35);
+    --chat-btn-shadow-hover: 0 calc(var(--unit-1) * 0.75) var(--unit-2) rgba(79, 99, 217, 0.45);
     --chat-panel-width: calc(var(--unit-2) * 23.75);
-    /* 380px */
     --chat-panel-width-tablet: calc(var(--unit-2) * 22.5);
-    /* 360px */
     --chat-panel-height: calc(var(--unit-2) * 37.5);
-    /* 600px */
     --chat-panel-height-tablet: calc(var(--unit-2) * 34.375);
-    /* 550px */
     --chat-panel-offset-bottom: calc(var(--chat-btn-size) + var(--unit-2));
-    /* btn + gap */
     --chat-panel-animation: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    /* Badge notification */
     --chat-badge-size: calc(var(--unit-1) * 3);
-    /* 24px */
     --chat-badge-offset-top: calc(var(--unit-1) * -0.625);
-    /* -5px */
     --chat-badge-offset-right: calc(var(--unit-1) * -0.625);
-    /* -5px */
     --chat-badge-border: calc(var(--unit-1) * 0.25);
-    /* 2px */
-
-    /* Messages */
     --chat-message-font: calc(1rem * 0.9);
-    /* 0.9rem */
     --chat-message-max-width: 70%;
     --chat-message-line-height: 1.4;
     --chat-message-animation: fadeIn 0.2s ease;
-
-    /* Input */
     --chat-input-font: calc(1rem * 0.9);
-    /* 0.9rem */
     --chat-input-max-length: 500;
-
-    /* Modal pseudo */
     --chat-modal-animation: slideUp 0.3s ease;
-    --chat-modal-bg: rgba(0, 0, 0, 0.5);
+    --chat-modal-bg: rgba(0, 0, 0, 0.6);
     --chat-modal-blur: 2px;
+}
+
+/* Mode clair (toggle paramètres) */
+html[data-theme-dark="0"] {
+    --bg-base: #eef1f6;
+    --bg-elevated: #ffffff;
+    --bg-surface: #ffffff;
+    --bg-surface-2: #f8fafc;
+    --text-primary: #0d0d0d;
+    --text-secondary: #4a5568;
+    --text-muted: #6b7280;
+    --border: rgba(13, 13, 13, 0.12);
+    --blanc: #f2f2f2;
+    --noir: #0d0d0d;
+    --text: #f2f2f2;
+    --text2: #0d0d0d;
+    --h1: #f2f2f2;
+    --h2: #0d0d0d;
+    --btn: #3E3B8C;
+    --btn-hover: #2D3073;
+    --btn-text: #f2f2f2;
+    --scrollbar-color: #F28241;
+    --shadow-small: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    --shadow-medium: rgba(0, 0, 0, 0.25) 0px 14px 28px, rgba(0, 0, 0, 0.22) 0px 10px 10px;
+    --shadow-strong: rgba(0, 0, 0, 0.25) 0px 14px 28px;
+    --shadow-large: rgba(0, 0, 0, 0.25) 0px 54px 55px;
 }
 
 * {

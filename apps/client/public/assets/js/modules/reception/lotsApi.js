@@ -78,3 +78,79 @@ export async function loadLotsWithItems({ status }) {
 
     return lotsWithItems;
 }
+
+function authHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('workspace_jwt') || ''}`
+    };
+}
+
+/**
+ * Ajoute un item à un lot actif.
+ * @param {string|number} lotId
+ * @param {object} payload
+ * @returns {Promise<object>} item créé
+ */
+export async function addLotItem(lotId, payload) {
+    const serverUrl = api.getServerUrl();
+    const response = await fetch(`${serverUrl}/api/lots/${lotId}/items`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(payload || {})
+    });
+    if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+            const err = await response.json();
+            message = err.message || err.error || message;
+        } catch (_) { /* ignore */ }
+        throw new Error(message);
+    }
+    const data = await response.json();
+    return data.item || data;
+}
+
+/**
+ * Soft-supprime un item de lot.
+ * @param {string|number} itemId
+ * @returns {Promise<object>}
+ */
+export async function removeLotItem(itemId) {
+    const serverUrl = api.getServerUrl();
+    const response = await fetch(`${serverUrl}/api/lots/items/${itemId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+    });
+    if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+            const err = await response.json();
+            message = err.message || err.error || message;
+        } catch (_) { /* ignore */ }
+        throw new Error(message);
+    }
+    return response.json();
+}
+
+/**
+ * Restaure un item soft-supprimé (undo).
+ * @param {string|number} itemId
+ * @returns {Promise<object>}
+ */
+export async function restoreLotItem(itemId) {
+    const serverUrl = api.getServerUrl();
+    const response = await fetch(`${serverUrl}/api/lots/items/${itemId}/restore`, {
+        method: 'POST',
+        headers: authHeaders()
+    });
+    if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+            const err = await response.json();
+            message = err.message || err.error || message;
+        } catch (_) { /* ignore */ }
+        throw new Error(message);
+    }
+    return response.json();
+}
