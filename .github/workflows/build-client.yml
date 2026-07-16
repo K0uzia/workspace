@@ -152,6 +152,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
+          # Pas de certificat Apple Developer en CI : éviter la signature ad-hoc qui casse le build
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npm run build:prod:mac
 
       - name: Upload macOS artifacts

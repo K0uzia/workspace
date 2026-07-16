@@ -116,7 +116,7 @@ async function runAutoUpdate(opts) {
                     setQuittingForUpdate(true);
                     const currentApp = process.env.APPIMAGE;
                     let newApp = autoUpdater.installerPath;
-                    // Sous Linux AppImage : déplacer le fichier téléchargé vers un dossier temporaire dédié
+                    // Sous Linux AppImage uniquement : remplacer le fichier via helper shell
                     if (process.platform === 'linux' && currentApp && newApp && fsModule.existsSync(newApp)) {
                         const updateTempDir = pathModule.join(app.getPath('temp'), 'workspace-update');
                         try {
@@ -128,23 +128,22 @@ async function runAutoUpdate(opts) {
                         } catch (e) {
                             console.warn('[Update] Déplacement vers temp échoué, utilisation du chemin par défaut:', e?.message);
                         }
-                        // Le script helper crée le .bak après fermeture (supprime ancien .bak, renomme l'actuelle en .bak, puis déplace la nouvelle)
-                    }
-                    const helperOk = tryLinuxAppImageUpdateHelper(currentApp, newApp);
-                    if (helperOk) {
-                        sessionLog({ hypothesisId: 'H2-H5', location: 'lib/update.js:update-downloaded', message: 'linux helper launched, force exit', data: {} });
-                        const splashWindow = getSplashWindow();
-                        const mainWindow = getMainWindow();
-                        if (splashWindow && !splashWindow.isDestroyed()) {
-                            splashWindow.destroy();
+                        const helperOk = tryLinuxAppImageUpdateHelper(currentApp, newApp);
+                        if (helperOk) {
+                            sessionLog({ hypothesisId: 'H2-H5', location: 'lib/update.js:update-downloaded', message: 'linux helper launched, force exit', data: {} });
+                            const splashWindow = getSplashWindow();
+                            const mainWindow = getMainWindow();
+                            if (splashWindow && !splashWindow.isDestroyed()) {
+                                splashWindow.destroy();
+                            }
+                            if (mainWindow && !mainWindow.isDestroyed()) {
+                                mainWindow.destroy();
+                            }
+                            setImmediate(() => {
+                                app.exit(0);
+                            });
+                            return;
                         }
-                        if (mainWindow && !mainWindow.isDestroyed()) {
-                            mainWindow.destroy();
-                        }
-                        setImmediate(() => {
-                            app.exit(0);
-                        });
-                        return;
                     }
                     sessionLog({ hypothesisId: 'H2-H5', location: 'lib/update.js:update-downloaded', message: 'calling quitAndInstall', data: {} });
                     autoUpdater.quitAndInstall(true, true);

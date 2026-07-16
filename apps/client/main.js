@@ -389,7 +389,7 @@ function tryLinuxAppImageUpdateHelperDetailed(currentAppPath, newAppPath) {
     }
 }
 
-// --- Mise à jour manuelle (AppImage) ---
+// --- Mise à jour manuelle (AppImage, .deb, DMG, NSIS) ---
 const GITHUB_OWNER = 'SandersonnDev';
 const GITHUB_REPO = 'workspace';
 
@@ -410,6 +410,21 @@ function compareSemver(a, b) {
     return 0;
 }
 
+/**
+ * Type d'install Linux détecté : AppImage (portable) ou deb (paquet système).
+ * Sur les autres OS, retourne le nom de plateforme.
+ */
+function getInstallPackageType() {
+    if (process.platform === 'linux') {
+        const appImage = process.env.APPIMAGE;
+        if (appImage && fs.existsSync(appImage)) return 'AppImage';
+        return 'deb';
+    }
+    if (process.platform === 'darwin') return 'dmg';
+    if (process.platform === 'win32') return 'nsis';
+    return 'unknown';
+}
+
 async function fetchLatestGithubRelease() {
     const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
     const res = await fetch(apiUrl, {
@@ -424,13 +439,35 @@ async function fetchLatestGithubRelease() {
     return await res.json();
 }
 
-function pickAppImageAsset(releaseJson) {
+function pickReleaseAsset(releaseJson, packageType = getInstallPackageType()) {
     const assets = Array.isArray(releaseJson?.assets) ? releaseJson.assets : [];
-    // Priorité au nom demandé par toi, puis variantes usuelles.
-    const preferred = assets.find(a => String(a?.name || '').toLowerCase() === 'workspace.appimage')
-        || assets.find(a => /workspace.*\.appimage$/i.test(String(a?.name || '')))
-        || assets.find(a => /\.appimage$/i.test(String(a?.name || '')));
-    return preferred || null;
+    const nameOf = (a) => String(a?.name || '').toLowerCase();
+
+    if (packageType === 'AppImage') {
+        return assets.find(a => nameOf(a) === 'workspace.appimage')
+            || assets.find(a => /workspace.*\.appimage$/i.test(nameOf(a)))
+            || assets.find(a => /\.appimage$/i.test(nameOf(a)))
+            || null;
+    }
+    if (packageType === 'deb') {
+        return assets.find(a => nameOf(a) === 'workspace.deb')
+            || assets.find(a => /workspace.*\.deb$/i.test(nameOf(a)))
+            || assets.find(a => /\.deb$/i.test(nameOf(a)))
+            || null;
+    }
+    if (packageType === 'dmg') {
+        const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+        return assets.find(a => nameOf(a).includes(arch) && /\.dmg$/i.test(nameOf(a)))
+            || assets.find(a => /\.dmg$/i.test(nameOf(a)))
+            || null;
+    }
+    if (packageType === 'nsis') {
+        return assets.find(a => nameOf(a) === 'workspace.exe')
+            || assets.find(a => /workspace.*\.(exe|msi)$/i.test(nameOf(a)))
+            || assets.find(a => /\.(exe|msi)$/i.test(nameOf(a)))
+            || null;
+    }
+    return null;
 }
 
 async function downloadToFile(downloadUrl, destPath, onProgress) {
@@ -483,12 +520,220 @@ async function downloadToFile(downloadUrl, destPath, onProgress) {
     }
 }
 
+function sendUpdateProgress(payload) {
+    try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('app-update-download-progress', payload);
+        }
+    } catch (_) { }
+}
+
+function sendUpdateDone(payload) {
+    try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('app-update-download-done', payload);
+        }
+    } catch (_) { }
+}
+
+/**
+ * Mise à jour AppImage : télécharge et remplace le fichier via helper shell.
+ */
+async function downloadAndApplyAppImageUpdate() {
+    const currentApp = process.env.APPIMAGE;
+    if (!currentApp || !fs.existsSync(currentApp)) {
+        return { success: false, error: 'APPIMAGE introuvable (lance l’app via AppImage)' };
+    }
+
+    const release = await fetchLatestGithubRelease();
+    const asset = pickReleaseAsset(release, 'AppImage');
+    if (!asset?.browser_download_url) {
+        return { success: false, error: 'Aucun asset AppImage trouvé sur la release' };
+    }
+    const latest = normalizeSemver(release?.tag_name || release?.name || '');
+    const tempDir = path.join(app.getPath('temp'), 'workspace-manual-update');
+    try { fs.mkdirSync(tempDir, { recursive: true }); } catch (_) { }
+    const downloadedPath = path.join(tempDir, 'workspace.appimage');
+
+    const dl = await downloadToFile(asset.browser_download_url, downloadedPath, sendUpdateProgress);
+    linuxAppImageBackup(currentApp);
+
+    const helper = tryLinuxAppImageUpdateHelperDetailed(currentApp, downloadedPath);
+    if (!helper.ok) {
+        const detail = helper.error || null;
+        return {
+            success: false,
+            error: detail
+                ? `Impossible de préparer le remplacement : ${detail}`
+                : 'Impossible de préparer le remplacement (helper non lancé)',
+            detail,
+            debug: {
+                currentApp,
+                downloadedPath,
+                downloadedExists: fs.existsSync(downloadedPath),
+                destDir: path.dirname(currentApp)
+            }
+        };
+    }
+    sendUpdateDone({ success: true, latestVersion: latest || null });
+    return {
+        success: true,
+        latestVersion: latest || null,
+        bytes: dl.bytes,
+        message: 'Mise à jour téléchargée. Redémarre l’application pour l’appliquer.'
+    };
+}
+
+/**
+ * Mise à jour .deb : télécharge le paquet puis l’installe (pkexec dpkg / xdg-open en repli).
+ */
+async function downloadAndApplyDebUpdate() {
+    const release = await fetchLatestGithubRelease();
+    const asset = pickReleaseAsset(release, 'deb');
+    if (!asset?.browser_download_url) {
+        return { success: false, error: 'Aucun asset .deb trouvé sur la release' };
+    }
+    const latest = normalizeSemver(release?.tag_name || release?.name || '');
+    const tempDir = path.join(app.getPath('temp'), 'workspace-manual-update');
+    try { fs.mkdirSync(tempDir, { recursive: true }); } catch (_) { }
+    const downloadedPath = path.join(tempDir, 'workspace.deb');
+
+    const dl = await downloadToFile(asset.browser_download_url, downloadedPath, sendUpdateProgress);
+
+    // Installation privilégiée : pkexec dpkg -i, sinon ouverture du fichier pour install manuelle
+    const installResult = await new Promise((resolve) => {
+        let settled = false;
+        const done = (value) => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+        try {
+            const child = spawn('pkexec', ['dpkg', '-i', downloadedPath], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            child.once('error', () => done({ method: 'open' }));
+            if (typeof child.pid === 'number' && child.pid > 0) {
+                child.unref();
+                done({ method: 'pkexec', ok: true });
+            } else {
+                child.once('spawn', () => {
+                    child.unref();
+                    done({ method: 'pkexec', ok: true });
+                });
+            }
+        } catch (_) {
+            done({ method: 'open' });
+        }
+    });
+
+    if (installResult.method === 'open') {
+        try {
+            const { shell } = require('electron');
+            await shell.openPath(downloadedPath);
+        } catch (e) {
+            return {
+                success: false,
+                error: `Paquet téléchargé mais installation impossible : ${e?.message || e}. Fichier : ${downloadedPath}`
+            };
+        }
+        sendUpdateDone({ success: true, latestVersion: latest || null });
+        return {
+            success: true,
+            latestVersion: latest || null,
+            bytes: dl.bytes,
+            message: 'Paquet .deb téléchargé. Installez-le puis redémarrez Workspace.'
+        };
+    }
+
+    // pkexec lancé : quitter pour laisser dpkg remplacer les binaires
+    sendUpdateDone({ success: true, latestVersion: latest || null });
+    setTimeout(() => {
+        quittingForUpdate = true;
+        app.quit();
+    }, 800);
+    return {
+        success: true,
+        latestVersion: latest || null,
+        bytes: dl.bytes,
+        message: 'Installation du .deb en cours. L’application va se fermer ; relancez-la ensuite.'
+    };
+}
+
+/**
+ * macOS / Windows : téléchargement + installation via electron-updater.
+ */
+async function downloadAndApplyElectronUpdater() {
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: GITHUB_OWNER,
+        repo: GITHUB_REPO,
+        releaseType: 'release',
+        allowPrerelease: false
+    });
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = false;
+
+    return await new Promise((resolve) => {
+        let settled = false;
+        const finish = (result) => {
+            if (settled) return;
+            settled = true;
+            autoUpdater.removeAllListeners('download-progress');
+            autoUpdater.removeAllListeners('update-downloaded');
+            autoUpdater.removeAllListeners('update-not-available');
+            autoUpdater.removeAllListeners('error');
+            resolve(result);
+        };
+
+        autoUpdater.on('download-progress', (p) => {
+            const percent = Math.round(p.percent || 0);
+            sendUpdateProgress({
+                received: p.transferred || null,
+                total: p.total || null,
+                percent
+            });
+        });
+        autoUpdater.on('update-downloaded', (info) => {
+            const latest = normalizeSemver(info?.version || '');
+            sendUpdateDone({ success: true, latestVersion: latest || null });
+            finish({
+                success: true,
+                latestVersion: latest || null,
+                message: 'Mise à jour téléchargée. Installation et redémarrage…'
+            });
+            setTimeout(() => {
+                quittingForUpdate = true;
+                try {
+                    autoUpdater.quitAndInstall(true, true);
+                } catch (e) {
+                    console.warn('[Update] quitAndInstall failed:', e?.message || e);
+                    app.quit();
+                }
+            }, 600);
+        });
+        autoUpdater.on('update-not-available', () => {
+            finish({ success: false, error: 'Aucune mise à jour disponible' });
+        });
+        autoUpdater.on('error', (err) => {
+            finish({ success: false, error: err?.message || String(err) });
+        });
+
+        autoUpdater.checkForUpdates().catch((err) => {
+            finish({ success: false, error: err?.message || String(err) });
+        });
+    });
+}
+
 ipcMain.handle('check-app-update', async () => {
     try {
         const current = normalizeSemver(app.getVersion());
+        const packageType = getInstallPackageType();
         const release = await fetchLatestGithubRelease();
         const latest = normalizeSemver(release?.tag_name || release?.name || '');
-        const asset = pickAppImageAsset(release);
+        const asset = pickReleaseAsset(release, packageType);
         const downloadUrl = asset?.browser_download_url || null;
         const available = !!latest && compareSemver(latest, current) > 0;
         return {
@@ -497,6 +742,7 @@ ipcMain.handle('check-app-update', async () => {
             currentVersion: current,
             latestVersion: latest || null,
             downloadUrl,
+            packageType,
             releaseName: release?.name || null
         };
     } catch (e) {
@@ -506,67 +752,23 @@ ipcMain.handle('check-app-update', async () => {
 
 ipcMain.handle('download-app-update', async () => {
     try {
-        if (process.platform !== 'linux') {
-            return { success: false, error: 'Mise à jour manuelle supportée uniquement sous Linux AppImage' };
+        const packageType = getInstallPackageType();
+        let result;
+        if (packageType === 'AppImage') {
+            result = await downloadAndApplyAppImageUpdate();
+        } else if (packageType === 'deb') {
+            result = await downloadAndApplyDebUpdate();
+        } else if (packageType === 'dmg' || packageType === 'nsis') {
+            result = await downloadAndApplyElectronUpdater();
+        } else {
+            result = { success: false, error: `Mise à jour non supportée pour ce type d’installation (${packageType})` };
         }
-        const currentApp = process.env.APPIMAGE;
-        if (!currentApp || !fs.existsSync(currentApp)) {
-            return { success: false, error: 'APPIMAGE introuvable (lance l’app via AppImage)' };
+        if (!result?.success) {
+            sendUpdateDone({ success: false, error: result?.error || 'Téléchargement impossible' });
         }
-
-        const release = await fetchLatestGithubRelease();
-        const asset = pickAppImageAsset(release);
-        if (!asset?.browser_download_url) {
-            return { success: false, error: 'Aucun asset AppImage trouvé sur la release' };
-        }
-        const latest = normalizeSemver(release?.tag_name || release?.name || '');
-        const tempDir = path.join(app.getPath('temp'), 'workspace-manual-update');
-        try { fs.mkdirSync(tempDir, { recursive: true }); } catch (_) { }
-        const downloadedPath = path.join(tempDir, 'workspace.appimage');
-
-        const dl = await downloadToFile(asset.browser_download_url, downloadedPath, ({ received, total, percent }) => {
-            try {
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                    mainWindow.webContents.send('app-update-download-progress', { received, total, percent });
-                }
-            } catch (_) { }
-        });
-        linuxAppImageBackup(currentApp);
-
-        const helper = tryLinuxAppImageUpdateHelperDetailed(currentApp, downloadedPath);
-        if (!helper.ok) {
-            const detail = helper.error || null;
-            return {
-                success: false,
-                error: detail
-                    ? `Impossible de préparer le remplacement : ${detail}`
-                    : 'Impossible de préparer le remplacement (helper non lancé)',
-                detail,
-                debug: {
-                    currentApp,
-                    downloadedPath,
-                    downloadedExists: fs.existsSync(downloadedPath),
-                    destDir: path.dirname(currentApp)
-                }
-            };
-        }
-        try {
-            if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.webContents.send('app-update-download-done', { success: true, latestVersion: latest || null });
-            }
-        } catch (_) { }
-        return {
-            success: true,
-            latestVersion: latest || null,
-            bytes: dl.bytes,
-            message: 'Mise à jour téléchargée. Redémarre l’application pour l’appliquer.'
-        };
+        return result;
     } catch (e) {
-        try {
-            if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.webContents.send('app-update-download-done', { success: false, error: e?.message || String(e) });
-            }
-        } catch (_) { }
+        sendUpdateDone({ success: false, error: e?.message || String(e) });
         return { success: false, error: e?.message || String(e) };
     }
 });
