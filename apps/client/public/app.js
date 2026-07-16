@@ -543,9 +543,26 @@ class PageManager {
         const accountDropdown = document.getElementById('settingsDropdownAccount');
         if (accountDropdown) accountDropdown.style.display = 'none';
         this.syncThemeToggleUI();
-        this._updateDownloaded = false;
-        this.refreshUpdateUI();
+        // Ne pas reset _updateDownloaded : le bouton Redémarrer doit rester disponible
+        this.syncPendingUpdateFromMain().then(() => this.refreshUpdateUI());
         modal.classList.remove('hidden');
+    }
+
+    async syncPendingUpdateFromMain() {
+        try {
+            if (!window.electron?.invoke) return;
+            const pending = await window.electron.invoke('get-pending-app-update', {});
+            if (pending?.ready) {
+                this._updateDownloaded = true;
+                if (pending.latestVersion && this._updateInfo?.success) {
+                    this._updateInfo = {
+                        ...this._updateInfo,
+                        available: true,
+                        latestVersion: pending.latestVersion
+                    };
+                }
+            }
+        } catch (_) { /* ignore */ }
     }
 
     attachSettingsModalListeners() {
@@ -562,6 +579,7 @@ class PageManager {
         const themeToggleBtn = document.getElementById('settingsThemeDarkToggle');
         const btnCheckUpdate = document.getElementById('settingsBtnCheckUpdate');
         const btnDownloadUpdate = document.getElementById('settingsBtnDownloadUpdate');
+        const btnRestartUpdate = document.getElementById('settingsBtnRestartUpdate');
 
         if (!modal) return;
 
@@ -584,8 +602,8 @@ class PageManager {
             const progressFill = document.getElementById('settingsUpdateProgressFill');
             const progressText = document.getElementById('settingsUpdateProgressText');
             if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
-            this._updateDownloaded = false;
-            if (hint) hint.classList.add('hidden');
+            // Ne pas effacer un téléchargement déjà prêt sauf si l’utilisateur revérifie
+            if (hint && !this._updateDownloaded) hint.classList.add('hidden');
             if (progressWrap) progressWrap.classList.add('hidden');
             if (progressFill) progressFill.style.width = '0%';
             if (progressText) progressText.textContent = '0%';
@@ -599,6 +617,7 @@ class PageManager {
                 }
                 const res = await window.electron.invoke('check-app-update', {});
                 this._updateInfo = res;
+                if (res?.updateReady) this._updateDownloaded = true;
                 this.refreshUpdateUI();
             } catch (e) {
                 if (status) status.textContent = 'Erreur de vérification';
@@ -632,8 +651,9 @@ class PageManager {
                     if (!res?.success) {
                         throw new Error(res?.error || res?.detail || 'Téléchargement impossible');
                     }
-                    if (status) status.textContent = res?.latestVersion ? `Téléchargé (v${res.latestVersion})` : 'Téléchargé';
-                    // Le hint sera affiché via l'événement "done" pour éviter tout faux positif.
+                    if (status) status.textContent = res?.latestVersion ? `Prête (v${res.latestVersion})` : 'Mise à jour prête';
+                    this._updateDownloaded = true;
+                    // Toast + hint via l'événement app-update-download-done (évite le double affichage)
                 } catch (e) {
                     if (status) status.textContent = 'Erreur téléchargement';
                     if (errEl) {
@@ -641,6 +661,32 @@ class PageManager {
                         errEl.classList.remove('hidden');
                     }
                 } finally {
+                    this.refreshUpdateUI();
+                }
+            });
+        }
+
+        if (btnRestartUpdate) {
+            btnRestartUpdate.addEventListener('click', async () => {
+                const status = document.getElementById('settingsUpdateStatus');
+                const errEl = document.getElementById('settingsUpdateError');
+                if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
+                try {
+                    if (!window.electron?.invoke) throw new Error('Disponible uniquement dans l’application desktop');
+                    btnRestartUpdate.disabled = true;
+                    if (status) status.textContent = 'Installation et redémarrage…';
+                    const res = await window.electron.invoke('install-app-update', {});
+                    if (!res?.success) {
+                        throw new Error(res?.error || 'Installation impossible');
+                    }
+                    if (status) status.textContent = res?.message || 'Redémarrage…';
+                } catch (e) {
+                    if (status) status.textContent = 'Erreur installation';
+                    if (errEl) {
+                        errEl.textContent = e?.message || String(e);
+                        errEl.classList.remove('hidden');
+                    }
+                    btnRestartUpdate.disabled = false;
                     this.refreshUpdateUI();
                 }
             });
@@ -674,9 +720,15 @@ class PageManager {
                 const btnDownload = document.getElementById('settingsBtnDownloadUpdate');
                 if (payload?.success) {
                     if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
-                    if (status) status.textContent = payload?.latestVersion ? `Téléchargé (v${payload.latestVersion})` : 'Téléchargé';
+                    if (status) status.textContent = payload?.latestVersion ? `Prête (v${payload.latestVersion})` : 'Mise à jour prête';
                     this._updateDownloaded = true;
                     if (hint) hint.classList.remove('hidden');
+                    if (this.showNotification && payload?.needsRestart !== false) {
+                        this.showNotification(
+                            'Mise à jour téléchargée. Redémarrez pour l’appliquer.',
+                            'success'
+                        );
+                    }
                 } else {
                     this._updateDownloaded = false;
                     if (status) status.textContent = 'Erreur téléchargement';
@@ -775,19 +827,25 @@ class PageManager {
         const info = this._updateInfo;
         const status = document.getElementById('settingsUpdateStatus');
         const btnDownload = document.getElementById('settingsBtnDownloadUpdate');
+        const btnRestart = document.getElementById('settingsBtnRestartUpdate');
         const hint = document.getElementById('settingsUpdateHint');
         const badgeUser = document.getElementById('profileUpdateBadge');
         const badgeGuest = document.getElementById('profileUpdateBadgeGuest');
         const ping = document.getElementById('profileUpdatePing');
 
         const available = !!(info && info.success && info.available);
+        const readyToInstall = !!this._updateDownloaded;
 
-        if (badgeUser) badgeUser.classList.toggle('hidden', !available);
-        if (badgeGuest) badgeGuest.classList.toggle('hidden', !available);
-        if (ping) ping.classList.toggle('hidden', !available);
+        if (badgeUser) badgeUser.classList.toggle('hidden', !available && !readyToInstall);
+        if (badgeGuest) badgeGuest.classList.toggle('hidden', !available && !readyToInstall);
+        if (ping) ping.classList.toggle('hidden', !available && !readyToInstall);
 
         if (status) {
             if (!window.electron?.invoke) status.textContent = 'Disponible uniquement dans l’application desktop';
+            else if (readyToInstall) {
+                const v = info?.latestVersion;
+                status.textContent = v ? `Prête à installer (v${v})` : 'Mise à jour prête — redémarrez pour appliquer';
+            }
             else if (!info) status.textContent = 'Vérification…';
             else if (!info.success) status.textContent = info.error ? `Vérification impossible (${info.error})` : 'Vérification impossible';
             else if (available) status.textContent = `Mise à jour disponible : v${info.latestVersion} (actuelle v${info.currentVersion})`;
@@ -795,14 +853,19 @@ class PageManager {
         }
 
         if (btnDownload) {
-            // Le bouton n'apparaît qu'après vérification (info != null) et uniquement si une MAJ est disponible.
-            btnDownload.classList.toggle('hidden', !(info && info.success && available));
-            btnDownload.disabled = !(window.electron?.invoke && available);
+            // Masquer le téléchargement si déjà prêt ; sinon afficher si MAJ dispo
+            btnDownload.classList.toggle('hidden', readyToInstall || !(info && info.success && available));
+            btnDownload.disabled = !(window.electron?.invoke && available) || readyToInstall;
+        }
+
+        if (btnRestart) {
+            btnRestart.classList.toggle('hidden', !readyToInstall);
+            btnRestart.disabled = !(window.electron?.invoke && readyToInstall);
         }
 
         // Le hint ne doit apparaître qu'après un téléchargement réel et réussi.
         if (hint) {
-            hint.classList.toggle('hidden', !this._updateDownloaded);
+            hint.classList.toggle('hidden', !readyToInstall);
         }
     }
 

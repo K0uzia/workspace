@@ -217,6 +217,17 @@ html[data-theme-dark="0"] .settings-btn--primary:hover:not(:disabled) {
     color: #ffffff !important;
 }
 
+html[data-theme-dark="0"] .settings-btn--restart {
+    background: rgba(22, 163, 74, 0.14) !important;
+    color: #166534 !important;
+    border-color: rgba(22, 163, 74, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .settings-btn--restart:hover:not(:disabled) {
+    background: rgba(22, 163, 74, 0.22) !important;
+    color: #14532d !important;
+}
+
 html[data-theme-dark="0"] .settings-error {
     color: #b91c1c !important;
 }

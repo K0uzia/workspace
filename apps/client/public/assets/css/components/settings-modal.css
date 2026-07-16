@@ -211,6 +211,17 @@
     color: #e8eeff;
 }
 
+.settings-btn--restart {
+    background: rgba(74, 222, 128, 0.18);
+    color: #bbf7d0;
+    border-color: rgba(74, 222, 128, 0.4);
+}
+
+.settings-btn--restart:hover:not(:disabled) {
+    background: rgba(74, 222, 128, 0.28);
+    color: #dcfce7;
+}
+
 /* Compat anciens sélecteurs .btn dans settings */
 .settings-section .btn,
 .settings-form .btn,

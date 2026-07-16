@@ -269,8 +269,23 @@ let mainWindow;
 let splashWindow = null;
 /** true pendant quitAndInstall pour ne pas retarder la sortie (before-quit) */
 let quittingForUpdate = false;
+/** Mise à jour téléchargée, en attente d’un redémarrage explicite (Paramètres) */
+let pendingAppUpdate = null;
 /** Début du démarrage (app.ready) pour mesure de performance */
 let startupBegin = 0;
+
+function markUpdateInstalledFlag() {
+    const flagPath = path.join(app.getPath('userData'), 'workspace-update-installed.flag');
+    try {
+        fs.writeFileSync(flagPath, Date.now().toString(), 'utf8');
+    } catch (_) { /* ignore */ }
+}
+
+function setPendingAppUpdate(info) {
+    pendingAppUpdate = info && typeof info === 'object'
+        ? { ...info, ready: true, preparedAt: Date.now() }
+        : null;
+}
 
 /**
  * Instance unique: empêcher le double lancement et remettre la fenêtre existante au premier plan.
@@ -662,7 +677,8 @@ function sendUpdateDone(payload) {
 }
 
 /**
- * Mise à jour AppImage : télécharge et remplace le fichier via helper shell.
+ * Mise à jour AppImage : télécharge + prépare le helper (applique au prochain quit).
+ * Ne ferme PAS l’app — l’utilisateur doit cliquer « Redémarrer ».
  */
 async function downloadAndApplyAppImageUpdate() {
     const currentApp = process.env.APPIMAGE;
@@ -699,17 +715,26 @@ async function downloadAndApplyAppImageUpdate() {
             }
         };
     }
-    sendUpdateDone({ success: true, latestVersion: latest || null });
+    setPendingAppUpdate({
+        packageType: 'AppImage',
+        latestVersion: latest || null,
+        downloadedPath,
+        currentApp,
+        helperStarted: true
+    });
+    sendUpdateDone({ success: true, latestVersion: latest || null, needsRestart: true });
     return {
         success: true,
         latestVersion: latest || null,
         bytes: dl.bytes,
-        message: 'Mise à jour téléchargée. Redémarre l’application pour l’appliquer.'
+        needsRestart: true,
+        message: 'Mise à jour téléchargée. Redémarrez l’application pour l’appliquer.'
     };
 }
 
 /**
- * Mise à jour .deb : télécharge le paquet puis l’installe (pkexec dpkg / xdg-open en repli).
+ * Mise à jour .deb : télécharge uniquement (pas de pkexec / pas de quit).
+ * L’installation privilégiée se fait au clic « Redémarrer ».
  */
 async function downloadAndApplyDebUpdate() {
     const meta = await fetchLatestUpdateMeta('deb');
@@ -723,69 +748,24 @@ async function downloadAndApplyDebUpdate() {
 
     const dl = await downloadToFile(meta.downloadUrl, downloadedPath, sendUpdateProgress);
 
-    // Installation privilégiée : pkexec dpkg -i, sinon ouverture du fichier pour install manuelle
-    const installResult = await new Promise((resolve) => {
-        let settled = false;
-        const done = (value) => {
-            if (settled) return;
-            settled = true;
-            resolve(value);
-        };
-        try {
-            const child = spawn('pkexec', ['dpkg', '-i', downloadedPath], {
-                detached: true,
-                stdio: 'ignore'
-            });
-            child.once('error', () => done({ method: 'open' }));
-            if (typeof child.pid === 'number' && child.pid > 0) {
-                child.unref();
-                done({ method: 'pkexec', ok: true });
-            } else {
-                child.once('spawn', () => {
-                    child.unref();
-                    done({ method: 'pkexec', ok: true });
-                });
-            }
-        } catch (_) {
-            done({ method: 'open' });
-        }
+    setPendingAppUpdate({
+        packageType: 'deb',
+        latestVersion: latest || null,
+        downloadedPath
     });
-
-    if (installResult.method === 'open') {
-        try {
-            const { shell } = require('electron');
-            await shell.openPath(downloadedPath);
-        } catch (e) {
-            return {
-                success: false,
-                error: `Paquet téléchargé mais installation impossible : ${e?.message || e}. Fichier : ${downloadedPath}`
-            };
-        }
-        sendUpdateDone({ success: true, latestVersion: latest || null });
-        return {
-            success: true,
-            latestVersion: latest || null,
-            bytes: dl.bytes,
-            message: 'Paquet .deb téléchargé. Installez-le puis redémarrez Workspace.'
-        };
-    }
-
-    // pkexec lancé : quitter pour laisser dpkg remplacer les binaires
-    sendUpdateDone({ success: true, latestVersion: latest || null });
-    setTimeout(() => {
-        quittingForUpdate = true;
-        app.quit();
-    }, 800);
+    sendUpdateDone({ success: true, latestVersion: latest || null, needsRestart: true });
     return {
         success: true,
         latestVersion: latest || null,
         bytes: dl.bytes,
-        message: 'Installation du .deb en cours. L’application va se fermer ; relancez-la ensuite.'
+        needsRestart: true,
+        message: 'Paquet .deb téléchargé. Redémarrez pour installer (demande admin si besoin).'
     };
 }
 
 /**
- * macOS / Windows : téléchargement + installation via electron-updater.
+ * macOS / Windows : téléchargement via electron-updater.
+ * Ne appelle PAS quitAndInstall — l’utilisateur doit confirmer via « Redémarrer ».
  */
 async function downloadAndApplyElectronUpdater() {
     const { autoUpdater } = require('electron-updater');
@@ -818,21 +798,19 @@ async function downloadAndApplyElectronUpdater() {
         });
         autoUpdater.on('update-downloaded', (info) => {
             const latest = normalizeSemver(info?.version || '');
-            sendUpdateDone({ success: true, latestVersion: latest || null });
+            const packageType = getInstallPackageType();
+            setPendingAppUpdate({
+                packageType,
+                latestVersion: latest || null,
+                via: 'electron-updater'
+            });
+            sendUpdateDone({ success: true, latestVersion: latest || null, needsRestart: true });
             finish({
                 success: true,
                 latestVersion: latest || null,
-                message: 'Mise à jour téléchargée. Installation et redémarrage…'
+                needsRestart: true,
+                message: 'Mise à jour téléchargée. Redémarrez pour l’appliquer.'
             });
-            setTimeout(() => {
-                quittingForUpdate = true;
-                try {
-                    autoUpdater.quitAndInstall(true, true);
-                } catch (e) {
-                    console.warn('[Update] quitAndInstall failed:', e?.message || e);
-                    app.quit();
-                }
-            }, 600);
         });
         autoUpdater.on('update-not-available', () => {
             finish({ success: false, error: 'Aucune mise à jour disponible' });
@@ -845,6 +823,110 @@ async function downloadAndApplyElectronUpdater() {
             finish({ success: false, error: err?.message || String(err) });
         });
     });
+}
+
+/**
+ * Applique la mise à jour déjà téléchargée (consentement utilisateur requis).
+ * isSilent=false pour afficher l’installeur / UAC si besoin (Windows).
+ */
+async function installPendingAppUpdate() {
+    if (!pendingAppUpdate?.ready) {
+        return { success: false, error: 'Aucune mise à jour prête à installer. Téléchargez-la d’abord.' };
+    }
+
+    const packageType = pendingAppUpdate.packageType || getInstallPackageType();
+    markUpdateInstalledFlag();
+
+    if (packageType === 'AppImage') {
+        const currentApp = pendingAppUpdate.currentApp || process.env.APPIMAGE;
+        const downloadedPath = pendingAppUpdate.downloadedPath;
+        if (!pendingAppUpdate.helperStarted) {
+            if (!currentApp || !downloadedPath || !fs.existsSync(downloadedPath)) {
+                return { success: false, error: 'Fichier AppImage de mise à jour introuvable' };
+            }
+            const helper = tryLinuxAppImageUpdateHelperDetailed(currentApp, downloadedPath);
+            if (!helper.ok) {
+                return { success: false, error: helper.error || 'Impossible de lancer le helper AppImage' };
+            }
+        }
+        quittingForUpdate = true;
+        setTimeout(() => app.quit(), 300);
+        return { success: true, message: 'Redémarrage pour appliquer la mise à jour…' };
+    }
+
+    if (packageType === 'deb') {
+        const downloadedPath = pendingAppUpdate.downloadedPath;
+        if (!downloadedPath || !fs.existsSync(downloadedPath)) {
+            return { success: false, error: 'Paquet .deb introuvable' };
+        }
+        const installResult = await new Promise((resolve) => {
+            let settled = false;
+            const done = (value) => {
+                if (settled) return;
+                settled = true;
+                resolve(value);
+            };
+            try {
+                const child = spawn('pkexec', ['dpkg', '-i', downloadedPath], {
+                    detached: true,
+                    stdio: 'ignore'
+                });
+                child.once('error', () => done({ method: 'open' }));
+                if (typeof child.pid === 'number' && child.pid > 0) {
+                    child.unref();
+                    done({ method: 'pkexec', ok: true });
+                } else {
+                    child.once('spawn', () => {
+                        child.unref();
+                        done({ method: 'pkexec', ok: true });
+                    });
+                }
+            } catch (_) {
+                done({ method: 'open' });
+            }
+        });
+
+        if (installResult.method === 'open') {
+            try {
+                const { shell } = require('electron');
+                await shell.openPath(downloadedPath);
+            } catch (e) {
+                return {
+                    success: false,
+                    error: `Installation impossible : ${e?.message || e}. Fichier : ${downloadedPath}`
+                };
+            }
+            return {
+                success: true,
+                message: 'Paquet ouvert pour installation manuelle. Relancez Workspace ensuite.'
+            };
+        }
+
+        quittingForUpdate = true;
+        setTimeout(() => app.quit(), 500);
+        return {
+            success: true,
+            message: 'Installation en cours (demande admin). L’application va se fermer.'
+        };
+    }
+
+    if (packageType === 'dmg' || packageType === 'nsis') {
+        const { autoUpdater } = require('electron-updater');
+        quittingForUpdate = true;
+        try {
+            // isSilent=false → l’utilisateur voit l’installeur / UAC si nécessaire
+            autoUpdater.quitAndInstall(false, true);
+            return { success: true, message: 'Installation et redémarrage…' };
+        } catch (e) {
+            console.warn('[Update] quitAndInstall failed:', e?.message || e);
+            try {
+                app.quit();
+            } catch (_) { /* ignore */ }
+            return { success: false, error: e?.message || String(e) };
+        }
+    }
+
+    return { success: false, error: `Installation non supportée (${packageType})` };
 }
 
 ipcMain.handle('check-app-update', async () => {
@@ -862,7 +944,8 @@ ipcMain.handle('check-app-update', async () => {
             latestVersion: latest || null,
             downloadUrl,
             packageType,
-            releaseName: meta?.releaseName || null
+            releaseName: meta?.releaseName || null,
+            updateReady: !!(pendingAppUpdate?.ready)
         };
     } catch (e) {
         return { success: false, error: e?.message || String(e) };
@@ -890,6 +973,23 @@ ipcMain.handle('download-app-update', async () => {
         sendUpdateDone({ success: false, error: e?.message || String(e) });
         return { success: false, error: e?.message || String(e) };
     }
+});
+
+ipcMain.handle('install-app-update', async () => {
+    try {
+        return await installPendingAppUpdate();
+    } catch (e) {
+        return { success: false, error: e?.message || String(e) };
+    }
+});
+
+ipcMain.handle('get-pending-app-update', async () => {
+    return {
+        success: true,
+        ready: !!(pendingAppUpdate?.ready),
+        packageType: pendingAppUpdate?.packageType || null,
+        latestVersion: pendingAppUpdate?.latestVersion || null
+    };
 });
 
 let pdfWindows = new Map();

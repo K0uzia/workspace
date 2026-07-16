@@ -23,7 +23,9 @@ const ALLOWED_CHANNELS = {
         'read-file-as-base64',
         'run-lsblk',
         'check-app-update',
-        'download-app-update'
+        'download-app-update',
+        'install-app-update',
+        'get-pending-app-update'
     ],
     on: [
         'update-was-installed',

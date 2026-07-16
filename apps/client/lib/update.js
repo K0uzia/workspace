@@ -1,6 +1,11 @@
 /**
  * Module de mise à jour automatique (electron-updater).
  * Utilisé par le main process lorsque l'app est packagée.
+ *
+ * Important : au téléchargement terminé, on NE ferme PAS l'app et on
+ * n'appelle PAS quitAndInstall. L'utilisateur doit confirmer via
+ * Paramètres → « Redémarrer pour appliquer ».
+ *
  * @module lib/update
  */
 
@@ -23,6 +28,7 @@ const fs = require('fs');
  * @param {(value: boolean) => void} opts.setQuittingForUpdate
  * @param {(currentAppPath: string) => void} opts.linuxAppImageBackup
  * @param {(currentAppPath: string, newAppPath: string) => boolean} opts.tryLinuxAppImageUpdateHelper
+ * @param {(payload: object) => void} [opts.onUpdateReady] - Notifie qu'une MAJ est prête (sans installer)
  * @param {(payload: object) => void} [opts.sessionLog] - Optionnel, pour debug
  * @returns {Promise<void>}
  */
@@ -35,11 +41,8 @@ async function runAutoUpdate(opts) {
         setSplashProgress,
         setSplashUpdateSuccess,
         launchApp,
-        getSplashWindow,
         getMainWindow,
-        setQuittingForUpdate,
-        linuxAppImageBackup,
-        tryLinuxAppImageUpdateHelper,
+        onUpdateReady = () => {},
         sessionLog = () => {}
     } = opts;
 
@@ -93,8 +96,13 @@ async function runAutoUpdate(opts) {
             setSplashMessage(percent < 100 ? `Téléchargement… ${percent} %` : 'Téléchargement terminé.');
             setSplashProgress(percent);
         });
-        autoUpdater.on('update-downloaded', () => {
-            sessionLog({ hypothesisId: 'H1', location: 'lib/update.js:update-downloaded', message: 'update-downloaded fired', data: { updateCheckFinished } });
+        autoUpdater.on('update-downloaded', (info) => {
+            sessionLog({
+                hypothesisId: 'H1',
+                location: 'lib/update.js:update-downloaded',
+                message: 'update-downloaded fired (stay open, await user restart)',
+                data: { updateCheckFinished, version: info?.version || null }
+            });
             if (updateCheckFinished) return;
             updateCheckFinished = true;
             if (timeoutId) {
@@ -102,51 +110,61 @@ async function runAutoUpdate(opts) {
                 timeoutId = null;
             }
             setSplashProgress(null);
-            setSplashMessage('Installation et redémarrage…');
-            const flagPath = pathModule.join(app.getPath('userData'), 'workspace-update-installed.flag');
-            try {
-                fsModule.writeFileSync(flagPath, Date.now().toString(), 'utf8');
-            } catch (_) { }
-            sessionLog({ hypothesisId: 'H3', location: 'lib/update.js:update-downloaded', message: 'flag written, before setImmediate', data: {} });
-            setSplashUpdateSuccess('Redémarrage en cours…');
-            setImmediate(() => {
-                setTimeout(() => {
-                    setQuittingForUpdate(true);
-                    const currentApp = process.env.APPIMAGE;
-                    let newApp = autoUpdater.installerPath;
-                    // Sous Linux AppImage uniquement : remplacer le fichier via helper shell
-                    if (process.platform === 'linux' && currentApp && newApp && fsModule.existsSync(newApp)) {
-                        const updateTempDir = pathModule.join(app.getPath('temp'), 'workspace-update');
-                        try {
-                            fsModule.mkdirSync(updateTempDir, { recursive: true });
-                            const tempAppPath = pathModule.join(updateTempDir, 'workspace.AppImage');
-                            fsModule.renameSync(newApp, tempAppPath);
-                            newApp = tempAppPath;
-                            console.log('[Update] AppImage déplacée vers dossier temporaire:', newApp);
-                        } catch (e) {
-                            console.warn('[Update] Déplacement vers temp échoué, utilisation du chemin par défaut:', e?.message);
-                        }
-                        const helperOk = tryLinuxAppImageUpdateHelper(currentApp, newApp);
-                        if (helperOk) {
-                            sessionLog({ hypothesisId: 'H2-H5', location: 'lib/update.js:update-downloaded', message: 'linux helper launched, force exit', data: {} });
-                            const splashWindow = getSplashWindow();
-                            const mainWindow = getMainWindow();
-                            if (splashWindow && !splashWindow.isDestroyed()) {
-                                splashWindow.destroy();
-                            }
-                            if (mainWindow && !mainWindow.isDestroyed()) {
-                                mainWindow.destroy();
-                            }
-                            setImmediate(() => {
-                                app.exit(0);
-                            });
-                            return;
-                        }
+            setSplashMessage('Mise à jour prête. Lancement…');
+            setSplashUpdateSuccess('Mise à jour téléchargée — redémarrez depuis Paramètres pour l’appliquer.');
+
+            // Préparer l’AppImage (backup + copie temp) sans quitter ni installer
+            const currentApp = process.env.APPIMAGE;
+            let newApp = autoUpdater.installerPath;
+            let preparedAppImage = null;
+            if (process.platform === 'linux' && currentApp && newApp && fsModule.existsSync(newApp)) {
+                try {
+                    if (typeof opts.linuxAppImageBackup === 'function') {
+                        opts.linuxAppImageBackup(currentApp);
                     }
-                    sessionLog({ hypothesisId: 'H2-H5', location: 'lib/update.js:update-downloaded', message: 'calling quitAndInstall', data: {} });
-                    autoUpdater.quitAndInstall(true, true);
-                }, 500);
-            });
+                    const updateTempDir = pathModule.join(app.getPath('temp'), 'workspace-update');
+                    fsModule.mkdirSync(updateTempDir, { recursive: true });
+                    const tempAppPath = pathModule.join(updateTempDir, 'workspace.AppImage');
+                    fsModule.renameSync(newApp, tempAppPath);
+                    preparedAppImage = tempAppPath;
+                    console.log('[Update] AppImage prête (appliquée au redémarrage):', preparedAppImage);
+                } catch (e) {
+                    console.warn('[Update] Préparation AppImage échouée:', e?.message);
+                    preparedAppImage = newApp;
+                }
+            }
+
+            try {
+                onUpdateReady({
+                    version: info?.version || null,
+                    packageType: process.platform === 'linux'
+                        ? (currentApp ? 'AppImage' : 'deb')
+                        : (process.platform === 'darwin' ? 'dmg' : 'nsis'),
+                    downloadedPath: preparedAppImage,
+                    currentApp: currentApp || null,
+                    via: 'electron-updater',
+                    // Helper AppImage lancé uniquement au redémarrage utilisateur
+                    helperStarted: false
+                });
+            } catch (e) {
+                console.warn('[Update] onUpdateReady failed:', e?.message);
+            }
+
+            // Notifier le renderer une fois la fenêtre principale prête
+            setTimeout(() => {
+                try {
+                    const mainWindow = typeof getMainWindow === 'function' ? getMainWindow() : null;
+                    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+                        mainWindow.webContents.send('app-update-download-done', {
+                            success: true,
+                            latestVersion: info?.version || null,
+                            needsRestart: true
+                        });
+                    }
+                } catch (_) { /* ignore */ }
+            }, 1500);
+
+            setTimeout(launchApp, 800);
         });
         autoUpdater.on('update-not-available', (info) => {
             const remoteVersion = info?.version || '?';

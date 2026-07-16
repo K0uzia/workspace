@@ -31,6 +31,9 @@
                     <button type="button" id="settingsBtnDownloadUpdate" class="settings-btn settings-btn--primary hidden" disabled>
                         <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger &amp; préparer
                     </button>
+                    <button type="button" id="settingsBtnRestartUpdate" class="settings-btn settings-btn--restart hidden" disabled>
+                        <i class="fa-solid fa-power-off" aria-hidden="true"></i> Redémarrer pour appliquer
+                    </button>
                 </div>
 
                 <div class="settings-update-progress hidden" id="settingsUpdateProgress">
@@ -42,7 +45,7 @@
 
                 <div class="settings-update-hint hidden" id="settingsUpdateHint">
                     <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-                    <span>Mise à jour téléchargée. <strong>Redémarrez l’application</strong> pour l’appliquer.</span>
+                    <span>Mise à jour prête. Cliquez sur <strong>Redémarrer pour appliquer</strong> (une demande admin peut apparaître).</span>
                 </div>
                 <div class="settings-error hidden" id="settingsUpdateError"></div>
             </section>
