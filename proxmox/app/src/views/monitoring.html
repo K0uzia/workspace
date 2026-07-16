@@ -37,24 +37,20 @@
       <img src="/monitoring/assets/favicon.png" alt="" class="sidebar-logo-img">
       <div class="sidebar-logo-text">
         <div class="title">Admin Panel</div>
-        <div class="sub">Workspace Backend</div>
+        <div class="sub">Agenda · Réception</div>
       </div>
     </div>
     <div class="sidebar-user">Connecté en tant que<strong id="sidebar-username">—</strong></div>
     <nav>
       <div class="nav-section">Tableau de bord</div>
       <div class="nav-item active" data-page="dashboard"><span class="icon"><i class="fa-solid fa-gauge"></i></span> Dashboard</div>
-      <div class="nav-section">Base de données</div>
+      <div class="nav-section">Données métier</div>
       <div class="nav-item" data-page="users"><span class="icon"><i class="fa-solid fa-users"></i></span> Utilisateurs</div>
       <div class="nav-item" data-page="agenda"><span class="icon"><i class="fa-solid fa-calendar-days"></i></span> Agenda</div>
       <div class="nav-item" data-page="reception"><span class="icon"><i class="fa-solid fa-box-open"></i></span> Réception</div>
-      <div class="nav-section">Configuration client</div>
-      <div class="nav-item" data-page="config-apps"><span class="icon"><i class="fa-solid fa-desktop"></i></span> Applications</div>
-      <div class="nav-item" data-page="config-folders"><span class="icon"><i class="fa-solid fa-folder"></i></span> Dossiers</div>
       <div class="nav-section">Supervision</div>
       <div class="nav-item" data-page="errors"><span class="icon"><i class="fa-solid fa-circle-exclamation"></i></span> Issues</div>
       <div class="nav-item" data-page="db"><span class="icon"><i class="fa-solid fa-database"></i></span> Base de données</div>
-      <div class="nav-item" data-page="chat"><span class="icon"><i class="fa-solid fa-comments"></i></span> Chat</div>
       <div class="nav-item" data-page="logs"><span class="icon"><i class="fa-solid fa-list"></i></span> Logs</div>
       <div class="nav-item" data-page="config-smtp"><span class="icon"><i class="fa-solid fa-envelope-open-text"></i></span> Email</div>
     </nav>
@@ -69,11 +65,11 @@
 
     <!-- ── Dashboard ── -->
     <div class="page active" id="page-dashboard">
-      <div class="page-header"><h1>Dashboard</h1><p>Vue d'ensemble du serveur</p></div>
+      <div class="page-header"><h1>Dashboard</h1><p>Vue d'ensemble — Agenda, Réception et supervision</p></div>
       <div class="stats-row" id="dash-stats">
         <div class="stat-card blue"><div class="label">Clients connectés</div><div class="value" id="ds-connected">—</div></div>
         <div class="stat-card green"><div class="label">Comptes (inscrits)</div><div class="value" id="ds-users">—</div></div>
-        <div class="stat-card info" style="--info:#8b5cf6"><div class="label">Messages chat</div><div class="value" id="ds-messages">—</div></div>
+        <div class="stat-card info" style="--info:#8b5cf6"><div class="label">Événements agenda</div><div class="value" id="ds-events">—</div></div>
         <div class="stat-card orange"><div class="label">Lots</div><div class="value" id="ds-lots">—</div></div>
         <div class="stat-card green"><div class="label">Uptime</div><div class="value" id="ds-uptime" style="font-size:18px">—</div></div>
       </div>
@@ -135,7 +131,7 @@
 
     <!-- ── Agenda ── -->
     <div class="page" id="page-agenda">
-      <div class="page-header"><h1>Agenda</h1><p>Gérer les événements</p></div>
+      <div class="page-header"><h1>Agenda</h1><p>Événements du client Workspace</p></div>
       <div class="card">
         <div class="card-header">
           <div class="toolbar">
@@ -154,7 +150,7 @@
 
     <!-- ── Réception ── -->
     <div class="page" id="page-reception">
-      <div class="page-header"><h1>Réception</h1><p>Lots, marques et modèles</p></div>
+      <div class="page-header"><h1>Réception</h1><p>Lots, disques, commandes, dons et prêts</p></div>
       <div class="sub-tabs">
         <div class="sub-tab active" data-sub="lots">Lots</div>
         <div class="sub-tab" data-sub="disques">Lots disques</div>
@@ -293,73 +289,6 @@
       </div>
     </div>
 
-    <!-- ── Raccourcis web ── -->
-    <div class="page" id="page-shortcuts">
-      <div class="page-header"><h1>Raccourcis web</h1><p>Gérer les catégories et raccourcis de chaque utilisateur</p></div>
-      <div class="sub-tabs">
-        <div class="sub-tab active" data-sub="sc-cats">Catégories</div>
-        <div class="sub-tab" data-sub="sc-links">Raccourcis</div>
-      </div>
-      <div class="sub-panel active" id="sub-sc-cats">
-        <div class="card">
-          <div class="card-header">
-            <h2>Catégories</h2>
-            <button class="btn btn-primary btn-sm" onclick="openCatModal()">+ Ajouter</button>
-          </div>
-          <div class="table-wrap">
-            <table><thead><tr><th>#</th><th>Utilisateur</th><th>Nom</th><th>Raccourcis</th><th>Actions</th></tr></thead>
-            <tbody id="cats-table"><tr class="empty-row"><td colspan="5">Chargement…</td></tr></tbody></table>
-          </div>
-        </div>
-      </div>
-      <div class="sub-panel" id="sub-sc-links">
-        <div class="card">
-          <div class="card-header">
-            <h2>Raccourcis</h2>
-            <button class="btn btn-primary btn-sm" onclick="openShortcutModal()">+ Ajouter</button>
-          </div>
-          <div class="table-wrap">
-            <table><thead><tr><th>#</th><th>Utilisateur</th><th>Titre</th><th>URL</th><th>Catégorie</th><th>Actions</th></tr></thead>
-            <tbody id="shortcuts-table"><tr class="empty-row"><td colspan="6">Chargement…</td></tr></tbody></table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Config Applications ── -->
-    <div class="page" id="page-config-apps">
-      <div class="page-header"><h1>Applications</h1><p>Applications lancées depuis le client (par preset)</p></div>
-      <div class="card config-card-apps">
-        <div class="card-body config-presets-grid" id="app-presets-container">
-          <div class="loading-inline">Chargement…</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Config Dossiers ── -->
-    <div class="page" id="page-config-folders">
-      <div class="page-header"><h1>Dossiers</h1><p>Dossiers accessibles depuis le client (par preset)</p></div>
-      <div class="card config-card-folders">
-        <div class="card-body config-presets-grid" id="folder-presets-container">
-          <div class="loading-inline">Chargement…</div>
-        </div>
-      </div>
-      <div class="card config-card-secondary">
-        <div class="card-header"><h2>Filtres globaux</h2></div>
-        <div class="card-body">
-          <div class="form-group">
-            <label class="form-label">Extensions ignorées (séparées par des virgules)</label>
-            <input type="text" class="form-input" id="folder-ignore-ext" placeholder=".tmp, .bak, .log">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Suffixes ignorés (séparées par des virgules)</label>
-            <input type="text" class="form-input" id="folder-ignore-suffix" placeholder=".tmp, .bak, ~">
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveFolderGlobals()"><i class="fa-solid fa-floppy-disk"></i> Sauvegarder filtres</button>
-        </div>
-      </div>
-    </div>
-
     <!-- ── Config Email (SMTP) ── -->
     <div class="page" id="page-config-smtp">
       <div class="page-header">
@@ -411,7 +340,7 @@
 
     <!-- ── Issues ── -->
     <div class="page" id="page-errors">
-      <div class="page-header"><h1>Issues</h1><p>Feedback, bug reports et erreurs clients</p></div>
+      <div class="page-header"><h1>Issues</h1><p>Bug reports et erreurs techniques clients</p></div>
       <div class="stats-row" id="err-stats-row"></div>
       <div class="card issues-toolbar-card">
         <div class="card-header">
@@ -423,14 +352,6 @@
             </select>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="loadLogErrors()"><i class="fa-solid fa-rotate-right"></i> Actualiser</button>
-        </div>
-      </div>
-
-      <div class="card issues-section-card">
-        <div class="card-header"><h2><i class="fa-solid fa-comment"></i> Feedback</h2><span class="badge badge-info" id="err-feedback-count">0</span></div>
-        <div class="table-wrap">
-          <table class="log-table"><thead><tr><th>#</th><th>Message</th><th>Client</th><th>Date</th><th>Statut</th><th></th></tr></thead>
-          <tbody id="log-errors-feedback-table"></tbody></table>
         </div>
       </div>
 
@@ -475,28 +396,9 @@
       </div>
     </div>
 
-    <!-- ── Chat ── -->
-    <div class="page" id="page-chat">
-      <div class="page-header"><h1>Chat</h1><p>Messages récents et modération</p></div>
-      <div class="card">
-        <div class="card-header">
-          <h2>Messages chat récents</h2>
-          <div class="flex-gap">
-            <button class="btn btn-secondary btn-sm" onclick="toggleSelectAllChat()"><i class="fa-solid fa-check-double"></i> Tout sélectionner</button>
-            <button class="btn btn-danger btn-sm" id="btn-delete-selected" style="display:none" onclick="deleteSelectedMessages()"><i class="fa-solid fa-trash"></i> Supprimer la sélection</button>
-            <button class="btn btn-secondary btn-sm" onclick="loadLogChat()"><i class="fa-solid fa-rotate-right"></i></button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="log-table"><thead><tr><th style="width:32px"><input type="checkbox" id="chat-select-all" onchange="onChatSelectAll(this)"></th><th>#</th><th>Utilisateur</th><th>Message</th><th>Date</th><th></th></tr></thead>
-          <tbody id="log-chat-table"></tbody></table>
-        </div>
-      </div>
-    </div>
-
     <!-- ── Logs ── -->
     <div class="page" id="page-logs">
-      <div class="page-header"><h1>Logs</h1><p>Supervision par catégorie</p></div>
+      <div class="page-header"><h1>Logs</h1><p>Supervision Auth, API et Réception</p></div>
       <div class="log-tabs">
         <div class="log-tab active" data-log="auth"><i class="fa-solid fa-lock"></i> Auth</div>
         <div class="log-tab" data-log="api"><i class="fa-solid fa-globe"></i> API</div>
@@ -532,34 +434,6 @@
         <div class="card">
           <div class="card-header"><h2>Logs réception / lots</h2><button class="btn btn-secondary btn-sm" onclick="loadLogReception()"><i class="fa-solid fa-rotate-right"></i></button></div>
           <div class="card-body"><div class="log-terminal" id="log-reception-terminal"></div></div>
-        </div>
-      </div>
-
-      <!-- Issues (erreurs auto + feedback utilisateurs) -->
-      <div class="log-panel" id="log-errors">
-        <div class="stats-row" id="err-stats-row"></div>
-        <div class="card">
-          <div class="card-header">
-            <div class="toolbar">
-              <select id="err-filter-status" onchange="loadLogErrors()">
-                <option value="">Tous statuts</option>
-                <option value="unresolved">Non résolues</option>
-                <option value="resolved">Résolues</option>
-              </select>
-              <select id="err-filter-type" onchange="loadLogErrors()">
-                <option value="">Tous types</option>
-                <option value="feedback">Feedback</option>
-                <option value="bug_report">Bug report</option>
-                <option value="uncaught_error">Erreur JS</option>
-                <option value="unhandled_rejection">Promise rejetée</option>
-              </select>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="loadLogErrors()"><i class="fa-solid fa-rotate-right"></i></button>
-          </div>
-          <div class="table-wrap">
-            <table class="log-table"><thead><tr><th>#</th><th>Type</th><th>Message / Retour utilisateur</th><th>Client</th><th>Date</th><th>Statut</th><th></th></tr></thead>
-            <tbody id="log-errors-table"></tbody></table>
-          </div>
         </div>
       </div>
 
@@ -657,21 +531,6 @@
   </div>
 </div>
 
-<!-- Cat modal -->
-<div class="modal-overlay" id="cat-modal">
-  <div class="modal">
-    <div class="modal-header"><h3>Ajouter une catégorie</h3><button class="modal-close" onclick="closeModal('cat-modal')">×</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label>Utilisateur (ID) *</label><select id="cat-form-user"></select></div>
-      <div class="form-group"><label>Nom *</label><input type="text" id="cat-form-name"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('cat-modal')">Annuler</button>
-      <button class="btn btn-primary" onclick="saveCat()">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
 <!-- Lot modal (edit + items) -->
 <div class="modal-overlay" id="lot-modal">
   <div class="modal" style="width:80vw;max-width:80vw">
@@ -749,32 +608,13 @@
   </div>
 </div>
 
-<!-- Shortcut modal -->
-<div class="modal-overlay" id="shortcut-modal">
-  <div class="modal">
-    <div class="modal-header"><h3 id="sc-modal-title">Ajouter un raccourci</h3><button class="modal-close" onclick="closeModal('shortcut-modal')">×</button></div>
-    <div class="modal-body">
-      <input type="hidden" id="sc-edit-id">
-      <div class="form-group"><label>Utilisateur *</label><select id="sc-form-user"></select></div>
-      <div class="form-group"><label>Titre *</label><input type="text" id="sc-form-title"></div>
-      <div class="form-group"><label>URL *</label><input type="url" id="sc-form-url" placeholder="https://…"></div>
-      <div class="form-group"><label>Description</label><input type="text" id="sc-form-desc"></div>
-      <div class="form-group"><label>Catégorie</label><select id="sc-form-cat"><option value="">— Aucune —</option></select></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('shortcut-modal')">Annuler</button>
-      <button class="btn btn-primary" onclick="saveShortcut()">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
 <!-- Issue response modal (réponse / notes par type de demande) -->
 <div class="modal-overlay" id="issue-response-modal">
   <div class="modal">
     <div class="modal-header"><h3>Réponse / Notes</h3><button class="modal-close" onclick="closeModal('issue-response-modal')">×</button></div>
     <div class="modal-body">
       <input type="hidden" id="issue-response-id">
-      <p class="text-muted" style="font-size:12px;margin-bottom:10px">Réponse ou note interne pour cette demande (feedback, bug, etc.).</p>
+      <p class="text-muted" style="font-size:12px;margin-bottom:10px">Réponse ou note interne pour ce bug report ou cette erreur.</p>
       <div class="form-group">
         <label class="form-label">Notes</label>
         <textarea id="issue-response-notes" rows="4" placeholder="Votre réponse ou note…"></textarea>
@@ -906,7 +746,6 @@
 let TOKEN = sessionStorage.getItem('admin_token') || '';
 let CURRENT_USER = sessionStorage.getItem('admin_user') || '';
 let allUsers = [];
-let allCategories = [];
 let currentMarqueId = null;
 let rawLogsCache = '';
 let currentCommandeDetail = null;
@@ -1193,7 +1032,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
 function navigateTo(page) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + page));
-  const loaders = { dashboard: loadDashboard, users: loadUsers, agenda: loadAgenda, reception: loadReception, shortcuts: loadShortcuts, 'config-apps': loadAppConfig, 'config-folders': loadFolderConfig, 'config-smtp': loadSmtpConfig, errors: loadLogErrors, db: loadLogDb, chat: loadLogChat, logs: () => loadLogAuth() };
+  const loaders = { dashboard: loadDashboard, users: loadUsers, agenda: loadAgenda, reception: loadReception, 'config-smtp': loadSmtpConfig, errors: loadLogErrors, db: loadLogDb, logs: () => loadLogAuth() };
   if (loaders[page]) loaders[page]();
 }
 
@@ -1210,8 +1049,6 @@ document.querySelectorAll('.sub-tab').forEach(el => {
     if (sub === 'commandes') { loadCommandes(); loadCommandeProducts(); }
     if (sub === 'dons') loadDons();
     if (sub === 'prets') loadPrets();
-    if (sub === 'sc-cats') loadCategories();
-    if (sub === 'sc-links') loadShortcutLinks();
   });
 });
 
@@ -1326,7 +1163,7 @@ async function loadDashboard() {
     }
     if (db && db.stats) {
       document.getElementById('ds-users').textContent = db.stats.users;
-      document.getElementById('ds-messages').textContent = db.stats.messages;
+      document.getElementById('ds-events').textContent = db.stats.events;
       document.getElementById('ds-lots').textContent = db.stats.lots;
     }
     const authenticated = (ws && ws.connectedUsers) ? ws.connectedUsers : [];
@@ -2408,387 +2245,7 @@ async function deleteModele(id) {
   if (currentMarqueId) loadModeles(currentMarqueId);
 }
 
-// ── Raccourcis web ───────────────────────────────────────────────────────────
-function loadShortcuts() { loadCategories(); }
-
-async function loadCategories() {
-  const data = await api('GET', '/api/admin/shortcut-categories');
-  allCategories = data.categories || [];
-  const tbody = document.getElementById('cats-table');
-  if (!allCategories.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Aucune catégorie</td></tr>'; return; }
-  tbody.innerHTML = allCategories.map(c => `
-    <tr>
-      <td>${c.id}</td>
-      <td>${escHtml(c.username||'—')}</td>
-      <td>${escHtml(c.name)}</td>
-      <td><span class="badge badge-info">${c.shortcut_count}</span></td>
-      <td><button class="btn btn-danger btn-sm btn-icon" onclick="deleteCat(${c.id})"><i class="fa-solid fa-trash"></i></button></td>
-    </tr>`).join('');
-}
-
-async function loadShortcutLinks() {
-  const data = await api('GET', '/api/admin/shortcuts');
-  const shortcuts = data.shortcuts || [];
-  const tbody = document.getElementById('shortcuts-table');
-  if (!shortcuts.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Aucun raccourci</td></tr>'; return; }
-  tbody.innerHTML = shortcuts.map(s => `
-    <tr>
-      <td>${s.id}</td>
-      <td>${escHtml(s.username||'—')}</td>
-      <td>${escHtml(s.title)}</td>
-      <td><a href="${escHtml(s.url)}" target="_blank" rel="noopener" style="color:var(--info);text-decoration:none">${escHtml(s.url.length>40?s.url.slice(0,40)+'…':s.url)}</a></td>
-      <td>${escHtml(s.category_name||'—')}</td>
-      <td><div class="actions-cell">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="openShortcutModal(${s.id})"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteShortcut(${s.id})"><i class="fa-solid fa-trash"></i></button>
-      </div></td>
-    </tr>`).join('');
-}
-
-function fillUserSelect(selId) {
-  const sel = document.getElementById(selId);
-  sel.innerHTML = allUsers.map(u => `<option value="${u.id}">${escHtml(u.username)}</option>`).join('');
-}
-
-function fillCatSelect(selId, userId) {
-  const sel = document.getElementById(selId);
-  const cats = userId ? allCategories.filter(c => String(c.user_id) === String(userId)) : allCategories;
-  sel.innerHTML = '<option value="">— Aucune —</option>' + cats.map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
-}
-
-function openCatModal() {
-  if (!allUsers.length) loadAllUsers().then(() => openCatModal());
-  else { fillUserSelect('cat-form-user'); document.getElementById('cat-form-name').value = ''; openModal('cat-modal'); }
-}
-
-async function saveCat() {
-  const user_id = document.getElementById('cat-form-user').value;
-  const name = document.getElementById('cat-form-name').value.trim();
-  if (!user_id || !name) { toast('Utilisateur et nom requis', 'error'); return; }
-  const data = await api('POST', '/api/admin/shortcut-categories', { user_id: parseInt(user_id), name });
-  if (data.error) { toast(data.error, 'error'); return; }
-  toast('Catégorie créée');
-  closeModal('cat-modal');
-  loadCategories();
-}
-
-async function deleteCat(id) {
-  if (!confirm('Supprimer cette catégorie ?')) return;
-  const data = await api('DELETE', `/api/admin/shortcut-categories/${id}`);
-  if (data.error) { toast(data.error, 'error'); return; }
-  toast('Catégorie supprimée');
-  loadCategories();
-}
-
-let allShortcuts = [];
-
-function openShortcutModal(id) {
-  document.getElementById('sc-edit-id').value = id || '';
-  document.getElementById('sc-modal-title').textContent = id ? 'Modifier le raccourci' : 'Ajouter un raccourci';
-  fillUserSelect('sc-form-user');
-  fillCatSelect('sc-form-cat', null);
-  document.getElementById('sc-form-title').value = '';
-  document.getElementById('sc-form-url').value = '';
-  document.getElementById('sc-form-desc').value = '';
-  if (id) {
-    const s = allShortcuts.find(x => x.id === id);
-    if (s) {
-      document.getElementById('sc-form-user').value = s.user_id;
-      fillCatSelect('sc-form-cat', s.user_id);
-      document.getElementById('sc-form-cat').value = s.category_id || '';
-      document.getElementById('sc-form-title').value = s.title;
-      document.getElementById('sc-form-url').value = s.url;
-      document.getElementById('sc-form-desc').value = s.description || '';
-    }
-  }
-  openModal('shortcut-modal');
-}
-
-async function saveShortcut() {
-  const id = document.getElementById('sc-edit-id').value;
-  const body = {
-    user_id: parseInt(document.getElementById('sc-form-user').value),
-    title: document.getElementById('sc-form-title').value.trim(),
-    url: document.getElementById('sc-form-url').value.trim(),
-    description: document.getElementById('sc-form-desc').value.trim() || null,
-    category_id: document.getElementById('sc-form-cat').value || null,
-  };
-  if (!body.title || !body.url || !body.user_id) { toast('Utilisateur, titre et URL requis', 'error'); return; }
-  const data = id ? await api('PUT', `/api/admin/shortcuts/${id}`, body) : await api('POST', '/api/admin/shortcuts', body);
-  if (data.error) { toast(data.error, 'error'); return; }
-  toast(id ? 'Raccourci mis à jour' : 'Raccourci créé');
-  closeModal('shortcut-modal');
-  loadShortcutLinks();
-}
-
-async function deleteShortcut(id) {
-  if (!confirm('Supprimer ce raccourci ?')) return;
-  const data = await api('DELETE', `/api/admin/shortcuts/${id}`);
-  if (data.error) { toast(data.error, 'error'); return; }
-  toast('Raccourci supprimé');
-  loadShortcutLinks();
-}
-
-// ── Config Applications ──────────────────────────────────────────────────────
-let _appConfig = null;
-
-async function loadAppConfig() {
-  const data = await api('GET', '/api/admin/config/apps');
-  if (!data.appManagers) { document.getElementById('app-presets-container').innerHTML = `<p class="text-muted">${data.error || 'Impossible de charger la config'}</p>`; return; }
-  _appConfig = data;
-  renderAppPresets(data.appManagers);
-}
-
-function renderAppPresets(appManagers) {
-  const container = document.getElementById('app-presets-container');
-  if (!appManagers || !Object.keys(appManagers).length) {
-    container.innerHTML = '<p class="text-muted">Aucun preset configuré.</p>'; return;
-  }
-  container.innerHTML = Object.entries(appManagers).map(([key, preset]) => `
-    <div class="config-preset-card" id="app-preset-${key}">
-      <div class="preset-header">
-        <span class="preset-name">${escHtml(key)}</span>
-        <button class="btn btn-primary btn-sm" onclick="showAddAppModal('${key}')"><i class="fa-solid fa-plus"></i> App</button>
-      </div>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead><tr><th>Nom</th><th>Commande</th><th>Icône</th><th></th></tr></thead>
-          <tbody>
-            ${(preset.apps || []).length ? (preset.apps || []).map((app, i) => `
-              <tr>
-                <td>${escHtml(app.name)}</td>
-                <td><code>${escHtml(app.command)}</code></td>
-                <td>${escHtml(app.icon || '')}</td>
-                <td class="actions-cell">
-                  <button class="btn btn-secondary btn-sm btn-icon" onclick="editApp('${key}', ${i})" title="Modifier"><i class="fa-solid fa-pen"></i></button>
-                  <button class="btn btn-danger btn-sm btn-icon" onclick="deleteApp('${key}', ${i})" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
-                </td>
-              </tr>`).join('') : '<tr><td colspan="4" class="text-muted">Aucune application</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-    </div>`).join('');
-}
-
-function showAddAppModal(presetKey, editIndex = null) {
-  const existing = editIndex !== null ? (_appConfig.appManagers[presetKey]?.apps[editIndex] || {}) : {};
-  openDynamicModal(editIndex !== null ? 'Modifier l\'application' : 'Ajouter une application', `
-    <div class="form-group"><label class="form-label">Nom</label><input type="text" class="form-input" id="app-name" value="${escHtml(existing.name || '')}"></div>
-    <div class="form-group"><label class="form-label">Commande</label><input type="text" class="form-input" id="app-command" value="${escHtml(existing.command || '')}"></div>
-    <div class="form-group"><label class="form-label">Icône FontAwesome (ex: fa-code)</label><input type="text" class="form-input" id="app-icon" value="${escHtml(existing.icon || '')}"></div>
-    <div class="form-group"><label class="form-label">Arguments (séparés par des espaces)</label><input type="text" class="form-input" id="app-args" value="${escHtml((existing.args || []).join(' '))}"></div>
-  `, async () => {
-    const name = document.getElementById('app-name').value.trim();
-    const command = document.getElementById('app-command').value.trim();
-    if (!name || !command) { toast('Nom et commande requis', 'error'); return false; }
-    const app = { name, command, icon: document.getElementById('app-icon').value.trim() || 'fa-rocket', args: document.getElementById('app-args').value.trim().split(/\s+/).filter(Boolean) };
-    if (editIndex !== null) _appConfig.appManagers[presetKey].apps[editIndex] = app;
-    else _appConfig.appManagers[presetKey].apps.push(app);
-    await saveAppConfigToServer();
-    return true;
-  });
-}
-
-function editApp(presetKey, index) { showAddAppModal(presetKey, index); }
-
-async function deleteApp(presetKey, index) {
-  if (!confirm('Supprimer cette application ?')) return;
-  _appConfig.appManagers[presetKey].apps.splice(index, 1);
-  await saveAppConfigToServer();
-}
-
-async function saveAppConfigToServer() {
-  const content = buildAppConfigJs(_appConfig.appManagers);
-  const data = await api('PUT', '/api/admin/config/apps', { content });
-  if (data.error) { toast(data.error, 'error'); return; }
-  toast('Applications sauvegardées');
-  renderAppPresets(_appConfig.appManagers);
-}
-
-function buildAppConfigJs(appManagers) {
-  const json = JSON.stringify(appManagers, null, 8).replace(/"([^"]+)":/g, '$1:').replace(/"/g, "'");
-  return [
-    "/**",
-    " * Configuration pour le lancement d'applications",
-    " * Géré via le panel monitoring — ne pas modifier manuellement",
-    " */",
-    "",
-    "export const appConfig = {",
-    "    appManagers: " + json + ",",
-    "",
-    "    resolvePreset(name) {",
-    "        if (!name) return null;",
-    "        const key = name.toLowerCase();",
-    "        return this.appManagers?.[key] || null;",
-    "    }",
-    "};",
-    "",
-    "export default appConfig;",
-    ""
-  ].join("\n");
-}
-
-// ── Config Dossiers ──────────────────────────────────────────────────────────
-let _folderConfig = null;
-
-async function loadFolderConfig() {
-  const data = await api('GET', '/api/admin/config/folders');
-  if (!data.fileManagers) { document.getElementById('folder-presets-container').innerHTML = `<p class="text-muted">${data.error || 'Impossible de charger la config'}</p>`; return; }
-  _folderConfig = data;
-  renderFolderPresets(data.fileManagers);
-  document.getElementById('folder-ignore-ext').value = (data.ignoreExtensions || []).join(', ');
-  document.getElementById('folder-ignore-suffix').value = (data.ignoreSuffixes || []).join(', ');
-}
-
-function renderFolderPresets(fileManagers) {
-  const container = document.getElementById('folder-presets-container');
-  if (!fileManagers || !Object.keys(fileManagers).length) {
-    container.innerHTML = '<p class="text-muted">Aucun preset configuré.</p>'; return;
-  }
-  container.innerHTML = Object.entries(fileManagers).map(([key, preset]) => `
-    <div class="config-preset-card" id="folder-preset-${key}">
-      <div class="preset-header">
-        <span class="preset-name">${escHtml(key)}</span>
-        <button class="btn btn-secondary btn-sm" onclick="showEditFolderPresetModal('${key}')"><i class="fa-solid fa-pen"></i> Modifier</button>
-      </div>
-      <div class="config-preset-body">
-        <div class="preset-path"><span class="label">Chemin</span> <code>${escHtml(preset.basePath || '')}</code></div>
-        ${preset.blacklist?.length ? `<div class="preset-blacklist"><span class="label">Blacklist</span> ${preset.blacklist.map(b => `<code>${escHtml(b)}</code>`).join(' ')}</div>` : ''}
-      </div>
-    </div>`).join('');
-}
-
-function showEditFolderPresetModal(editKey) {
-  const existing = editKey ? (_folderConfig.fileManagers[editKey] || {}) : {};
-  openDynamicModal(editKey ? `Modifier "${editKey}"` : 'Nouveau preset dossier', `
-    <div class="form-group"><label class="form-label">Nom du preset</label>
-    <input type="text" class="form-input" id="fp-key" value="${escHtml(editKey || '')}" ${editKey ? 'readonly' : ''}></div>
-    <div class="form-group"><label class="form-label">Chemin de base</label>
-    <input type="text" class="form-input" id="fp-path" value="${escHtml(existing.basePath || '')}" placeholder="/mnt/team/#TEAM/"></div>
-    <div class="form-group"><label class="form-label">Blacklist (séparée par des virgules)</label>
-    <input type="text" class="form-input" id="fp-blacklist" value="${escHtml((existing.blacklist || []).join(', '))}"></div>
-  `, async () => {
-    const key = document.getElementById('fp-key').value.trim().toLowerCase();
-    const basePath = document.getElementById('fp-path').value.trim();
-    if (!key || !basePath) { toast('Nom et chemin requis', 'error'); return false; }
-    const blacklist = document.getElementById('fp-blacklist').value.split(',').map(s => s.trim()).filter(Boolean);
-    _folderConfig.fileManagers[key] = { basePath, ...(blacklist.length ? { blacklist } : {}) };
-    await saveFolderConfigToServer();
-    return true;
-  });
-}
-
-async function saveFolderGlobals() {
-  _folderConfig.ignoreExtensions = document.getElementById('folder-ignore-ext').value.split(',').map(s => s.trim()).filter(Boolean);
-  _folderConfig.ignoreSuffixes = document.getElementById('folder-ignore-suffix').value.split(',').map(s => s.trim()).filter(Boolean);
-  await saveFolderConfigToServer();
-}
-
-async function saveFolderConfigToServer() {
-  const content = buildFolderConfigJs(_folderConfig);
-  const data = await api('PUT', '/api/admin/config/folders', { content });
-  if (data.error) { toast(data.error, 'error'); return; }
-  toast('Dossiers sauvegardés');
-  renderFolderPresets(_folderConfig.fileManagers);
-}
-
-function buildFolderConfigJs(cfg) {
-  const fm = JSON.stringify(cfg.fileManagers, null, 8).replace(/"([^"]+)":/g, '$1:').replace(/"/g, "'");
-  const bl = JSON.stringify(cfg.blacklist || []);
-  const is = JSON.stringify(cfg.ignoreSuffixes || []);
-  const ie = JSON.stringify(cfg.ignoreExtensions || []);
-  return [
-    "/**",
-    " * Configuration générique pour l'ouverture de dossiers",
-    " * Géré via le panel monitoring — ne pas modifier manuellement",
-    " */",
-    "",
-    "export const folderConfig = {",
-    "    fileManagers: " + fm + ",",
-    "",
-    "    blacklist: " + bl + ",",
-    "    ignoreSuffixes: " + is + ",",
-    "    ignoreExtensions: " + ie + ",",
-    "",
-    "    isBlacklisted(name) {",
-    "        if (this.blacklist.includes(name)) return true;",
-    "        if (name.startsWith('~$')) return true;",
-    "        if (name.startsWith('.') && name !== '.' && name !== '..') return true;",
-    "        for (const suffix of this.ignoreSuffixes) { if (name.endsWith(suffix)) return true; }",
-    "        for (const ext of this.ignoreExtensions) { if (name.endsWith(ext)) return true; }",
-    "        return false;",
-    "    },",
-    "",
-    "    resolvePreset(name) {",
-    "        if (!name) return this;",
-    "        const key = name.toLowerCase();",
-    "        const preset = this.fileManagers?.[key];",
-    "        if (!preset) return this;",
-    "        return { ...this, ...preset, blacklist: preset.blacklist !== undefined ? preset.blacklist : this.blacklist, ignoreSuffixes: preset.ignoreSuffixes || this.ignoreSuffixes, ignoreExtensions: preset.ignoreExtensions || this.ignoreExtensions };",
-    "    }",
-    "};",
-    "",
-    "export default folderConfig;",
-    ""
-  ].join("\n");
-}
-
-// ── Logs ─────────────────────────────────────────────────────────────────────
-async function loadLogChat() {
-  const data = await api('GET', '/api/admin/logs/chat?limit=200');
-  const logs = data.logs || [];
-  const tbody = document.getElementById('log-chat-table');
-  document.getElementById('chat-select-all').checked = false;
-  document.getElementById('btn-delete-selected').style.display = 'none';
-  if (!logs.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Aucun message</td></tr>'; return; }
-  tbody.innerHTML = logs.map(m => `
-    <tr>
-      <td><input type="checkbox" class="chat-row-check" data-id="${m.id}" onchange="updateChatDeleteBtn()"></td>
-      <td>${m.id}</td>
-      <td>${escHtml(m.username)}</td>
-      <td>${escHtml(m.text)}</td>
-      <td>${fmtDate(m.created_at)}</td>
-      <td><button class="btn btn-danger btn-sm btn-icon" onclick="deleteMessage(${m.id})"><i class="fa-solid fa-trash"></i></button></td>
-    </tr>`).join('');
-}
-
-function onChatSelectAll(cb) {
-  document.querySelectorAll('.chat-row-check').forEach(c => { c.checked = cb.checked; });
-  updateChatDeleteBtn();
-}
-
-function toggleSelectAllChat() {
-  const all = document.querySelectorAll('.chat-row-check');
-  const anyUnchecked = Array.from(all).some(c => !c.checked);
-  all.forEach(c => { c.checked = anyUnchecked; });
-  document.getElementById('chat-select-all').checked = anyUnchecked;
-  updateChatDeleteBtn();
-}
-
-function updateChatDeleteBtn() {
-  const checked = document.querySelectorAll('.chat-row-check:checked').length;
-  document.getElementById('btn-delete-selected').style.display = checked > 0 ? '' : 'none';
-  document.getElementById('chat-select-all').checked = checked > 0 && checked === document.querySelectorAll('.chat-row-check').length;
-}
-
-async function deleteSelectedMessages() {
-  const ids = Array.from(document.querySelectorAll('.chat-row-check:checked')).map(c => parseInt(c.dataset.id));
-  if (!ids.length) return;
-  if (!confirm(`Supprimer ${ids.length} message(s) ?`)) return;
-  const data = await api('POST', '/api/admin/messages/bulk-delete', { ids });
-  if (data.error) { toast(data.error, 'error'); return; }
-  toast(`${data.deleted} message(s) supprimé(s)`);
-  loadLogChat();
-}
-
-async function deleteMessage(id) {
-  if (!confirm('Supprimer ce message ?')) return;
-  const data = await api('DELETE', `/api/admin/messages/${id}`);
-  if (data.error) { toast(data.error, 'error'); return; }
-  toast('Message supprimé');
-  loadLogChat();
-}
-
+// ── Logs / Base de données ───────────────────────────────────────────────────
 let dbCurrentTable = '';
 let dbCurrentColumns = [];
 let dbCurrentRowId = null;
@@ -2801,13 +2258,11 @@ async function loadLogDb() {
   const row = document.getElementById('db-stats-row');
   const items = [
     { label: 'Utilisateurs', value: s.users, cls: 'blue' },
-    { label: 'Messages', value: s.messages, cls: 'info' },
     { label: 'Événements agenda', value: s.events, cls: 'green' },
     { label: 'Commandes', value: s.commandes, cls: 'info' },
     { label: 'Dons', value: s.dons, cls: 'green' },
     { label: 'Lots', value: s.lots, cls: 'orange' },
     { label: 'Articles lots', value: s.lot_items, cls: 'orange' },
-    { label: 'Raccourcis', value: s.shortcuts, cls: 'blue' },
     { label: 'Marques', value: s.marques, cls: 'green' },
     { label: 'Modèles', value: s.modeles, cls: 'green' },
   ];
@@ -2987,20 +2442,12 @@ async function loadLogErrors() {
   }
 
   const errors = (errData && errData.data) ? errData.data : (errData.errors || []);
-  const feedbackList = errors.filter(e => e.error_type === 'feedback');
   const bugsList = errors.filter(e => e.error_type === 'bug_report');
   const otherList = errors.filter(e => e.error_type !== 'feedback' && e.error_type !== 'bug_report');
 
-  const feedbackTbody = document.getElementById('log-errors-feedback-table');
   const bugsTbody = document.getElementById('log-errors-bugs-table');
   const otherTbody = document.getElementById('log-errors-other-table');
 
-  if (feedbackTbody) {
-    document.getElementById('err-feedback-count').textContent = feedbackList.length;
-    feedbackTbody.innerHTML = feedbackList.length
-      ? feedbackList.map(e => renderIssueRow(e, false)).join('')
-      : '<tr class="empty-row"><td colspan="6">Aucun feedback</td></tr>';
-  }
   if (bugsTbody) {
     document.getElementById('err-bugs-count').textContent = bugsList.length;
     bugsTbody.innerHTML = bugsList.length
