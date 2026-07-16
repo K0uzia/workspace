@@ -16,7 +16,10 @@ export default class GestionLotsManager {
         this.marques = [];
         this.modeles = [];
         this.lots = [];
-        this.eventsAttached = false;
+        this.listeners = [];
+        this._barcodeBuffer = '';
+        this._barcodeTimer = null;
+        this._lastSerialEnterAt = 0;
         
         this.init();
     }
@@ -166,138 +169,128 @@ export default class GestionLotsManager {
         }
     }
 
+    addListener(element, event, handler) {
+        if (!element) return;
+        element.addEventListener(event, handler);
+        this.listeners.push({ element, event, handler });
+    }
+
     /**
-     * Configuration des événements avec délégation
+     * Configuration des événements (nettoyables via destroy)
      */
     setupEventListeners() {
         logger.debug('🔧 Configuration événements');
-        
-        // Vérifier qu'on n'attache pas les événements en double (flag global)
-        if (window.__gestionLotsEventsAttached) {
-            logger.debug('ℹ️ Événements déjà attachés globalement, skip');
-            return;
-        }
-        window.__gestionLotsEventsAttached = true;
-        this.eventsAttached = true;
-        
-        // Attacher directement aux boutons - pas de délégation pour éviter les conflits
+
         const attachButton = (id, handler) => {
             const btn = document.getElementById(id);
-            if (btn) {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    logger.debug(`🖱️ Clic sur ${id}`);
-                    handler();
-                });
-                logger.debug(`✅ ${id} attaché`);
-            } else {
+            if (!btn) {
                 logger.warn(`⚠️ ${id} non trouvé`);
+                return;
             }
+            this.addListener(btn, 'click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                logger.debug(`🖱️ Clic sur ${id}`);
+                handler();
+            });
+            logger.debug(`✅ ${id} attaché`);
         };
 
-        // Attendre que le DOM soit stable
         setTimeout(() => {
             attachButton('btn-add-manual', () => this.addManualRow());
             attachButton('btn-save-lot', () => this.saveLot());
             attachButton('btn-cancel-lot', () => this.cancelLot());
             attachButton('btn-submit-marque', () => this.submitNewMarque());
             attachButton('btn-submit-modele', () => this.submitNewModele());
-            
-            // Gérer le changement de marque dans le formulaire d'ajout de modèle
+            attachButton('btn-confirm-clear-lot', () => this.confirmCancelLot());
+            attachButton('btn-apply-mass', () => this.applyMassValues());
+            attachButton('btn-confirm-mass-apply', () => this.confirmMassApply());
+            attachButton('btn-confirm-delete-row', () => this.confirmDeleteRow());
+
             const selectMarque = document.getElementById('select-marque-for-modele');
             if (selectMarque) {
-                selectMarque.addEventListener('change', (e) => {
+                this.addListener(selectMarque, 'change', (e) => {
                     logger.debug('📦 Marque sélectionnée pour modèle:', e.target.value);
                 });
             }
-            
-            // Gérer les changements de marques dans les lignes du tableau
-            document.addEventListener('change', (e) => {
-                if (e.target.name === 'marque') {
-                    const row = e.target.closest('tr');
-                    if (row) {
-                        const modeleSelect = row.querySelector('select[name="modele"]');
-                        const selectedMarqueId = e.target.value;
-                        if (modeleSelect) {
-                            if (selectedMarqueId) {
-                                logger.debug('Marque changée dans ligne existante:', selectedMarqueId);
-                                this.updateModeleSelect(selectedMarqueId, modeleSelect);
-                            } else {
-                                // Aucune marque sélectionnée, vider le select de modèles
-                                modeleSelect.innerHTML = '<option value="">Modèle...</option>';
-                                modeleSelect.value = '';
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Autres boutons
-            attachButton('btn-confirm-clear-lot', () => this.confirmCancelLot());
-            attachButton('btn-apply-mass', () => this.applyMassValues());
-            
-            // Select all checkbox
+
             const selectAll = document.getElementById('select-all');
             if (selectAll) {
-                selectAll.addEventListener('change', (e) => {
-                    const checkboxes = document.querySelectorAll('.row-checkbox');
-                    checkboxes.forEach(cb => cb.checked = e.target.checked);
+                this.addListener(selectAll, 'change', (e) => {
+                    document.querySelectorAll('.row-checkbox').forEach(cb => {
+                        cb.checked = e.target.checked;
+                    });
                 });
-                logger.debug('✅ select-all attaché');
             }
-            
-            // Populer les selects de masse
+
             this.populateMassSelects();
-            
-            // Boutons de confirmation modale
-            attachButton('btn-confirm-mass-apply', () => this.confirmMassApply());
-            attachButton('btn-confirm-delete-row', () => this.confirmDeleteRow());
-            // Afficher/masquer "Précisez le type" dans la modale masse quand Type = Autres
+
             const modalMassType = document.getElementById('modal-mass-type');
             const modalMassTypeOther = document.getElementById('modal-mass-type-other');
             if (modalMassType && modalMassTypeOther) {
-                modalMassType.addEventListener('change', () => {
+                this.addListener(modalMassType, 'change', () => {
                     const isAutres = modalMassType.value === 'autres';
                     modalMassTypeOther.style.display = isAutres ? 'block' : 'none';
                     modalMassTypeOther.required = isAutres;
                     if (!isAutres) modalMassTypeOther.value = '';
                 });
             }
-            
-            // Bouton add-modele pour remplir le select
+
             const btnAddModele = document.getElementById('btn-add-modele');
             if (btnAddModele) {
-                btnAddModele.addEventListener('click', () => {
+                this.addListener(btnAddModele, 'click', () => {
                     setTimeout(() => this.populateMarqueSelect(), 150);
                 });
-                logger.debug('✅ btn-add-modele attaché');
             }
         }, 300);
 
-        // Scan de code-barres (hors champs : buffer clavier + Enter)
-        let barcodeBuffer = '';
-        let barcodeTimeout;
+        this._onMarqueChange = (e) => {
+            if (e.target.name !== 'marque' || !e.target.closest('#lot-table-body')) return;
+            const row = e.target.closest('tr');
+            if (!row) return;
+            const modeleSelect = row.querySelector('select[name="modele"]');
+            const selectedMarqueId = e.target.value;
+            if (!modeleSelect) return;
+            if (selectedMarqueId) {
+                this.updateModeleSelect(selectedMarqueId, modeleSelect);
+            } else {
+                modeleSelect.innerHTML = '<option value="">Modèle...</option>';
+                modeleSelect.value = '';
+            }
+        };
+        document.addEventListener('change', this._onMarqueChange);
 
-        document.addEventListener('keydown', (e) => {
+        this._onBarcodeKeydown = (e) => {
+            if (!document.getElementById('lot-table-body')) return;
             if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
-            if (e.key === 'Enter' && barcodeBuffer.length > 3) {
-                this.addRowFromScan(barcodeBuffer);
-                barcodeBuffer = '';
-            } else if (e.key.length === 1) {
-                barcodeBuffer += e.key;
-                clearTimeout(barcodeTimeout);
-                barcodeTimeout = setTimeout(() => {
-                    barcodeBuffer = '';
+            if (e.key === 'Enter' && this._barcodeBuffer.length > 3) {
+                e.preventDefault();
+                e.stopPropagation();
+                const code = this._barcodeBuffer.trim();
+                this._barcodeBuffer = '';
+                clearTimeout(this._barcodeTimer);
+                this.addRowFromScan(code);
+                return;
+            }
+            if (e.key.length === 1) {
+                this._barcodeBuffer += e.key;
+                clearTimeout(this._barcodeTimer);
+                this._barcodeTimer = setTimeout(() => {
+                    this._barcodeBuffer = '';
                 }, 100);
             }
-        });
+        };
+        document.addEventListener('keydown', this._onBarcodeKeydown);
 
-        // Quand on scan dans le champ S/N (douchette) : Enter = garder le S/N, créer une nouvelle ligne et focus S/N pour rescanner
-        document.addEventListener('keydown', (e) => {
+        this._onSerialEnter = (e) => {
             if (e.target.name !== 'serial_number' || e.key !== 'Enter') return;
             if (!e.target.closest('#lot-table-body')) return;
+
+            const now = Date.now();
+            if (now - this._lastSerialEnterAt < 300) return;
+            this._lastSerialEnterAt = now;
+
             const snInput = e.target;
             const value = (snInput.value || '').trim();
             if (!value) return;
@@ -309,19 +302,11 @@ export default class GestionLotsManager {
             const row = snInput.closest('tr');
             if (!tbody || !row) return;
 
-            // Vérifier doublon (autres lignes uniquement)
-            const existingRows = tbody.querySelectorAll('tr');
-            const snExists = Array.from(existingRows).some(r => {
-                if (r === row) return false;
-                const other = r.querySelector('input[name="serial_number"]');
-                return other && other.value.trim().toUpperCase() === value.toUpperCase();
-            });
-            if (snExists) {
+            if (this.isDuplicateSerial(value, row)) {
                 this.showNotification(`S/N déjà présent: ${value}`, 'warning');
                 return;
             }
 
-            // Nouvelle ligne SCAN vide et focus sur son S/N
             const newRow = this.createRow('', 'scan');
             tbody.appendChild(newRow);
             const newSnInput = newRow.querySelector('input[name="serial_number"]');
@@ -330,9 +315,21 @@ export default class GestionLotsManager {
                 newSnInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
             this.showNotification('S/N enregistré, prêt pour le prochain scan', 'success');
-        });
+        };
+        document.addEventListener('keydown', this._onSerialEnter);
 
         logger.debug('✅ Événements configurés');
+    }
+
+    isDuplicateSerial(serial, excludeRow = null) {
+        const tbody = document.getElementById('lot-table-body');
+        if (!tbody) return false;
+        const normalized = serial.trim().toUpperCase();
+        return [...tbody.querySelectorAll('tr')].some(r => {
+            if (r === excludeRow) return false;
+            const other = r.querySelector('input[name="serial_number"]');
+            return other && other.value.trim().toUpperCase() === normalized;
+        });
     }
 
     /**
@@ -340,31 +337,30 @@ export default class GestionLotsManager {
      */
     addRowFromScan(serialNumber) {
         logger.debug('📷 Scan détecté:', serialNumber);
-        
-        // Vérifier que le S/N n'est pas vide
-        if (!serialNumber || serialNumber.trim() === '') {
+
+        const value = (serialNumber || '').trim();
+        if (!value) {
             logger.warn('⚠️ S/N vide');
             return;
         }
-        
+
         const tbody = document.getElementById('lot-table-body');
         if (!tbody) return;
 
-        // Vérifier si ce S/N a déjà été scanné
-        const existingRows = tbody.querySelectorAll('tr');
-        const snExists = Array.from(existingRows).some(row => {
-            const snInput = row.querySelector('input[name="serial_number"]');
-            return snInput && snInput.value.trim().toUpperCase() === serialNumber.trim().toUpperCase();
-        });
-
-        if (snExists) {
-            logger.warn('⚠️ Doublon détecté:', serialNumber);
-            this.showNotification(`S/N déjà scanné: ${serialNumber}`, 'warning');
+        if (this.isDuplicateSerial(value)) {
+            logger.warn('⚠️ Doublon détecté:', value);
+            this.showNotification(`S/N déjà scanné: ${value}`, 'warning');
             return;
         }
 
-        const row = this.createRow(serialNumber, 'scan');
+        const row = this.createRow(value, 'scan');
         tbody.appendChild(row);
+
+        const snInput = row.querySelector('input[name="serial_number"]');
+        if (snInput) {
+            snInput.focus();
+            snInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
 
         this.showNotification('Appareil scanné ajouté', 'success');
     }
@@ -441,9 +437,10 @@ export default class GestionLotsManager {
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </td>
-            <!-- Champs cachés pour date et heure (traçabilité interne) -->
-            <input type="hidden" name="date" value="${now.toISOString().split('T')[0]}">
-            <input type="hidden" name="time" value="${now.toTimeString().slice(0, 5)}">
+            <td class="lot-table__meta" hidden aria-hidden="true">
+                <input type="hidden" name="date" value="${now.toISOString().split('T')[0]}">
+                <input type="hidden" name="time" value="${now.toTimeString().slice(0, 5)}">
+            </td>
         `;
         
         // Attacher les événements
@@ -960,12 +957,38 @@ export default class GestionLotsManager {
      * Confirmer la suppression d'une ligne
      */
     confirmDeleteRow() {
-        if (this.rowToDelete) {
-            this.rowToDelete.remove();
-            this.showNotification('Ligne supprimée', 'success');
-            this.renumberRows();
-            this.modalManager.close('modal-confirm-delete');
+        if (!this.rowToDelete || !this.rowToDelete.isConnected) {
             this.rowToDelete = null;
+            this.modalManager.close('modal-confirm-delete');
+            return;
+        }
+
+        this.rowToDelete.remove();
+        this.showNotification('Ligne supprimée', 'success');
+        this.renumberRows();
+        this.modalManager.close('modal-confirm-delete');
+        this.rowToDelete = null;
+
+        this.ensureScanRow();
+    }
+
+    ensureScanRow() {
+        const tbody = document.getElementById('lot-table-body');
+        if (!tbody) return;
+
+        const rows = [...tbody.querySelectorAll('tr')];
+        if (rows.length === 0) {
+            const row = this.createRow('', 'scan');
+            tbody.appendChild(row);
+            row.querySelector('input[name="serial_number"]')?.focus();
+            return;
+        }
+
+        const lastRow = rows[rows.length - 1];
+        const lastSn = lastRow.querySelector('input[name="serial_number"]');
+        if (lastSn && lastSn.value.trim()) {
+            const row = this.createRow('', 'scan');
+            tbody.appendChild(row);
         }
     }
     
@@ -1102,19 +1125,37 @@ export default class GestionLotsManager {
      */
     destroy() {
         logger.debug('🧹 Destruction GestionLotsManager');
-        
-        // Réinitialiser les flags pour permettre la réattachement des événements
-        this.eventsAttached = false;
-        window.__gestionLotsEventsAttached = false;
-        
-        // Réinitialiser les données
+
+        if (this._onSerialEnter) {
+            document.removeEventListener('keydown', this._onSerialEnter);
+            this._onSerialEnter = null;
+        }
+        if (this._onBarcodeKeydown) {
+            document.removeEventListener('keydown', this._onBarcodeKeydown);
+            this._onBarcodeKeydown = null;
+        }
+        if (this._onMarqueChange) {
+            document.removeEventListener('change', this._onMarqueChange);
+            this._onMarqueChange = null;
+        }
+        if (this._barcodeTimer) {
+            clearTimeout(this._barcodeTimer);
+            this._barcodeTimer = null;
+        }
+        this._barcodeBuffer = '';
+
+        this.listeners.forEach(({ element, event, handler }) => {
+            element?.removeEventListener(event, handler);
+        });
+        this.listeners = [];
+
+        this.rowToDelete = null;
         this.lots = [];
         this.currentRowNumber = 1;
-        
-        // Vider le tableau
+
         const tbody = document.getElementById('lot-table-body');
         if (tbody) tbody.innerHTML = '';
-        
+
         logger.debug('✅ GestionLotsManager nettoyé');
     }
 }

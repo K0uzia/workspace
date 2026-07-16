@@ -22,7 +22,6 @@ class PageManager {
             'home': { showHeader: true, showFooter: true, showChat: true },
             'agenda': { showHeader: true, showFooter: true, showChat: false },
             'dossier': { showHeader: true, showFooter: true, showChat: true },
-            'application': { showHeader: true, showFooter: true, showChat: true },
             'reception': receptionLayout,
             'entrer': receptionLayout,
             'sortie': receptionLayout,
@@ -33,7 +32,6 @@ class PageManager {
             'commande': receptionLayout,
             'dons': receptionLayout,
             'prets': receptionLayout,
-            'shortcut': { showHeader: true, showFooter: true, showChat: true },
             'option': { showHeader: true, showFooter: true, showChat: false },
             'login': { showHeader: false, showFooter: false, showChat: false },
             'signup': { showHeader: false, showFooter: false, showChat: false }
@@ -1064,7 +1062,6 @@ class PageManager {
             this.attachListeners();
             this.attachReceptionPageListeners();
             this.initializeFileManagers();
-            this.initializeAppManagers();
             if (isReceptionSubPage) {
                 requestAnimationFrame(() => {
                     const recepSection = document.querySelector('.recep-section');
@@ -1190,8 +1187,6 @@ class PageManager {
                 .catch(error => {
                     logger.error('❌ Erreur import AgendaStore:', error);
                 });
-
-            this.initializeHomeModals();
         } else if (pageName === 'agenda') {
             import('./assets/js/modules/agenda/AgendaInit.js')
                 .then(module => {
@@ -1202,19 +1197,6 @@ class PageManager {
                 })
                 .catch(error => {
                     logger.error('❌ Erreur import AgendaInit:', error);
-                });
-        } else if (pageName === 'shortcut') {
-            import('./assets/js/modules/shortcut/ShortcutManager.js')
-                .then(async module => {
-                    const ShortcutManager = module.default;
-                    if (window.shortcutManager) {
-                        window.shortcutManager.destroy();
-                    }
-                    window.shortcutManager = new ShortcutManager();
-                    await window.shortcutManager.init();
-                })
-                .catch(error => {
-                    logger.error('❌ Erreur import ShortcutManager:', error);
                 });
         } else if (pageName === 'entrer') {
             // Empêcher la double initialisation
@@ -1423,36 +1405,6 @@ class PageManager {
         }
     }
 
-    async initializeAppManagers() {
-        const appContainers = document.querySelectorAll('.app-manager[data-app]');
-        if (!appContainers.length) return;
-
-        try {
-            const [managerModule, configModule] = await Promise.all([
-                import('./assets/js/modules/app/AppManager.js'),
-                import('./assets/js/config/AppConfig.js')
-            ]);
-            const AppManager = managerModule.default;
-
-            if (window.appManagers) {
-                window.appManagers.forEach(m => m.destroy());
-            }
-            window.appManagers = [];
-
-            appContainers.forEach(container => {
-                const preset = container.dataset.app?.toLowerCase();
-                logger.debug('🔧 Initialisation AppManager:', preset, container);
-                const manager = new AppManager({
-                    scope: container,
-                    preset: preset
-                });
-                window.appManagers.push(manager);
-            });
-        } catch (error) {
-            logger.error('❌ Erreur initialisation AppManagers:', error);
-        }
-    }
-
     async loadTodayEvents(AgendaStore) {
         try {
             const today = new Date();
@@ -1518,91 +1470,7 @@ class PageManager {
     }
 
     /**
-     * Initialise les modales de la page d'accueil (liste adhérents, feedback)
-     */
-    initializeHomeModals() {
-        const feedbackSubmit = document.getElementById('feedback-submit-btn');
-        const feedbackMessage = document.getElementById('feedback-message');
-        const feedbackType = document.getElementById('feedback-type');
-        const feedbackCharCount = document.getElementById('feedback-char-count');
-        if (feedbackMessage && feedbackCharCount) {
-            feedbackMessage.addEventListener('input', () => {
-                feedbackCharCount.textContent = feedbackMessage.value.length;
-            });
-            feedbackMessage.dispatchEvent(new Event('input'));
-        }
-        if (feedbackSubmit) {
-            feedbackSubmit.addEventListener('click', () => this.submitFeedback());
-        }
-    }
-
-    /**
-     * Envoie le formulaire de feedback vers POST /api/monitoring/errors (panel admin / issues).
-     * Payload aligné sur le serveur (branche proxmox) : clientId, errorType, errorMessage, userMessage, etc.
-     */
-    async submitFeedback() {
-        const messageEl = document.getElementById('feedback-message');
-        const typeEl = document.getElementById('feedback-type');
-        if (!messageEl || !typeEl) return;
-        const message = messageEl.value.trim();
-        if (!message) return;
-
-        const formType = typeEl.value || 'feedback';
-        const submitBtn = document.getElementById('feedback-submit-btn');
-        if (submitBtn) submitBtn.disabled = true;
-
-        const api = (await import('./assets/js/config/api.js')).default;
-        await api.init();
-        const endpoint = api.getUrl('monitoring.errors');
-        const token = localStorage.getItem('workspace_jwt');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const clientId = localStorage.getItem('workspace_client_id') || 'web-' + (navigator.userAgent || '').slice(0, 50);
-        const errorType = formType === 'bug' ? 'bug_report' : formType;
-        const errorMessage = formType === 'bug'
-            ? `[Bug] ${message.substring(0, 80)}${message.length > 80 ? '…' : ''}`
-            : `[Feedback] ${message.substring(0, 80)}${message.length > 80 ? '…' : ''}`;
-
-        const payload = {
-            clientId,
-            clientVersion: typeof this.getAppVersion === 'function' ? this.getAppVersion() : '1.0',
-            platform: navigator.platform || '',
-            errorType,
-            errorMessage,
-            context: 'Formulaire « Faire un retour »',
-            userMessage: message.substring(0, 500),
-            userAgent: navigator.userAgent ? navigator.userAgent.substring(0, 500) : undefined
-        };
-
-        try {
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json().catch(() => ({}));
-            if (res.ok && data.success !== false) {
-                window.modalManager?.close('modal-feedback');
-                messageEl.value = '';
-                const charCount = document.getElementById('feedback-char-count');
-                if (charCount) charCount.textContent = '0';
-                this.showNotification?.('Merci, votre retour a bien été envoyé. Il sera visible dans le panel de suivi.', 'success');
-            } else {
-                const errMsg = data.error || data.message || `Erreur ${res.status}`;
-                this.showNotification?.(`Envoi impossible : ${errMsg}`, 'error');
-                logger.warn('Feedback non enregistré:', res.status, data);
-            }
-        } catch (e) {
-            this.showNotification?.('Envoi impossible. Vérifiez la connexion au serveur.', 'error');
-            logger.error('Erreur envoi feedback:', e);
-        } finally {
-            if (submitBtn) submitBtn.disabled = false;
-        }
-    }
-
-    /**
-     * Affiche une notification toast (feedback, erreur, succès)
+     * Affiche une notification toast (erreur, succès)
      */
     showNotification(message, type = 'info') {
         const notification = document.createElement('div');

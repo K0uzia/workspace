@@ -10,11 +10,9 @@
 
 /* ----------CSS PAGES----------- */
 @import url(./modules/agenda.css);
-@import url(./modules/appli.css);
 @import url(./modules/dossier.css);
 @import url(./modules/home.css);
 @import url(./modules/reception.css);
-@import url(./modules/shortcut.css);
 
 /* ----------CSS RECEPTION (modulaire par sous-page) ----------- */
 @import url(./modules/receptions/recep-common.css);

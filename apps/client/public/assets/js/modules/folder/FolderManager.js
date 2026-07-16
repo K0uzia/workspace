@@ -175,6 +175,8 @@ export default class FolderManager {
 
     renderList(folders) {
         if (!this.listContainer) return;
+
+        this.listContainer.classList.toggle('folders-list--scrollable', folders.length > 10);
         
         const fragment = document.createDocumentFragment();
         folders.forEach((name) => {

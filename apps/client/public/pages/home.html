@@ -37,9 +37,6 @@
                             <i class="fa-solid fa-list"></i> Liste des adhérents</button>
                     </div>
                 </div>
-                <div class="action-block">
-                    <button type="button" id="feedback-btn" class="action-block-btn" data-modal-open="modal-feedback" role="button" aria-label="Faire un retour">Faire un retour <i class="fa-regular fa-comment"></i></button>
-                </div>
             </div>
 
             <div class="grid-item">
@@ -66,40 +63,4 @@
             </div>
         </div>
     </div>
-
-    <!-- Modale Faire un retour (feedback) -->
-    <dialog class="universal-modal" id="modal-feedback" data-modal-id="modal-feedback">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fa-regular fa-comment"></i> Faire un retour</h2>
-                <button type="button" class="modal-close-btn" data-modal-close="modal-feedback">
-                    <i class="fa-solid fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="feedback-form" class="feedback-form">
-                    <div class="form-group">
-                        <label for="feedback-message">Votre message</label>
-                        <textarea id="feedback-message" name="message" rows="4" placeholder="Décrivez votre remarque, suggestion ou problème…" maxlength="1000" required></textarea>
-                        <small class="form-help"><span id="feedback-char-count">0</span> / 1000 caractères</small>
-                    </div>
-                    <div class="feedback-type-group">
-                        <label for="feedback-type">Type de retour</label>
-                        <select id="feedback-type" name="type">
-                            <option value="feedback">Suggestion / remarque</option>
-                            <option value="bug">Signaler un problème (bug)</option>
-                            <option value="question">Question</option>
-                        </select>
-                    </div>
-                    <p class="form-help feedback-destination">Votre message est envoyé au panel de suivi (issues) et pourra être traité par l’équipe.</p>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="modal-cancel-btn" data-modal-close="modal-feedback">Annuler</button>
-                <button type="button" class="modal-submit-btn" id="feedback-submit-btn">
-                    <i class="fa-solid fa-paper-plane"></i> Envoyer
-                </button>
-            </div>
-        </div>
-    </dialog>
 </section>
