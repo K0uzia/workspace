@@ -20,7 +20,6 @@ export default class GestionLotsManager {
         this.listeners = [];
         this._barcodeBuffer = '';
         this._barcodeTimer = null;
-        this._lastSerialEnterAt = 0;
         
         this.init();
     }
@@ -296,11 +295,6 @@ export default class GestionLotsManager {
             const value = (snInput.value || '').trim();
             if (!value) return;
 
-            // Debounce seulement après un Enter valide (évite de bloquer le prochain scan)
-            const now = Date.now();
-            if (now - this._lastSerialEnterAt < 300) return;
-            this._lastSerialEnterAt = now;
-
             e.preventDefault();
             e.stopPropagation();
 
@@ -314,7 +308,18 @@ export default class GestionLotsManager {
                 return;
             }
 
-            this.prepareNextScanRow();
+            // Toujours créer une NOUVELLE ligne SCAN vide juste après la ligne courante
+            // (ne pas réutiliser une ligne « vide » trouvée ailleurs dans le tableau).
+            const newRow = this.createRow('', 'scan');
+            if (row.nextSibling) {
+                tbody.insertBefore(newRow, row.nextSibling);
+            } else {
+                tbody.appendChild(newRow);
+            }
+            this.renumberRows();
+            const newSn = newRow.querySelector('input[name="serial_number"]');
+            this.focusSerialInput(newSn);
+
             this.updateLotUI();
             this.showNotification('S/N enregistré, prêt pour le prochain scan', 'success');
         };
@@ -337,25 +342,20 @@ export default class GestionLotsManager {
     /**
      * Focus fiable sur un champ S/N (évite le smooth scroll qui vole le focus
      * dès que le tableau déborde du viewport — typiquement après ~3 lignes).
+     * Focus immédiat + double rAF pour résister aux reflows / toasts.
      */
     focusSerialInput(input) {
         if (!input) return;
-        input.focus({ preventScroll: true });
-        const row = input.closest('tr');
-        if (row) {
-            row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
-        }
-    }
-
-    /**
-     * Garantit une ligne SCAN vide en bas et y place le focus — prêt pour le prochain scan.
-     */
-    prepareNextScanRow() {
-        this.ensureScanRow();
-        const tbody = document.getElementById('lot-table-body');
-        const snInput = tbody?.querySelector('tr:last-child input[name="serial_number"]');
-        this.focusSerialInput(snInput);
-        return snInput;
+        const apply = () => {
+            if (!input.isConnected) return;
+            input.focus({ preventScroll: true });
+            const row = input.closest('tr');
+            if (row) {
+                row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+            }
+        };
+        apply();
+        requestAnimationFrame(() => requestAnimationFrame(apply));
     }
 
     /**
@@ -376,11 +376,11 @@ export default class GestionLotsManager {
         if (this.isDuplicateSerial(value)) {
             logger.warn('⚠️ Doublon détecté:', value);
             this.showNotification(`S/N déjà scanné: ${value}`, 'warning');
-            this.prepareNextScanRow();
+            this.ensureEmptyScanRowAndFocus();
             return;
         }
 
-        // Réutiliser la dernière ligne vide si présente, sinon en créer une remplie
+        // Remplir la dernière ligne vide si présente, sinon créer une ligne remplie
         const rows = [...tbody.querySelectorAll('tr')];
         const lastRow = rows[rows.length - 1];
         const lastSn = lastRow?.querySelector('input[name="serial_number"]');
@@ -390,7 +390,11 @@ export default class GestionLotsManager {
             tbody.appendChild(this.createRow(value, 'scan'));
         }
 
-        this.prepareNextScanRow();
+        // Toujours ajouter une nouvelle ligne SCAN vide + focus
+        const newRow = this.createRow('', 'scan');
+        tbody.appendChild(newRow);
+        this.focusSerialInput(newRow.querySelector('input[name="serial_number"]'));
+
         this.flashScanPanel();
         this.updateLotUI();
         this.showNotification('Appareil scanné ajouté', 'success');
@@ -971,7 +975,7 @@ export default class GestionLotsManager {
         const nextSibling = row.nextElementSibling;
         row.remove();
         this.renumberRows();
-        this.prepareNextScanRow();
+        this.ensureEmptyScanRowAndFocus();
         this.updateLotUI();
 
         this.showNotification('Ligne supprimée', 'success', {
@@ -979,31 +983,36 @@ export default class GestionLotsManager {
                 if (nextSibling) tbody.insertBefore(row, nextSibling);
                 else tbody.appendChild(row);
                 this.renumberRows();
-                this.prepareNextScanRow();
+                this.ensureEmptyScanRowAndFocus();
                 this.updateLotUI();
             }
         });
     }
 
-    ensureScanRow() {
+    /**
+     * Après suppression (ou doublon hors champ) : s'assurer qu'il reste
+     * au moins une ligne SCAN vide pour continuer à scanner.
+     * Ne crée une ligne que s'il n'existe AUCUNE ligne S/N vide.
+     */
+    ensureEmptyScanRowAndFocus() {
         const tbody = document.getElementById('lot-table-body');
         if (!tbody) return null;
 
         const rows = [...tbody.querySelectorAll('tr')];
-        if (rows.length === 0) {
-            const row = this.createRow('', 'scan');
-            tbody.appendChild(row);
-            return row;
+        const emptyRow = rows.find(r => {
+            const sn = r.querySelector('input[name="serial_number"]');
+            return sn && !sn.value.trim();
+        });
+
+        if (emptyRow) {
+            this.focusSerialInput(emptyRow.querySelector('input[name="serial_number"]'));
+            return emptyRow;
         }
 
-        const lastRow = rows[rows.length - 1];
-        const lastSn = lastRow.querySelector('input[name="serial_number"]');
-        if (lastSn && lastSn.value.trim()) {
-            const row = this.createRow('', 'scan');
-            tbody.appendChild(row);
-            return row;
-        }
-        return lastRow;
+        const row = this.createRow('', 'scan');
+        tbody.appendChild(row);
+        this.focusSerialInput(row.querySelector('input[name="serial_number"]'));
+        return row;
     }
     
     /**
