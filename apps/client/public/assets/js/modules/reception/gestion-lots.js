@@ -41,13 +41,7 @@ export default class GestionLotsManager {
                 const row = this.createRow('', 'scan');
                 tbody.appendChild(row);
                 logger.debug('➕ Ligne SCAN initiale ajoutée');
-                
-                // AutoFocus sur le S/N de la première ligne
-                const snInput = row.querySelector('input[name="serial_number"]');
-                if (snInput) {
-                    snInput.focus();
-                    logger.debug('✅ AutoFocus sur S/N de la première ligne');
-                }
+                this.focusSerialInput(row.querySelector('input[name="serial_number"]'));
                 this.updateLotUI();
             }
         }, 500);
@@ -289,7 +283,7 @@ export default class GestionLotsManager {
                 clearTimeout(this._barcodeTimer);
                 this._barcodeTimer = setTimeout(() => {
                     this._barcodeBuffer = '';
-                }, 100);
+                }, 150);
             }
         };
         document.addEventListener('keydown', this._onBarcodeKeydown);
@@ -298,13 +292,14 @@ export default class GestionLotsManager {
             if (e.target.name !== 'serial_number' || e.key !== 'Enter') return;
             if (!e.target.closest('#lot-table-body')) return;
 
-            const now = Date.now();
-            if (now - this._lastSerialEnterAt < 300) return;
-            this._lastSerialEnterAt = now;
-
             const snInput = e.target;
             const value = (snInput.value || '').trim();
             if (!value) return;
+
+            // Debounce seulement après un Enter valide (évite de bloquer le prochain scan)
+            const now = Date.now();
+            if (now - this._lastSerialEnterAt < 300) return;
+            this._lastSerialEnterAt = now;
 
             e.preventDefault();
             e.stopPropagation();
@@ -315,16 +310,11 @@ export default class GestionLotsManager {
 
             if (this.isDuplicateSerial(value, row)) {
                 this.showNotification(`S/N déjà présent: ${value}`, 'warning');
+                this.focusSerialInput(snInput);
                 return;
             }
 
-            const newRow = this.createRow('', 'scan');
-            tbody.appendChild(newRow);
-            const newSnInput = newRow.querySelector('input[name="serial_number"]');
-            if (newSnInput) {
-                newSnInput.focus();
-                newSnInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
+            this.prepareNextScanRow();
             this.updateLotUI();
             this.showNotification('S/N enregistré, prêt pour le prochain scan', 'success');
         };
@@ -345,7 +335,31 @@ export default class GestionLotsManager {
     }
 
     /**
-     * Ajouter une ligne depuis un scan
+     * Focus fiable sur un champ S/N (évite le smooth scroll qui vole le focus
+     * dès que le tableau déborde du viewport — typiquement après ~3 lignes).
+     */
+    focusSerialInput(input) {
+        if (!input) return;
+        input.focus({ preventScroll: true });
+        const row = input.closest('tr');
+        if (row) {
+            row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        }
+    }
+
+    /**
+     * Garantit une ligne SCAN vide en bas et y place le focus — prêt pour le prochain scan.
+     */
+    prepareNextScanRow() {
+        this.ensureScanRow();
+        const tbody = document.getElementById('lot-table-body');
+        const snInput = tbody?.querySelector('tr:last-child input[name="serial_number"]');
+        this.focusSerialInput(snInput);
+        return snInput;
+    }
+
+    /**
+     * Ajouter une ligne depuis un scan (douchette hors champ)
      */
     addRowFromScan(serialNumber) {
         logger.debug('📷 Scan détecté:', serialNumber);
@@ -362,18 +376,21 @@ export default class GestionLotsManager {
         if (this.isDuplicateSerial(value)) {
             logger.warn('⚠️ Doublon détecté:', value);
             this.showNotification(`S/N déjà scanné: ${value}`, 'warning');
+            this.prepareNextScanRow();
             return;
         }
 
-        const row = this.createRow(value, 'scan');
-        tbody.appendChild(row);
-
-        const snInput = row.querySelector('input[name="serial_number"]');
-        if (snInput) {
-            snInput.focus();
-            snInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Réutiliser la dernière ligne vide si présente, sinon en créer une remplie
+        const rows = [...tbody.querySelectorAll('tr')];
+        const lastRow = rows[rows.length - 1];
+        const lastSn = lastRow?.querySelector('input[name="serial_number"]');
+        if (lastSn && !lastSn.value.trim()) {
+            lastSn.value = value;
+        } else {
+            tbody.appendChild(this.createRow(value, 'scan'));
         }
 
+        this.prepareNextScanRow();
         this.flashScanPanel();
         this.updateLotUI();
         this.showNotification('Appareil scanné ajouté', 'success');
@@ -391,9 +408,8 @@ export default class GestionLotsManager {
         const row = this.createRow('', 'manual');
         tbody.appendChild(row);
         
-        // Focus sur le champ S/N
         const snInput = row.querySelector('input[name="serial_number"]');
-        if (snInput) snInput.focus();
+        this.focusSerialInput(snInput);
 
         this.updateLotUI();
         this.showNotification('Ligne ajoutée', 'success');
@@ -645,6 +661,7 @@ export default class GestionLotsManager {
         setTimeout(() => {
             const row = this.createRow('', 'scan');
             tbody.appendChild(row);
+            this.focusSerialInput(row.querySelector('input[name="serial_number"]'));
             this.updateLotUI();
         }, 100);
         
@@ -954,7 +971,7 @@ export default class GestionLotsManager {
         const nextSibling = row.nextElementSibling;
         row.remove();
         this.renumberRows();
-        this.ensureScanRow();
+        this.prepareNextScanRow();
         this.updateLotUI();
 
         this.showNotification('Ligne supprimée', 'success', {
@@ -962,7 +979,7 @@ export default class GestionLotsManager {
                 if (nextSibling) tbody.insertBefore(row, nextSibling);
                 else tbody.appendChild(row);
                 this.renumberRows();
-                this.ensureScanRow();
+                this.prepareNextScanRow();
                 this.updateLotUI();
             }
         });
@@ -970,14 +987,13 @@ export default class GestionLotsManager {
 
     ensureScanRow() {
         const tbody = document.getElementById('lot-table-body');
-        if (!tbody) return;
+        if (!tbody) return null;
 
         const rows = [...tbody.querySelectorAll('tr')];
         if (rows.length === 0) {
             const row = this.createRow('', 'scan');
             tbody.appendChild(row);
-            row.querySelector('input[name="serial_number"]')?.focus();
-            return;
+            return row;
         }
 
         const lastRow = rows[rows.length - 1];
@@ -985,7 +1001,9 @@ export default class GestionLotsManager {
         if (lastSn && lastSn.value.trim()) {
             const row = this.createRow('', 'scan');
             tbody.appendChild(row);
+            return row;
         }
+        return lastRow;
     }
     
     /**

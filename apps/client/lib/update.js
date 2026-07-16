@@ -51,15 +51,13 @@ async function runAutoUpdate(opts) {
         console.log('[Update] Version installée:', currentVersion);
 
         const { autoUpdater } = require('electron-updater');
+        // generic + releases/latest/download évite api.github.com (403 rate-limit / User-Agent)
         const feedUrl = {
-            provider: 'github',
-            owner: 'SandersonnDev',
-            repo: 'workspace',
-            releaseType: 'release',
-            allowPrerelease: false,
+            provider: 'generic',
+            url: 'https://github.com/SandersonnDev/workspace/releases/latest/download'
         };
         autoUpdater.setFeedURL(feedUrl);
-        console.log('[Update] Source: GitHub', feedUrl.owner + '/' + feedUrl.repo, 'releaseType:', feedUrl.releaseType);
+        console.log('[Update] Source: GitHub releases/latest/download', feedUrl.url);
         autoUpdater.autoDownload = true;
         autoUpdater.autoInstallOnAppQuit = false;
 

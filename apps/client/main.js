@@ -425,18 +425,143 @@ function getInstallPackageType() {
     return 'unknown';
 }
 
-async function fetchLatestGithubRelease() {
-    const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
-    const res = await fetch(apiUrl, {
-        headers: {
-            'Accept': 'application/vnd.github+json',
-            'User-Agent': `WorkspaceClient/${app.getVersion?.() || '0.0.0'}`
-        }
+/** Headers GitHub : User-Agent obligatoire, sinon 403. */
+function githubRequestHeaders(extra = {}) {
+    return {
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': `WorkspaceClient/${app.getVersion?.() || '0.0.0'}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...extra
+    };
+}
+
+function githubLatestDownloadUrl(fileName) {
+    return `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest/download/${encodeURIComponent(fileName)}`;
+}
+
+function latestYmlFileName(packageType = getInstallPackageType()) {
+    if (packageType === 'dmg') return 'latest-mac.yml';
+    if (packageType === 'nsis') return 'latest.yml';
+    return 'latest-linux.yml';
+}
+
+function defaultAssetFileName(packageType = getInstallPackageType()) {
+    if (packageType === 'AppImage') return 'workspace.AppImage';
+    if (packageType === 'deb') return 'workspace.deb';
+    if (packageType === 'dmg') {
+        const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+        return `workspace-${app.getVersion?.() || '0.0.0'}-${arch}.dmg`;
+    }
+    if (packageType === 'nsis') return 'workspace.exe';
+    return null;
+}
+
+function parseElectronUpdaterYml(text) {
+    const versionMatch = String(text || '').match(/^\s*version:\s*['"]?([^\s'"#]+)/m);
+    const urls = [...String(text || '').matchAll(/^\s*-\s*url:\s*['"]?([^\s'"#]+)/gm)].map(m => m[1]);
+    const pathMatch = String(text || '').match(/^\s*path:\s*['"]?([^\s'"#]+)/m);
+    return {
+        version: versionMatch ? normalizeSemver(versionMatch[1]) : null,
+        files: urls,
+        path: pathMatch ? pathMatch[1] : null
+    };
+}
+
+function pickAssetFileNameFromYml(yml, packageType) {
+    const files = Array.isArray(yml?.files) ? yml.files : [];
+    const lower = (s) => String(s || '').toLowerCase();
+    if (packageType === 'AppImage') {
+        return files.find(f => lower(f).endsWith('.appimage'))
+            || yml?.path
+            || defaultAssetFileName('AppImage');
+    }
+    if (packageType === 'deb') {
+        return files.find(f => lower(f).endsWith('.deb'))
+            || defaultAssetFileName('deb');
+    }
+    if (packageType === 'dmg') {
+        const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+        return files.find(f => lower(f).includes(arch) && lower(f).endsWith('.dmg'))
+            || files.find(f => lower(f).endsWith('.dmg'))
+            || null;
+    }
+    if (packageType === 'nsis') {
+        return files.find(f => lower(f).endsWith('.exe'))
+            || files.find(f => lower(f).endsWith('.msi'))
+            || defaultAssetFileName('nsis');
+    }
+    return null;
+}
+
+/**
+ * Métadonnées de release via latest-*.yml (pas api.github.com → évite 403 rate-limit).
+ */
+async function fetchLatestUpdateMeta(packageType = getInstallPackageType()) {
+    const ymlName = latestYmlFileName(packageType);
+    const ymlUrl = githubLatestDownloadUrl(ymlName);
+    const res = await fetch(ymlUrl, {
+        redirect: 'follow',
+        headers: githubRequestHeaders({ Accept: 'text/yaml, text/plain, */*' })
     });
     if (!res.ok) {
-        throw new Error(`GitHub API HTTP ${res.status}`);
+        try {
+            return await fetchLatestUpdateMetaFromApi(packageType);
+        } catch (apiErr) {
+            throw new Error(
+                `Impossible de lire ${ymlName} (HTTP ${res.status}). ${apiErr?.message || ''}`.trim()
+            );
+        }
     }
-    return await res.json();
+    const text = await res.text();
+    const yml = parseElectronUpdaterYml(text);
+    if (!yml.version) {
+        throw new Error(`Version introuvable dans ${ymlName}`);
+    }
+    const assetName = pickAssetFileNameFromYml(yml, packageType);
+    const downloadUrl = assetName ? githubLatestDownloadUrl(assetName) : null;
+    return {
+        latestVersion: yml.version,
+        releaseName: `v${yml.version}`,
+        assetName,
+        downloadUrl,
+        packageType,
+        source: 'yml'
+    };
+}
+
+async function fetchLatestUpdateMetaFromApi(packageType = getInstallPackageType()) {
+    const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
+    const res = await fetch(apiUrl, { headers: githubRequestHeaders() });
+    const bodyText = await res.text().catch(() => '');
+    if (!res.ok) {
+        let detail = `GitHub API HTTP ${res.status}`;
+        if (res.status === 403) {
+            detail += ' — User-Agent requis ou rate-limit (60 req/h sans token)';
+            try {
+                const j = JSON.parse(bodyText);
+                if (j?.message) detail += ` (${j.message})`;
+            } catch (_) {
+                if (bodyText) detail += ` (${bodyText.slice(0, 180)})`;
+            }
+        }
+        throw new Error(detail);
+    }
+    let release;
+    try {
+        release = JSON.parse(bodyText);
+    } catch (_) {
+        throw new Error('Réponse GitHub API invalide');
+    }
+    const latestVersion = normalizeSemver(release?.tag_name || release?.name || '');
+    const asset = pickReleaseAsset(release, packageType);
+    return {
+        latestVersion: latestVersion || null,
+        releaseName: release?.name || release?.tag_name || null,
+        assetName: asset?.name || null,
+        downloadUrl: asset?.browser_download_url || (asset?.name ? githubLatestDownloadUrl(asset.name) : null),
+        packageType,
+        source: 'api'
+    };
 }
 
 function pickReleaseAsset(releaseJson, packageType = getInstallPackageType()) {
@@ -473,7 +598,7 @@ function pickReleaseAsset(releaseJson, packageType = getInstallPackageType()) {
 async function downloadToFile(downloadUrl, destPath, onProgress) {
     const res = await fetch(downloadUrl, {
         redirect: 'follow',
-        headers: { 'User-Agent': `WorkspaceClient/${app.getVersion?.() || '0.0.0'}` }
+        headers: githubRequestHeaders({ Accept: '*/*' })
     });
     if (!res.ok) throw new Error(`Téléchargement HTTP ${res.status}`);
 
@@ -545,17 +670,16 @@ async function downloadAndApplyAppImageUpdate() {
         return { success: false, error: 'APPIMAGE introuvable (lance l’app via AppImage)' };
     }
 
-    const release = await fetchLatestGithubRelease();
-    const asset = pickReleaseAsset(release, 'AppImage');
-    if (!asset?.browser_download_url) {
+    const meta = await fetchLatestUpdateMeta('AppImage');
+    if (!meta?.downloadUrl) {
         return { success: false, error: 'Aucun asset AppImage trouvé sur la release' };
     }
-    const latest = normalizeSemver(release?.tag_name || release?.name || '');
+    const latest = normalizeSemver(meta.latestVersion || '');
     const tempDir = path.join(app.getPath('temp'), 'workspace-manual-update');
     try { fs.mkdirSync(tempDir, { recursive: true }); } catch (_) { }
     const downloadedPath = path.join(tempDir, 'workspace.appimage');
 
-    const dl = await downloadToFile(asset.browser_download_url, downloadedPath, sendUpdateProgress);
+    const dl = await downloadToFile(meta.downloadUrl, downloadedPath, sendUpdateProgress);
     linuxAppImageBackup(currentApp);
 
     const helper = tryLinuxAppImageUpdateHelperDetailed(currentApp, downloadedPath);
@@ -588,17 +712,16 @@ async function downloadAndApplyAppImageUpdate() {
  * Mise à jour .deb : télécharge le paquet puis l’installe (pkexec dpkg / xdg-open en repli).
  */
 async function downloadAndApplyDebUpdate() {
-    const release = await fetchLatestGithubRelease();
-    const asset = pickReleaseAsset(release, 'deb');
-    if (!asset?.browser_download_url) {
+    const meta = await fetchLatestUpdateMeta('deb');
+    if (!meta?.downloadUrl) {
         return { success: false, error: 'Aucun asset .deb trouvé sur la release' };
     }
-    const latest = normalizeSemver(release?.tag_name || release?.name || '');
+    const latest = normalizeSemver(meta.latestVersion || '');
     const tempDir = path.join(app.getPath('temp'), 'workspace-manual-update');
     try { fs.mkdirSync(tempDir, { recursive: true }); } catch (_) { }
     const downloadedPath = path.join(tempDir, 'workspace.deb');
 
-    const dl = await downloadToFile(asset.browser_download_url, downloadedPath, sendUpdateProgress);
+    const dl = await downloadToFile(meta.downloadUrl, downloadedPath, sendUpdateProgress);
 
     // Installation privilégiée : pkexec dpkg -i, sinon ouverture du fichier pour install manuelle
     const installResult = await new Promise((resolve) => {
@@ -667,11 +790,8 @@ async function downloadAndApplyDebUpdate() {
 async function downloadAndApplyElectronUpdater() {
     const { autoUpdater } = require('electron-updater');
     autoUpdater.setFeedURL({
-        provider: 'github',
-        owner: GITHUB_OWNER,
-        repo: GITHUB_REPO,
-        releaseType: 'release',
-        allowPrerelease: false
+        provider: 'generic',
+        url: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest/download`
     });
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = false;
@@ -731,10 +851,9 @@ ipcMain.handle('check-app-update', async () => {
     try {
         const current = normalizeSemver(app.getVersion());
         const packageType = getInstallPackageType();
-        const release = await fetchLatestGithubRelease();
-        const latest = normalizeSemver(release?.tag_name || release?.name || '');
-        const asset = pickReleaseAsset(release, packageType);
-        const downloadUrl = asset?.browser_download_url || null;
+        const meta = await fetchLatestUpdateMeta(packageType);
+        const latest = normalizeSemver(meta?.latestVersion || '');
+        const downloadUrl = meta?.downloadUrl || null;
         const available = !!latest && compareSemver(latest, current) > 0;
         return {
             success: true,
@@ -743,7 +862,7 @@ ipcMain.handle('check-app-update', async () => {
             latestVersion: latest || null,
             downloadUrl,
             packageType,
-            releaseName: release?.name || null
+            releaseName: meta?.releaseName || null
         };
     } catch (e) {
         return { success: false, error: e?.message || String(e) };
