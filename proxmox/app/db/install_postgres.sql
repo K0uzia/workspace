@@ -53,7 +53,8 @@ CREATE TABLE IF NOT EXISTS lots (
   description TEXT,
   status VARCHAR(50),
   received_at TIMESTAMP DEFAULT NOW(),
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT NOW(),
+  deleted_at TIMESTAMP
 );
 
 -- Table lot_items
@@ -66,8 +67,13 @@ CREATE TABLE IF NOT EXISTS lot_items (
   modele_id INTEGER,
   entry_type VARCHAR(50),
   entry_date DATE,
-  entry_time TIME
+  entry_time TIME,
+  deleted_at TIMESTAMP
 );
+
+-- Soft-delete migrations (bases déjà installées)
+ALTER TABLE lots ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+ALTER TABLE lot_items ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
 
 -- Table marques
 CREATE TABLE IF NOT EXISTS marques (

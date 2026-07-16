@@ -1113,12 +1113,15 @@ function broadcastUserCount() {
         `;
         let whereClause = '';
         const queryParams: any[] = [];
+        const notDeleted = "(l.deleted_at IS NULL)";
         if (statusFilter === 'active') {
-          whereClause = " WHERE (l.status IS NULL OR l.status != 'finished')";
+          whereClause = ` WHERE ${notDeleted} AND (l.status IS NULL OR l.status NOT IN ('finished', 'cancelled'))`;
         } else if (statusFilter === 'finished') {
-          whereClause = " WHERE l.status = 'finished'";
+          whereClause = ` WHERE ${notDeleted} AND l.status = 'finished'`;
+        } else {
+          // status=all or no filter: return all non-deleted lots
+          whereClause = ` WHERE ${notDeleted}`;
         }
-        // status=all or no filter: return all lots
         const orderSql = ' ORDER BY l.received_at DESC';
         const result = await query(selectSql + whereClause + orderSql, queryParams);
         const lots = (result.rows as any[]).map((row: any) => ({
@@ -1253,12 +1256,12 @@ function broadcastUserCount() {
             l.id, l.name, l.status, l.item_count, l.description, 
             l.received_at, l.created_at, l.updated_at, l.finished_at, l.recovered_at, l.pdf_path
           FROM lots l
-          WHERE l.id = $1
+          WHERE l.id = $1 AND (l.deleted_at IS NULL)
         `, [id]);
 
         if (lotResult.rowCount === 0) {
           reply.statusCode = 404;
-          return { error: 'Lot not found' };
+          return { error: 'Lot not found', message: 'Lot introuvable.' };
         }
 
         const lot = lotResult.rows[0];
@@ -1395,15 +1398,134 @@ function broadcastUserCount() {
       }
     });
 
+    async function findOrCreateMarqueIdByName(name: string): Promise<number | null> {
+      const trimmed = String(name || '').trim();
+      if (!trimmed) return null;
+      const found = await query(
+        'SELECT id FROM marques WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1',
+        [trimmed]
+      );
+      if (found.rowCount && found.rowCount > 0) return found.rows[0].id;
+      try {
+        const created = await query('INSERT INTO marques (name) VALUES ($1) RETURNING id', [trimmed]);
+        return created.rows[0]?.id ?? null;
+      } catch (err: any) {
+        if (err.code === '23505') {
+          const again = await query(
+            'SELECT id FROM marques WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1',
+            [trimmed]
+          );
+          return again.rows[0]?.id ?? null;
+        }
+        throw err;
+      }
+    }
+
+    async function findOrCreateModeleIdByName(marqueId: number, name: string): Promise<number | null> {
+      const trimmed = String(name || '').trim();
+      if (!trimmed || !marqueId) return null;
+      const found = await query(
+        'SELECT id FROM modeles WHERE marque_id = $1 AND LOWER(TRIM(name)) = LOWER($2) LIMIT 1',
+        [marqueId, trimmed]
+      );
+      if (found.rowCount && found.rowCount > 0) return found.rows[0].id;
+      try {
+        const created = await query(
+          'INSERT INTO modeles (marque_id, name) VALUES ($1, $2) RETURNING id',
+          [marqueId, trimmed]
+        );
+        return created.rows[0]?.id ?? null;
+      } catch (err: any) {
+        if (err.code === '23505') {
+          const again = await query(
+            'SELECT id FROM modeles WHERE marque_id = $1 AND LOWER(TRIM(name)) = LOWER($2) LIMIT 1',
+            [marqueId, trimmed]
+          );
+          return again.rows[0]?.id ?? null;
+        }
+        throw err;
+      }
+    }
+
     // Update a lot item
     fastify.put('/api/lots/items/:id', async (request: FastifyRequest, reply: FastifyReply) => {
       const { id } = request.params as { id: string };
-      const { state, technician, recovered_at, os } = request.body as any;
+      const {
+        state,
+        technician,
+        recovered_at,
+        os,
+        serial_number,
+        type,
+        marque_id,
+        modele_id,
+        marque_name,
+        modele_name
+      } = request.body as any;
 
       try {
         const updates: string[] = [];
         const values: any[] = [];
         let paramIndex = 1;
+
+        if (serial_number !== undefined) {
+          updates.push(`serial_number = $${paramIndex++}`);
+          values.push(
+            serial_number === null || (typeof serial_number === 'string' && serial_number.trim() === '')
+              ? null
+              : String(serial_number).trim()
+          );
+        }
+
+        if (type !== undefined) {
+          updates.push(`type = $${paramIndex++}`);
+          values.push(
+            type === null || (typeof type === 'string' && type.trim() === '')
+              ? null
+              : String(type).trim()
+          );
+        }
+
+        let resolvedMarqueId: number | null | undefined = undefined;
+        if (marque_id !== undefined || marque_name !== undefined) {
+          if (marque_id !== undefined && marque_id !== null && marque_id !== '') {
+            const parsed = parseInt(String(marque_id), 10);
+            resolvedMarqueId = Number.isNaN(parsed) ? null : parsed;
+          } else if (marque_name !== undefined) {
+            const name = String(marque_name || '').trim();
+            resolvedMarqueId = name ? await findOrCreateMarqueIdByName(name) : null;
+          } else {
+            resolvedMarqueId = null;
+          }
+          updates.push(`marque_id = $${paramIndex++}`);
+          values.push(resolvedMarqueId);
+        }
+
+        let resolvedModeleId: number | null | undefined = undefined;
+        if (modele_id !== undefined || modele_name !== undefined) {
+          if (modele_id !== undefined && modele_id !== null && modele_id !== '') {
+            const parsed = parseInt(String(modele_id), 10);
+            resolvedModeleId = Number.isNaN(parsed) ? null : parsed;
+          } else if (modele_name !== undefined) {
+            const name = String(modele_name || '').trim();
+            if (name) {
+              let marqueForModele = resolvedMarqueId;
+              if (marqueForModele === undefined) {
+                const current = await query('SELECT marque_id FROM lot_items WHERE id = $1', [id]);
+                marqueForModele = current.rows[0]?.marque_id ?? null;
+              }
+              resolvedModeleId = marqueForModele
+                ? await findOrCreateModeleIdByName(marqueForModele, name)
+                : null;
+            } else {
+              resolvedModeleId = null;
+            }
+          } else {
+            resolvedModeleId = null;
+          }
+          updates.push(`modele_id = $${paramIndex++}`);
+          values.push(resolvedModeleId);
+        }
 
         if (state !== undefined) {
           if (state === null || (typeof state === 'string' && state.trim() === '')) {
@@ -1487,6 +1609,275 @@ function broadcastUserCount() {
           detail: error.detail,
           stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         };
+      }
+    });
+
+    // Ajouter un item à un lot actif
+    fastify.post('/api/lots/:id/items', async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      const body = (request.body as any) || {};
+      const {
+        serialNumber,
+        serial_number,
+        type,
+        marqueId,
+        marque_id,
+        modeleId,
+        modele_id,
+        marque_name,
+        modele_name,
+        entryType,
+        entry_type,
+        date,
+        entry_date,
+        time,
+        entry_time,
+        os,
+        state,
+        technician
+      } = body;
+
+      try {
+        const lotResult = await query(
+          `SELECT id, status FROM lots WHERE id = $1 AND (deleted_at IS NULL)`,
+          [id]
+        );
+        if (lotResult.rowCount === 0) {
+          reply.statusCode = 404;
+          return { error: 'Lot not found', message: 'Lot introuvable.' };
+        }
+        const lot = lotResult.rows[0];
+        if (lot.status === 'finished') {
+          reply.statusCode = 400;
+          return { error: 'Lot finished', message: 'Impossible d\'ajouter du matériel à un lot terminé.' };
+        }
+
+        let resolvedMarqueId: number | null = null;
+        if (marqueId != null || marque_id != null) {
+          const parsed = parseInt(String(marqueId ?? marque_id), 10);
+          resolvedMarqueId = Number.isNaN(parsed) ? null : parsed;
+        } else if (marque_name) {
+          resolvedMarqueId = await findOrCreateMarqueIdByName(String(marque_name));
+        }
+
+        let resolvedModeleId: number | null = null;
+        if (modeleId != null || modele_id != null) {
+          const parsed = parseInt(String(modeleId ?? modele_id), 10);
+          resolvedModeleId = Number.isNaN(parsed) ? null : parsed;
+        } else if (modele_name && resolvedMarqueId) {
+          resolvedModeleId = await findOrCreateModeleIdByName(resolvedMarqueId, String(modele_name));
+        }
+
+        const sn = String(serial_number ?? serialNumber ?? '').trim() || null;
+        const itemType = String(type || '').trim() || null;
+        const entryTypeVal = String(entry_type ?? entryType ?? 'manual').trim() || 'manual';
+        const entryDateVal = entry_date ?? date ?? null;
+        const entryTimeVal = entry_time ?? time ?? null;
+        const osVal = (typeof os === 'string' && ['windows', 'linux', 'chrome', 'apple', 'android', 'bsd'].includes(os))
+          ? os
+          : 'linux';
+        const stateVal = state != null && String(state).trim() !== '' ? String(state).trim() : null;
+        const techVal = technician != null && String(technician).trim() !== '' ? String(technician).trim() : null;
+
+        const insertResult = await query(
+          `INSERT INTO lot_items
+           (lot_id, serial_number, type, marque_id, modele_id, entry_type, entry_date, entry_time, os, state, technician, state_changed_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CASE WHEN $10::text IS NOT NULL THEN NOW() ELSE NULL END)
+           RETURNING *`,
+          [
+            id,
+            sn,
+            itemType,
+            resolvedMarqueId,
+            resolvedModeleId,
+            entryTypeVal,
+            entryDateVal,
+            entryTimeVal,
+            osVal,
+            stateVal,
+            techVal
+          ]
+        );
+
+        await query(
+          `UPDATE lots SET item_count = (
+             SELECT COUNT(*) FROM lot_items WHERE lot_id = $1 AND (deleted_at IS NULL)
+           ), updated_at = NOW() WHERE id = $1`,
+          [id]
+        );
+
+        const row = insertResult.rows[0];
+        let marqueName = null;
+        let modeleName = null;
+        if (row.marque_id) {
+          const m = await query('SELECT name FROM marques WHERE id = $1', [row.marque_id]);
+          marqueName = m.rows[0]?.name ?? null;
+        }
+        if (row.modele_id) {
+          const m = await query('SELECT name FROM modeles WHERE id = $1', [row.modele_id]);
+          modeleName = m.rows[0]?.name ?? null;
+        }
+
+        return {
+          success: true,
+          item: {
+            id: row.id,
+            lot_id: row.lot_id,
+            serial_number: row.serial_number,
+            type: row.type,
+            marque_id: row.marque_id,
+            modele_id: row.modele_id,
+            marque_name: marqueName,
+            modele_name: modeleName,
+            state: row.state || null,
+            technician: row.technician || null,
+            state_changed_at: row.state_changed_at || null,
+            entry_type: row.entry_type,
+            entry_date: row.entry_date,
+            entry_time: row.entry_time,
+            os: row.os || 'linux'
+          }
+        };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'POST /api/lots/:id/items error');
+        reply.statusCode = 500;
+        return { error: 'Database error', message: error.message || 'Unknown error' };
+      }
+    });
+
+    // Soft-delete d'un item de lot
+    fastify.delete('/api/lots/items/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+
+      try {
+        const current = await query(
+          `SELECT li.*, l.status AS lot_status
+           FROM lot_items li
+           JOIN lots l ON l.id = li.lot_id
+           WHERE li.id = $1 AND (li.deleted_at IS NULL)`,
+          [id]
+        );
+        if (current.rowCount === 0) {
+          reply.statusCode = 404;
+          return { error: 'Lot item not found', message: 'Matériel introuvable.' };
+        }
+        const item = current.rows[0];
+        if (item.lot_status === 'finished') {
+          reply.statusCode = 400;
+          return { error: 'Lot finished', message: 'Impossible de retirer du matériel d\'un lot terminé.' };
+        }
+
+        await query(
+          `UPDATE lot_items SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1`,
+          [id]
+        );
+        await query(
+          `UPDATE lots SET item_count = (
+             SELECT COUNT(*) FROM lot_items WHERE lot_id = $1 AND (deleted_at IS NULL)
+           ), updated_at = NOW() WHERE id = $1`,
+          [item.lot_id]
+        );
+
+        return {
+          success: true,
+          item: { id: item.id, lot_id: item.lot_id, deleted: true }
+        };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'DELETE /api/lots/items/:id error');
+        reply.statusCode = 500;
+        return { error: 'Database error', message: error.message || 'Unknown error' };
+      }
+    });
+
+    // Restaurer un item soft-supprimé (undo)
+    fastify.post('/api/lots/items/:id/restore', async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+
+      try {
+        const current = await query(
+          `SELECT li.*, l.status AS lot_status
+           FROM lot_items li
+           JOIN lots l ON l.id = li.lot_id
+           WHERE li.id = $1`,
+          [id]
+        );
+        if (current.rowCount === 0) {
+          reply.statusCode = 404;
+          return { error: 'Lot item not found', message: 'Matériel introuvable.' };
+        }
+        const item = current.rows[0];
+        if (item.lot_status === 'finished') {
+          reply.statusCode = 400;
+          return { error: 'Lot finished', message: 'Impossible de restaurer du matériel sur un lot terminé.' };
+        }
+        if (item.deleted_at == null) {
+          return { success: true, item: { id: item.id, lot_id: item.lot_id, restored: false } };
+        }
+
+        await query(
+          `UPDATE lot_items SET deleted_at = NULL, updated_at = NOW() WHERE id = $1`,
+          [id]
+        );
+        await query(
+          `UPDATE lots SET item_count = (
+             SELECT COUNT(*) FROM lot_items WHERE lot_id = $1 AND (deleted_at IS NULL)
+           ), updated_at = NOW() WHERE id = $1`,
+          [item.lot_id]
+        );
+
+        return {
+          success: true,
+          item: { id: item.id, lot_id: item.lot_id, restored: true }
+        };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'POST /api/lots/items/:id/restore error');
+        reply.statusCode = 500;
+        return { error: 'Database error', message: error.message || 'Unknown error' };
+      }
+    });
+
+    // Soft-delete d'un lot entier (annulation d'un lot en cours) + soft-delete de ses items
+    fastify.delete('/api/lots/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+
+      try {
+        const lotResult = await query(
+          `SELECT id, status FROM lots WHERE id = $1 AND (deleted_at IS NULL)`,
+          [id]
+        );
+        if (lotResult.rowCount === 0) {
+          reply.statusCode = 404;
+          return { error: 'Lot not found', message: 'Lot introuvable.' };
+        }
+        const lot = lotResult.rows[0];
+        if (lot.status === 'finished') {
+          reply.statusCode = 400;
+          return {
+            error: 'Lot finished',
+            message: 'Impossible de supprimer un lot terminé. Utilisez l\'administration si nécessaire.'
+          };
+        }
+
+        await query(
+          `UPDATE lot_items SET deleted_at = NOW(), updated_at = NOW()
+           WHERE lot_id = $1 AND (deleted_at IS NULL)`,
+          [id]
+        );
+        await query(
+          `UPDATE lots SET deleted_at = NOW(), status = 'cancelled', item_count = 0, updated_at = NOW()
+           WHERE id = $1`,
+          [id]
+        );
+
+        return {
+          success: true,
+          message: 'Lot supprimé.',
+          lot: { id: Number(id), deleted: true, status: 'cancelled' }
+        };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'DELETE /api/lots/:id error');
+        reply.statusCode = 500;
+        return { error: 'Database error', message: error.message || 'Unknown error' };
       }
     });
 
@@ -3375,6 +3766,10 @@ function broadcastUserCount() {
 ║   POST   /api/agenda/events       - Create event                          ║
 ║   GET    /api/lots                - List reception lots                   ║
 ║   POST   /api/lots                - Create lot                            ║
+║   POST   /api/lots/:id/items      - Add item to lot                       ║
+║   DELETE /api/lots/items/:id      - Soft-delete lot item                  ║
+║   POST   /api/lots/items/:id/restore - Restore soft-deleted item          ║
+║   DELETE /api/lots/:id            - Cancel / soft-delete lot              ║
 ║                                                                            ║
 ║ 💻 MANAGEMENT COMMANDS (on host)                                          ║
 ║   proxmox status                  - Show service status                   ║
