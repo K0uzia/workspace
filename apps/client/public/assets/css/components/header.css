@@ -132,14 +132,22 @@ menu {
 
 .nav-action {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--unit-1);
     padding-left: var(--unit-2);
     border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .nav-profile,
+.nav-theme,
 .nav-settings {
     position: relative;
     min-width: 40px;
+}
+
+.nav-theme[data-theme="light"] i {
+    color: rgba(255, 204, 51, 0.92);
 }
 
 .profile-update-ping {
@@ -376,6 +384,10 @@ menu {
 
     .nav-action {
         position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--unit-1);
         margin-top: 0;
         padding-top: var(--unit-2);
         padding-left: 0;

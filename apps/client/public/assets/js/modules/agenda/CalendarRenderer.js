@@ -205,7 +205,6 @@ export default class CalendarRenderer {
 
         const eventColor = ev.color || '#5b7cfa';
         button.style.backgroundColor = this.softEventBg(eventColor);
-        button.style.setProperty('--event-accent', eventColor);
         button.style.alignItems = 'flex-start';
 
         button.addEventListener('click', (e) => {
@@ -218,11 +217,13 @@ export default class CalendarRenderer {
 
     softEventBg(hex) {
         const raw = String(hex || '').replace('#', '');
-        if (!/^[0-9a-fA-F]{6}$/.test(raw)) return 'rgba(91, 124, 250, 0.16)';
+        const isLight = document.documentElement.getAttribute('data-theme-dark') === '0';
+        const alpha = isLight ? 0.32 : 0.18;
+        if (!/^[0-9a-fA-F]{6}$/.test(raw)) return `rgba(91, 124, 250, ${alpha})`;
         const r = parseInt(raw.slice(0, 2), 16);
         const g = parseInt(raw.slice(2, 4), 16);
         const b = parseInt(raw.slice(4, 6), 16);
-        return `rgba(${r}, ${g}, ${b}, 0.18)`;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
     displayEventDetails(ev, onEditClick) {

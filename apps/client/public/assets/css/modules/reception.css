@@ -4,11 +4,10 @@
  */
 
 .r-root {
-    --recep-page-bg: #0c111b;
-    --recep-panel-bg: #131a26;
-    --recep-panel-bg-soft: #182131;
-    --recep-panel-border: rgba(255, 255, 255, 0.08);
-    --recep-panel-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+    --recep-page-bg: var(--bg-base);
+    --recep-panel-bg: var(--bg-surface);
+    --recep-panel-bg-soft: var(--bg-surface-2);
+    --recep-panel-border: var(--border);
     --recep-panel-radius: 14px;
     --recep-gap: var(--unit-3);
     display: grid;
@@ -22,7 +21,7 @@
     max-width: 100%;
     box-sizing: border-box;
     background-color: var(--recep-page-bg);
-    color: #d7dfec;
+    color: var(--text-primary);
 }
 
 .r-header {

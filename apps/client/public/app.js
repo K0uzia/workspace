@@ -120,17 +120,49 @@ class PageManager {
         document.documentElement.setAttribute('data-theme-dark', enabled ? '1' : '0');
         document.body.style.backgroundColor = '';
         document.body.style.color = '';
+        this.syncThemeToggleUI(enabled);
     }
 
-    syncThemeToggleUI() {
-        const toggleBtn = document.getElementById('settingsThemeDarkToggle');
-        const hiddenInput = document.getElementById('settingsThemeDark');
-        const textEl = document.getElementById('settingsThemeDarkToggleText');
-        if (!toggleBtn || !hiddenInput || !textEl) return;
-        const isDark = hiddenInput.value === '1';
-        toggleBtn.setAttribute('aria-checked', isDark ? 'true' : 'false');
-        toggleBtn.dataset.state = isDark ? 'on' : 'off';
-        textEl.textContent = isDark ? 'ON' : 'OFF';
+    isDarkThemeEnabled() {
+        return document.documentElement.getAttribute('data-theme-dark') !== '0';
+    }
+
+    setThemePreference(isDark) {
+        const enabled = !!isDark;
+        try {
+            localStorage.setItem(this.themeStorageKey, enabled ? '1' : '0');
+        } catch (_) {}
+        this.applyThemePreference(enabled);
+    }
+
+    syncThemeToggleUI(isDark = this.isDarkThemeEnabled()) {
+        const enabled = !!isDark;
+        const navBtn = document.getElementById('navThemeToggle');
+        const navIcon = document.getElementById('navThemeIcon');
+        const navText = document.getElementById('navThemeText');
+        if (navBtn) {
+            const label = enabled ? 'Thème sombre' : 'Thème clair';
+            navBtn.title = label;
+            navBtn.setAttribute('aria-label', label);
+            navBtn.dataset.theme = enabled ? 'dark' : 'light';
+        }
+        if (navIcon) {
+            navIcon.className = enabled ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        }
+        if (navText) {
+            navText.textContent = enabled ? 'Thème sombre' : 'Thème clair';
+        }
+
+        // Sync éventuel du toggle paramètres (s’il est présent)
+        const settingsBtn = document.getElementById('settingsThemeDarkToggle');
+        const settingsInput = document.getElementById('settingsThemeDark');
+        const settingsText = document.getElementById('settingsThemeDarkToggleText');
+        if (settingsInput) settingsInput.value = enabled ? '1' : '0';
+        if (settingsBtn) {
+            settingsBtn.setAttribute('aria-checked', enabled ? 'true' : 'false');
+            settingsBtn.dataset.state = enabled ? 'on' : 'off';
+        }
+        if (settingsText) settingsText.textContent = enabled ? 'ON' : 'OFF';
     }
 
     /**
@@ -274,12 +306,14 @@ class PageManager {
             await this.loadSettingsModal();
             this.attachListeners();
             this.attachSettingsNavListener();
+            this.attachThemeNavListener();
         } catch (error) {
             this.logger.error('Erreur import AuthManager', error);
             try {
                 await this.loadSettingsModal();
                 this.attachListeners();
                 this.attachSettingsNavListener();
+                this.attachThemeNavListener();
             } catch (_) { /* ignore */ }
         }
     }
@@ -292,6 +326,17 @@ class PageManager {
             this.showSettingsModal();
         });
         navSettings.dataset.listenerAttached = 'true';
+    }
+
+    attachThemeNavListener() {
+        const navTheme = document.getElementById('navThemeToggle');
+        if (!navTheme || navTheme.dataset.listenerAttached) return;
+        this.syncThemeToggleUI();
+        navTheme.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.setThemePreference(!this.isDarkThemeEnabled());
+        });
+        navTheme.dataset.listenerAttached = 'true';
     }
 
     async loadAuthModal() {
@@ -497,11 +542,7 @@ class PageManager {
         document.querySelectorAll('.settings-auth-only').forEach(el => { el.style.display = 'none'; });
         const accountDropdown = document.getElementById('settingsDropdownAccount');
         if (accountDropdown) accountDropdown.style.display = 'none';
-        const themeInput = document.getElementById('settingsThemeDark');
-        if (themeInput) {
-            themeInput.value = localStorage.getItem(this.themeStorageKey) === '1' ? '1' : '0';
-            this.syncThemeToggleUI();
-        }
+        this.syncThemeToggleUI();
         this._updateDownloaded = false;
         this.refreshUpdateUI();
         modal.classList.remove('hidden');
@@ -519,7 +560,6 @@ class PageManager {
         const deleteConfirmBtn = document.getElementById('settingsDeleteConfirmBtn');
         const deleteCancelBtn = document.getElementById('settingsDeleteCancelBtn');
         const themeToggleBtn = document.getElementById('settingsThemeDarkToggle');
-        const themeInput = document.getElementById('settingsThemeDark');
         const btnCheckUpdate = document.getElementById('settingsBtnCheckUpdate');
         const btnDownloadUpdate = document.getElementById('settingsBtnDownloadUpdate');
 
@@ -529,17 +569,10 @@ class PageManager {
 
         if (closeBtn) closeBtn.addEventListener('click', hideModal);
         if (overlay) overlay.addEventListener('click', hideModal);
-        if (themeToggleBtn && themeInput) {
-            themeInput.value = localStorage.getItem(this.themeStorageKey) === '1' ? '1' : '0';
+        if (themeToggleBtn) {
             this.syncThemeToggleUI();
             themeToggleBtn.addEventListener('click', () => {
-                const nextDark = themeInput.value !== '1';
-                themeInput.value = nextDark ? '1' : '0';
-                try {
-                    localStorage.setItem(this.themeStorageKey, themeInput.value);
-                } catch (_) {}
-                this.applyThemePreference(nextDark);
-                this.syncThemeToggleUI();
+                this.setThemePreference(!this.isDarkThemeEnabled());
             });
         }
 
@@ -1306,7 +1339,7 @@ class PageManager {
                         const eventColor = event.color || '#3788d8';
                         const backgroundColor = eventColor + '20';
                         return `
-                            <div class="home-event-item" data-color="${eventColor}" data-bg-color="${backgroundColor}">
+                            <div class="home-event-item" data-bg-color="${backgroundColor}">
                                 <div class="home-event-item-title">${event.title}</div>
                                 <div class="home-event-item-time">
                                     ${startTime} à ${endTime}
@@ -1317,10 +1350,8 @@ class PageManager {
                     }).join('');
                     
                     document.querySelectorAll('.home-event-item').forEach(el => {
-                        const color = el.getAttribute('data-color');
                         const bgColor = el.getAttribute('data-bg-color');
                         el.style.backgroundColor = bgColor;
-                        el.style.borderLeft = `4px solid ${color}`;
                     });
                 }
             }

@@ -139,6 +139,11 @@ textarea::placeholder {
     color: #9db5ff;
 }
 
+html[data-theme-dark="0"] .r-root .lot-config__label,
+html[data-theme-dark="0"] .r-root .recep-label {
+    color: #3e3b8c;
+}
+
 .r-root .lot-table tbody tr:hover,
 .r-root .recep-table tbody tr:hover {
     background: rgba(124, 156, 255, 0.08);
@@ -153,4 +158,13 @@ textarea::placeholder {
 .r-root .modal-footer {
     border-top-color: rgba(255, 255, 255, 0.08);
     background: rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme-dark="0"] .r-root .modal-footer {
+    border-top-color: var(--border);
+    background: rgba(15, 23, 42, 0.04);
+}
+
+html[data-theme-dark="0"] .r-root .lot-table tbody tr:nth-child(even) {
+    background: rgba(15, 23, 42, 0.03);
 }

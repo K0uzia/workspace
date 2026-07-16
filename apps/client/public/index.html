@@ -4,6 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        try {
+            var t = localStorage.getItem('workspace_theme_dark');
+            document.documentElement.setAttribute('data-theme-dark', t === '0' ? '0' : '1');
+        } catch (e) {}
+    </script>
     <link rel="stylesheet" href="./assets/css/global.css">
     <!-- Font Awesome Icons (Local - Electron Compatible) -->
     <link rel="stylesheet" href="./assets/css/fontawesome-local.css">

@@ -1,6 +1,6 @@
 {
   "name": "workspace",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "main": "main.js",
   "homepage": "https://github.com/SandersonnDev/workspace#readme",
   "description": "Workspace - Interface utilisateur collaborative",
@@ -55,6 +55,9 @@
     "copyright": "Copyright © 2026 Sandersonn",
     "electronVersion": "39.2.4",
     "npmRebuild": false,
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
     "publish": {
       "provider": "github",
       "owner": "SandersonnDev",
@@ -158,6 +161,8 @@
     },
     "linux": {
       "maintainer": "Sandersonn <sandersonn@users.noreply.github.com>",
+      "executableName": "workspace",
+      "synopsis": "Workspace - Interface utilisateur collaborative",
       "target": [
         {
           "target": "AppImage",
@@ -179,25 +184,30 @@
         "entry": {
           "Name": "Workspace",
           "Comment": "Workspace - Interface utilisateur collaborative",
-          "Categories": "Utility;"
+          "Categories": "Utility;",
+          "StartupWMClass": "workspace"
         }
       }
     },
     "appImage": {
-      "artifactName": "workspace.${ext}"
+      "artifactName": "workspace.${ext}",
+      "compression": "zstd"
     },
     "deb": {
+      "packageCategory": "utils",
       "depends": [
-        "libgtk-3-0",
-        "libnotify4",
+        "libgtk-3-0 | libgtk-3-0t64",
+        "libnotify4 | libnotify4t64",
         "libnss3",
-        "libxss1",
+        "libxss1 | libxss1t64",
+        "libxtst6 | libxtst6t64",
         "xdg-utils",
-        "libatspi2.0-0",
-        "libsecret-1-0"
+        "libatspi2.0-0 | libatspi2.0-0t64",
+        "libuuid1",
+        "libsecret-1-0 | libsecret-1-0t64",
+        "libasound2 | libasound2t64"
       ],
       "priority": "optional",
-      "category": "Utility",
       "artifactName": "${productName}.${ext}"
     }
   },

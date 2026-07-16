@@ -1,0 +1,1615 @@
+/**
+ * Thème clair — overrides agressifs (chargé après recep-dark)
+ * Cible html[data-theme-dark="0"] pour forcer lisibilité partout.
+ * recep-dark.css ne s'applique qu'en data-theme-dark="1".
+ */
+
+/* ========== Base globale ========== */
+
+html[data-theme-dark="0"] body,
+html[data-theme-dark="0"] main,
+html[data-theme-dark="0"] .recep-section {
+    background-color: #f4f5f7 !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] h1,
+html[data-theme-dark="0"] h2,
+html[data-theme-dark="0"] h3,
+html[data-theme-dark="0"] h4,
+html[data-theme-dark="0"] p,
+html[data-theme-dark="0"] label,
+html[data-theme-dark="0"] span,
+html[data-theme-dark="0"] li,
+html[data-theme-dark="0"] td,
+html[data-theme-dark="0"] th {
+    color: inherit;
+}
+
+html[data-theme-dark="0"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+html[data-theme-dark="0"] select,
+html[data-theme-dark="0"] textarea {
+    background-color: #ffffff !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.18) !important;
+}
+
+html[data-theme-dark="0"] input::placeholder,
+html[data-theme-dark="0"] textarea::placeholder {
+    color: #6b7280 !important;
+    opacity: 1;
+}
+
+html[data-theme-dark="0"] select option,
+html[data-theme-dark="0"] select optgroup {
+    background-color: #ffffff;
+    color: #0d1117;
+}
+
+/* ========== Header / nav ========== */
+
+html[data-theme-dark="0"] menu {
+    background: linear-gradient(180deg, #ffffff 0%, #f0f2f5 100%) !important;
+    border-bottom: 1px solid rgba(13, 17, 23, 0.1) !important;
+    box-shadow: 0 4px 16px rgba(13, 17, 23, 0.06) !important;
+}
+
+html[data-theme-dark="0"] .nav-brand-title,
+html[data-theme-dark="0"] .nav-btn,
+html[data-theme-dark="0"] .nav-links a {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .nav-brand-mark {
+    background: rgba(62, 59, 140, 0.12) !important;
+    border-color: rgba(62, 59, 140, 0.25) !important;
+}
+
+html[data-theme-dark="0"] .nav-btn i {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .nav-btn:hover,
+html[data-theme-dark="0"] .nav-links a:hover {
+    color: #0d1117 !important;
+    background: rgba(13, 17, 23, 0.06) !important;
+    border-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .nav-reception {
+    background: rgba(62, 59, 140, 0.1) !important;
+    border-color: rgba(62, 59, 140, 0.22) !important;
+}
+
+html[data-theme-dark="0"] .nav-action {
+    border-left-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .nav-theme[data-theme="light"] i {
+    color: #d97706 !important;
+}
+
+html[data-theme-dark="0"] .profile-dropdown {
+    background-color: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    box-shadow: 0 12px 32px rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .profile-username {
+    color: #0d1117 !important;
+    border-bottom-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .profile-btn {
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    background-color: #eef0f4 !important;
+    color: #1a1a1a !important;
+}
+
+html[data-theme-dark="0"] .profile-btn:hover {
+    background-color: rgba(62, 59, 140, 0.1) !important;
+    border-color: rgba(62, 59, 140, 0.28) !important;
+    color: #0d1117 !important;
+}
+
+@media (max-width: 980px) {
+    html[data-theme-dark="0"] .nav-links {
+        background-color: #ffffff !important;
+        border-color: rgba(13, 17, 23, 0.12) !important;
+        box-shadow: 0 12px 32px rgba(13, 17, 23, 0.12) !important;
+    }
+
+    html[data-theme-dark="0"] .nav-action {
+        border-top-color: rgba(13, 17, 23, 0.1) !important;
+    }
+}
+
+/* ========== Footer ========== */
+
+html[data-theme-dark="0"] footer,
+html[data-theme-dark="0"] .footer {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+    border-top: 1px solid rgba(13, 17, 23, 0.1);
+}
+
+/* ========== Settings modal ========== */
+
+html[data-theme-dark="0"] .settings-modal-overlay {
+    background-color: rgba(13, 17, 23, 0.45) !important;
+}
+
+html[data-theme-dark="0"] .settings-modal-container {
+    background: linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%) !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    box-shadow: 0 24px 48px rgba(13, 17, 23, 0.14) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .settings-modal-container .settings-modal-header {
+    background: linear-gradient(180deg, #f7f8fa 0%, #ffffff 100%) !important;
+    border-bottom-color: rgba(13, 17, 23, 0.1) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .settings-modal-close {
+    background: #eef0f4 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    color: #1a1a1a !important;
+}
+
+html[data-theme-dark="0"] .settings-modal-close:hover {
+    background: rgba(13, 17, 23, 0.08) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .settings-modal-title,
+html[data-theme-dark="0"] .settings-modal-title i,
+html[data-theme-dark="0"] .settings-update-card__titles h3,
+html[data-theme-dark="0"] .settings-dropdown__title,
+html[data-theme-dark="0"] .settings-section h3 {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .settings-modal-title i,
+html[data-theme-dark="0"] .settings-update-card__icon,
+html[data-theme-dark="0"] .settings-dropdown__title {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .settings-update-card,
+html[data-theme-dark="0"] .settings-section,
+html[data-theme-dark="0"] .settings-theme-row,
+html[data-theme-dark="0"] .settings-toggle-row,
+html[data-theme-dark="0"] .settings-dropdown,
+html[data-theme-dark="0"] .settings-update-status {
+    background: #eef0f4 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .settings-update-card__subtitle,
+html[data-theme-dark="0"] .settings-update-status-label,
+html[data-theme-dark="0"] .settings-dropdown__chevron,
+html[data-theme-dark="0"] .settings-update-progress-text {
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .settings-btn--ghost {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+    border-color: rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .settings-btn--ghost:hover:not(:disabled) {
+    background: #eef0f4 !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .settings-btn--primary {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+    border-color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .settings-btn--primary:hover:not(:disabled) {
+    background: #2d3073 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .settings-error {
+    color: #b91c1c !important;
+}
+
+html[data-theme-dark="0"] .settings-update-hint {
+    background: rgba(22, 163, 74, 0.1) !important;
+    border-color: rgba(22, 163, 74, 0.28) !important;
+    color: #166534 !important;
+}
+
+html[data-theme-dark="0"] .settings-update-hint i {
+    color: #16a34a !important;
+}
+
+html[data-theme-dark="0"] .settings-update-progress-bar {
+    background: rgba(13, 17, 23, 0.08) !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+}
+
+/* ========== Agenda ========== */
+
+html[data-theme-dark="0"] .calendar-details,
+html[data-theme-dark="0"] .calendar-day,
+html[data-theme-dark="0"] .calendar-month,
+html[data-theme-dark="0"] .fc,
+html[data-theme-dark="0"] .fc .fc-scrollgrid,
+html[data-theme-dark="0"] .fc .fc-theme-standard td,
+html[data-theme-dark="0"] .fc .fc-theme-standard th,
+html[data-theme-dark="0"] .fc .fc-daygrid-day,
+html[data-theme-dark="0"] .fc .fc-timegrid-slot,
+html[data-theme-dark="0"] .fc .fc-list {
+    background: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .calendar-details {
+    box-shadow: 0 4px 16px rgba(13, 17, 23, 0.06) !important;
+}
+
+/* Contrôles agenda — surface claire distincte, pas fond blanc plat */
+html[data-theme-dark="0"] .calendar-view-switch,
+html[data-theme-dark="0"] .calendar-nav {
+    background: #eef0f4 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .calendar-details h3,
+html[data-theme-dark="0"] .calendar-title,
+html[data-theme-dark="0"] #dashboard-calendar-label,
+html[data-theme-dark="0"] .fc .fc-toolbar-title,
+html[data-theme-dark="0"] .fc .fc-col-header-cell-cushion,
+html[data-theme-dark="0"] .fc .fc-daygrid-day-number,
+html[data-theme-dark="0"] .calendar-day-number,
+html[data-theme-dark="0"] .calendar-month-number,
+html[data-theme-dark="0"] .calendar-day-name,
+html[data-theme-dark="0"] .calendar-details .detail-content,
+html[data-theme-dark="0"] .calendar-details .detail-content strong {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .calendar-details p,
+html[data-theme-dark="0"] .calendar-details-empty {
+    color: #4b5563 !important;
+}
+
+/* Bouton créer événement — accent solide, texte blanc */
+html[data-theme-dark="0"] #addEventBtn,
+html[data-theme-dark="0"] .agenda-action .btn-primary {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+    border: 1px solid #3e3b8c !important;
+    box-shadow: 0 4px 12px rgba(62, 59, 140, 0.28) !important;
+}
+
+html[data-theme-dark="0"] #addEventBtn:hover,
+html[data-theme-dark="0"] .agenda-action .btn-primary:hover {
+    background: #2d3073 !important;
+    color: #ffffff !important;
+    border-color: #2d3073 !important;
+}
+
+/* Switch vue Semaine/Mois/Année */
+html[data-theme-dark="0"] .calendar-view-btn {
+    background: transparent !important;
+    color: #1a1a1a !important;
+    border: none !important;
+}
+
+html[data-theme-dark="0"] .calendar-view-btn:hover {
+    background: rgba(62, 59, 140, 0.12) !important;
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .calendar-view-btn.is-active {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(62, 59, 140, 0.25) !important;
+}
+
+/* Nav prev/next — boutons accent lisibles */
+html[data-theme-dark="0"] .calendar-nav button,
+html[data-theme-dark="0"] .calendar-nav-btn,
+html[data-theme-dark="0"] .calendar-today-btn {
+    background: #3e3b8c !important;
+    border: 1px solid #3e3b8c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .calendar-nav button:hover,
+html[data-theme-dark="0"] .calendar-nav-btn:hover,
+html[data-theme-dark="0"] .calendar-today-btn:hover {
+    background: #2d3073 !important;
+    border-color: #2d3073 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .calendar-nav-btn i {
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .calendar-day.other-month {
+    background: #f4f5f7 !important;
+}
+
+html[data-theme-dark="0"] .calendar-day.today,
+html[data-theme-dark="0"] .calendar-month.today,
+html[data-theme-dark="0"] .fc .fc-daygrid-day.fc-day-today,
+html[data-theme-dark="0"] .fc .fc-timegrid-col.fc-day-today {
+    background: rgba(62, 59, 140, 0.08) !important;
+    border-color: rgba(62, 59, 140, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .fc .fc-button,
+html[data-theme-dark="0"] .fc .fc-button-primary {
+    background: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.18) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .fc .fc-button-primary:not(:disabled).fc-button-active,
+html[data-theme-dark="0"] .fc .fc-button-primary:hover {
+    background: #3e3b8c !important;
+    border-color: #3e3b8c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .fc-theme-standard .fc-scrollgrid,
+html[data-theme-dark="0"] .fc-theme-standard td,
+html[data-theme-dark="0"] .fc-theme-standard th {
+    border-color: rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .fc .fc-list-day-cushion,
+html[data-theme-dark="0"] .fc .fc-list-table td {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+}
+
+/* Agenda modales */
+html[data-theme-dark="0"] .agenda-event-modal .modal-content,
+html[data-theme-dark="0"] #agenda-delete-modal .modal-content,
+html[data-theme-dark="0"] .event-modal .modal-content,
+html[data-theme-dark="0"] .agenda-modal .modal-content,
+html[data-theme-dark="0"] #event-modal .modal-content {
+    background: #ffffff !important;
+    border: 1px solid rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+    box-shadow: 0 24px 48px rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .modal-header,
+html[data-theme-dark="0"] #agenda-delete-modal .modal-header,
+html[data-theme-dark="0"] #agenda-delete-modal .modal-footer,
+html[data-theme-dark="0"] .event-modal .modal-header,
+html[data-theme-dark="0"] .agenda-modal .modal-header,
+html[data-theme-dark="0"] #event-modal .modal-header {
+    background: linear-gradient(180deg, #f7f8fa 0%, #ffffff 100%) !important;
+    border-color: rgba(13, 17, 23, 0.1) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .modal-header h2,
+html[data-theme-dark="0"] .agenda-event-modal .modal-header h2 i,
+html[data-theme-dark="0"] .event-modal .modal-header h2,
+html[data-theme-dark="0"] .agenda-modal .modal-header h2,
+html[data-theme-dark="0"] .event-modal label,
+html[data-theme-dark="0"] .agenda-modal label,
+html[data-theme-dark="0"] .agenda-event-form .form-group label,
+html[data-theme-dark="0"] .agenda-event-form .checkbox-label {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .modal-header h2 i {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .modal-body,
+html[data-theme-dark="0"] .agenda-event-form .form-group input[type="text"],
+html[data-theme-dark="0"] .agenda-event-form .form-group input[type="date"],
+html[data-theme-dark="0"] .agenda-event-form .form-group input[type="time"],
+html[data-theme-dark="0"] .event-modal input,
+html[data-theme-dark="0"] .event-modal select,
+html[data-theme-dark="0"] .event-modal textarea,
+html[data-theme-dark="0"] .agenda-modal input,
+html[data-theme-dark="0"] .agenda-modal select,
+html[data-theme-dark="0"] .agenda-modal textarea {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+    border-color: rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-form .form-group input[type="color"] {
+    background: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.18) !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .modal-footer,
+html[data-theme-dark="0"] .event-modal .modal-footer,
+html[data-theme-dark="0"] .agenda-modal .modal-footer,
+html[data-theme-dark="0"] #event-modal .modal-footer,
+html[data-theme-dark="0"] #agenda-delete-modal .modal-footer {
+    background: #f4f5f7 !important;
+    border-top: 1px solid rgba(13, 17, 23, 0.1) !important;
+}
+
+/* Modales agenda — boutons secondaires / primaire / danger */
+html[data-theme-dark="0"] .agenda-event-modal .btn-annuler,
+html[data-theme-dark="0"] .agenda-event-modal .btn-secondary,
+html[data-theme-dark="0"] #agenda-delete-modal .btn-secondary,
+html[data-theme-dark="0"] .agenda-event-form .color-picker-controls .btn.btn-sm {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.2) !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .btn-annuler:hover,
+html[data-theme-dark="0"] .agenda-event-modal .btn-secondary:hover,
+html[data-theme-dark="0"] #agenda-delete-modal .btn-secondary:hover,
+html[data-theme-dark="0"] .agenda-event-form .color-picker-controls .btn.btn-sm:hover {
+    background: #eef0f4 !important;
+    color: #0d1117 !important;
+    border-color: rgba(13, 17, 23, 0.28) !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .btn-primary,
+html[data-theme-dark="0"] #agenda-delete-modal .btn-primary {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+    border: 1px solid #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .btn-primary:hover,
+html[data-theme-dark="0"] #agenda-delete-modal .btn-primary:hover {
+    background: #2d3073 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .btn-danger,
+html[data-theme-dark="0"] .agenda-event-modal .btn-danger-outline,
+html[data-theme-dark="0"] #agenda-delete-modal .btn-danger {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border: 1px solid #dc2626 !important;
+}
+
+html[data-theme-dark="0"] .agenda-event-modal .btn-danger:hover,
+html[data-theme-dark="0"] .agenda-event-modal .btn-danger-outline:hover,
+html[data-theme-dark="0"] #agenda-delete-modal .btn-danger:hover {
+    background: #b91c1c !important;
+    color: #ffffff !important;
+}
+
+/* Pastilles couleur favoris — ne pas écraser le fond inline */
+html[data-theme-dark="0"] .color-favorite-btn,
+html[data-theme-dark="0"] .color-circle {
+    border: 2px solid rgba(13, 17, 23, 0.2) !important;
+    box-shadow: 0 1px 3px rgba(13, 17, 23, 0.15) !important;
+}
+
+html[data-theme-dark="0"] #agenda-delete-modal .text-mute {
+    color: #4b5563 !important;
+}
+
+/* ========== Modales universelles ========== */
+
+html[data-theme-dark="0"] .universal-modal .modal-content,
+html[data-theme-dark="0"] dialog .modal-content,
+html[data-theme-dark="0"] .r-root .universal-modal .modal-content,
+html[data-theme-dark="0"] .lots-saisie-page .universal-modal .modal-content,
+html[data-theme-dark="0"] .entrer-page .universal-modal .modal-content,
+html[data-theme-dark="0"] .r-root .lots-modal .modal-content,
+html[data-theme-dark="0"] .auth-modal-content,
+html[data-theme-dark="0"] .auth-modal .modal-content,
+html[data-theme-dark="0"] .auth-modal-container,
+html[data-theme-dark="0"] .auth-modal-box {
+    background: #ffffff !important;
+    border: 1px solid rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+    box-shadow: 0 24px 48px rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-header,
+html[data-theme-dark="0"] dialog .modal-header,
+html[data-theme-dark="0"] .r-root .universal-modal .modal-header {
+    background: #f7f8fa !important;
+    border-bottom: 1px solid rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-header h2,
+html[data-theme-dark="0"] dialog .modal-header h2,
+html[data-theme-dark="0"] .r-root .universal-modal .modal-header h2 {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-header h2 i {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-close-btn,
+html[data-theme-dark="0"] dialog .modal-close-btn {
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-close-btn:hover {
+    background: rgba(13, 17, 23, 0.06) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-body,
+html[data-theme-dark="0"] dialog .modal-body {
+    color: #1a1a1a !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-body label,
+html[data-theme-dark="0"] .universal-modal .form-group label {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-body input,
+html[data-theme-dark="0"] .universal-modal .modal-body select,
+html[data-theme-dark="0"] .universal-modal .modal-body textarea,
+html[data-theme-dark="0"] .universal-modal .edit-items-table input,
+html[data-theme-dark="0"] .universal-modal .edit-items-table select {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-footer {
+    background: #f4f5f7 !important;
+    border-top: 1px solid rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-cancel-btn,
+html[data-theme-dark="0"] .universal-modal .modal-actions .recep-btn-secondary,
+html[data-theme-dark="0"] .universal-modal .lots-modal__btn--cancel {
+    background: #eef0f4 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+    color: #1a1a1a !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .modal-submit-btn,
+html[data-theme-dark="0"] .universal-modal .modal-actions .recep-btn-primary,
+html[data-theme-dark="0"] .universal-modal .lots-modal__btn--submit {
+    background: #3e3b8c !important;
+    border: none !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .lots-modal__btn--danger {
+    background: rgba(220, 38, 38, 0.1) !important;
+    border: 1px solid rgba(220, 38, 38, 0.35) !important;
+    color: #b91c1c !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .edit-items-table th,
+html[data-theme-dark="0"] .universal-modal .details-table th,
+html[data-theme-dark="0"] .universal-modal .recep-table th {
+    background: #eef0f4 !important;
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .universal-modal .edit-items-table td,
+html[data-theme-dark="0"] .universal-modal .details-table td {
+    color: #1a1a1a !important;
+    border-bottom-color: rgba(13, 17, 23, 0.08) !important;
+}
+
+/* ========== Réception layout (reception.css hardcodé) ========== */
+
+html[data-theme-dark="0"] .r-root {
+    --recep-page-bg: #f4f5f7;
+    --recep-panel-bg: #ffffff;
+    --recep-panel-bg-soft: #eef0f4;
+    --recep-panel-border: rgba(13, 17, 23, 0.12);
+    --recep-panel-shadow: 0 8px 24px rgba(13, 17, 23, 0.08);
+    --recep-accent: #3e3b8c;
+    --recep-accent-soft: rgba(62, 59, 140, 0.12);
+    --recep-text: #0d1117;
+    --recep-text-muted: #4b5563;
+    --recep-danger: #dc2626;
+    --recep-success: #16a34a;
+    --recep-warn: #d97706;
+    background-color: #f4f5f7 !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-header {
+    background: linear-gradient(180deg, #ffffff 0%, #f0f2f5 100%) !important;
+    color: #0d1117 !important;
+    border-right: 1px solid rgba(13, 17, 23, 0.1) !important;
+    box-shadow: 4px 0 24px rgba(13, 17, 23, 0.04) !important;
+}
+
+html[data-theme-dark="0"] .r-brand {
+    border-bottom-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .r-brand-kicker,
+html[data-theme-dark="0"] .r-nav-icon {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-brand-title,
+html[data-theme-dark="0"] .r-main-header h1,
+html[data-theme-dark="0"] .r-main-title,
+html[data-theme-dark="0"] .r-main-header-text h1 {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-brand-subtitle,
+html[data-theme-dark="0"] .r-nav-group-title,
+html[data-theme-dark="0"] .r-main-header p,
+html[data-theme-dark="0"] .r-main-subtitle {
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .r-nav-item {
+    color: #1a1a1a !important;
+}
+
+html[data-theme-dark="0"] .r-nav-item:hover {
+    background-color: rgba(13, 17, 23, 0.05) !important;
+    border-color: rgba(13, 17, 23, 0.08) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-nav-item[aria-current="page"],
+html[data-theme-dark="0"] .r-nav-item.active {
+    background: rgba(62, 59, 140, 0.12) !important;
+    border-color: rgba(62, 59, 140, 0.28) !important;
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-main {
+    background-color: #f4f5f7 !important;
+}
+
+html[data-theme-dark="0"] .r-main-header {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-bottom: 1px solid rgba(13, 17, 23, 0.1) !important;
+    box-shadow: 0 4px 16px rgba(13, 17, 23, 0.05) !important;
+    color: #0d1117 !important;
+}
+
+/* ========== Réception — composants partagés (ex-recep-dark, version claire) ========== */
+
+html[data-theme-dark="0"] .r-root .recep-page {
+    --recep-accent: #3e3b8c;
+    --recep-accent-soft: rgba(62, 59, 140, 0.12);
+    --recep-text: #0d1117;
+    --recep-text-muted: #4b5563;
+    --recep-danger: #dc2626;
+    --recep-success: #16a34a;
+    --recep-warn: #d97706;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    max-width: none;
+    min-height: 36px;
+    padding: 0 var(--unit-3);
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    cursor: pointer;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn:hover:not(:disabled) {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--ghost {
+    color: #0d1117 !important;
+    background: #eef0f4 !important;
+    border-color: rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--ghost:hover:not(:disabled) {
+    background: #e4e7ec !important;
+    border-color: rgba(13, 17, 23, 0.2) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--secondary,
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--muted {
+    color: #3e3b8c !important;
+    background: rgba(62, 59, 140, 0.1) !important;
+    border-color: rgba(62, 59, 140, 0.28) !important;
+    font-weight: 600;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--secondary:hover:not(:disabled),
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--muted:hover:not(:disabled) {
+    color: #2d3073 !important;
+    background: rgba(62, 59, 140, 0.18) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--primary {
+    color: #ffffff !important;
+    background: #3e3b8c !important;
+    border-color: transparent;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(62, 59, 140, 0.25);
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--primary:hover:not(:disabled) {
+    color: #ffffff !important;
+    background: #2d3073 !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-btn--danger {
+    color: #b91c1c !important;
+    background: rgba(220, 38, 38, 0.1) !important;
+    border-color: rgba(220, 38, 38, 0.35) !important;
+    font-weight: 600;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-config__label,
+html[data-theme-dark="0"] .r-root .recep-page .lot-config__group-label,
+html[data-theme-dark="0"] .r-root .lot-config__label,
+html[data-theme-dark="0"] .r-root .recep-label,
+html[data-theme-dark="0"] .r-root .commande-container .lot-config__label,
+html[data-theme-dark="0"] .r-root .dons-container .lot-config__label,
+html[data-theme-dark="0"] .r-root .prets-container .lot-config__label,
+html[data-theme-dark="0"] .r-root .historique-container .lot-config__label,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-config__label {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-config__input,
+html[data-theme-dark="0"] .r-root .recep-page .recep-input,
+html[data-theme-dark="0"] .r-root .lot-table td input,
+html[data-theme-dark="0"] .r-root .lot-table td select,
+html[data-theme-dark="0"] .r-root .lot-table td textarea {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page:not(.lots-saisie-page) .lot-table th,
+html[data-theme-dark="0"] .r-root .lot-table th,
+html[data-theme-dark="0"] .r-root .recep-table th {
+    background: #e8ebf0 !important;
+    color: #0d1117 !important;
+    border-bottom: 1px solid rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page:not(.lots-saisie-page) .lot-table td,
+html[data-theme-dark="0"] .r-root .lot-table td {
+    color: #1a1a1a !important;
+    border-bottom: 1px solid rgba(13, 17, 23, 0.08) !important;
+}
+
+html[data-theme-dark="0"] .r-root .lot-table tbody tr:nth-child(even),
+html[data-theme-dark="0"] .r-root .recep-table tbody tr:nth-child(even) {
+    background: rgba(13, 17, 23, 0.03) !important;
+}
+
+html[data-theme-dark="0"] .r-root .lot-table tbody tr:hover,
+html[data-theme-dark="0"] .r-root .recep-table tbody tr:hover {
+    background: rgba(62, 59, 140, 0.08) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-table .btn-remove-line,
+html[data-theme-dark="0"] .r-root .recep-page .lot-table .btn-delete-row,
+html[data-theme-dark="0"] .r-root .recep-page .lot-table .recep-btn-icon {
+    color: #4b5563 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+    background: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-card,
+html[data-theme-dark="0"] .r-root .lot-card:not(.lot-card--table),
+html[data-theme-dark="0"] .r-root .recep-detail-hero,
+html[data-theme-dark="0"] .r-root .recep-stat-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+    box-shadow: 0 4px 16px rgba(13, 17, 23, 0.06) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-card--table,
+html[data-theme-dark="0"] .r-root .lot-card--table {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-card__section-title,
+html[data-theme-dark="0"] .r-root .recep-form-section__title {
+    color: #3e3b8c !important;
+    border-bottom-color: rgba(62, 59, 140, 0.25) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-form-section,
+html[data-theme-dark="0"] .r-root .recep-toolbar-compact,
+html[data-theme-dark="0"] .r-root .prets-container .prets-config-grid {
+    border-bottom-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-tag--yellow {
+    background-color: rgba(217, 119, 6, 0.12) !important;
+    color: #b45309 !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-tag--grey {
+    background-color: rgba(13, 17, 23, 0.06) !important;
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-progress-wrap {
+    background-color: rgba(13, 17, 23, 0.08) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-card-actions .btn-action {
+    background: #eef0f4 !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-page .lot-card-actions .btn-action:hover:not(:disabled) {
+    background: rgba(62, 59, 140, 0.1) !important;
+    border-color: rgba(62, 59, 140, 0.3) !important;
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-btn-primary {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-btn-secondary {
+    background: #eef0f4 !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-btn-secondary:hover {
+    background: rgba(62, 59, 140, 0.1) !important;
+    border-color: rgba(62, 59, 140, 0.28) !important;
+    color: #3e3b8c !important;
+}
+
+/* Toolbars réception — une seule surface propre, enfants transparents */
+html[data-theme-dark="0"] .r-root .recep-toolbar,
+html[data-theme-dark="0"] .r-root .recep-toolbar-compact,
+html[data-theme-dark="0"] .r-root .lot-config,
+html[data-theme-dark="0"] .r-root .historique-filters,
+html[data-theme-dark="0"] .r-root .tracabilite-filters,
+html[data-theme-dark="0"] .r-root .inventaire-lot-toolbar,
+html[data-theme-dark="0"] .r-root .prets-container .prets-config-grid {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-toolbar {
+    border-bottom: 1px solid rgba(13, 17, 23, 0.1) !important;
+    padding: var(--unit-2) 0 !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-toolbar-compact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--unit-2);
+    padding: var(--unit-3) 0;
+    margin-bottom: var(--unit-2);
+    border-bottom: 1px solid rgba(13, 17, 23, 0.1);
+}
+
+html[data-theme-dark="0"] .r-root .recep-toolbar-compact .lot-config__field,
+html[data-theme-dark="0"] .r-root .recep-toolbar-compact .lot-config__actions,
+html[data-theme-dark="0"] .r-root .recep-toolbar .recep-toolbar-field,
+html[data-theme-dark="0"] .r-root .recep-toolbar .recep-toolbar-actions,
+html[data-theme-dark="0"] .r-root .lot-config__main,
+html[data-theme-dark="0"] .r-root .lot-config__groups,
+html[data-theme-dark="0"] .r-root .lot-config__group,
+html[data-theme-dark="0"] .r-root .lot-config__group-actions,
+html[data-theme-dark="0"] .r-root .lot-config__actions,
+html[data-theme-dark="0"] .r-root .inventaire-lot-toolbar {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+html[data-theme-dark="0"] .r-root .recep-toolbar-compact .lot-config__actions {
+    margin-left: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--unit-2);
+    align-items: center;
+}
+
+html[data-theme-dark="0"] .r-root .form-help {
+    color: #4b5563 !important;
+}
+
+/* ========== Lots saisie ========== */
+
+html[data-theme-dark="0"] .lots-saisie-page {
+    --lot-border: rgba(13, 17, 23, 0.12);
+    --lot-text: #0d1117;
+    --lot-text-muted: #4b5563;
+    --lot-accent: #3e3b8c;
+    --lot-accent-soft: rgba(62, 59, 140, 0.12);
+    --lot-success: #16a34a;
+    --lot-warn: #d97706;
+    --lot-danger: #dc2626;
+    --lot-input-bg: #ffffff;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-btn {
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-btn:hover {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-btn--ghost {
+    color: #0d1117 !important;
+    background: #eef0f4 !important;
+    border-color: rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-btn--secondary {
+    color: #3e3b8c !important;
+    background: rgba(62, 59, 140, 0.1) !important;
+    border-color: rgba(62, 59, 140, 0.28) !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-btn--secondary:hover {
+    color: #2d3073 !important;
+    background: rgba(62, 59, 140, 0.18) !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-btn--muted {
+    color: #4b5563 !important;
+    background: #eef0f4 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-btn--primary {
+    color: #ffffff !important;
+    background: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-btn--primary:hover {
+    color: #ffffff !important;
+    background: #2d3073 !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-toolbar__name,
+html[data-theme-dark="0"] .lots-saisie-page .lot-table,
+html[data-theme-dark="0"] .lots-saisie-page .lot-card {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-card {
+    background: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+}
+
+/* Toolbar lots — pas de bloc blanc ; bordure basse uniquement */
+html[data-theme-dark="0"] .lots-saisie-page .lot-toolbar {
+    background: transparent !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-toolbar__actions,
+html[data-theme-dark="0"] .lots-saisie-page .lot-toolbar__sep,
+html[data-theme-dark="0"] .lots-saisie-page .lot-toolbar__count {
+    background: transparent !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .lot-toolbar__name {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(13, 17, 23, 0.18) !important;
+    color: #0d1117 !important;
+    border-radius: 0 !important;
+}
+
+html[data-theme-dark="0"] .lots-saisie-page .universal-modal .modal-content {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+}
+
+/* ========== Historique / Traçabilité ========== */
+
+html[data-theme-dark="0"] .r-root .historique-container .lot-btn,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-btn--secondary {
+    background: rgba(62, 59, 140, 0.1) !important;
+    color: #3e3b8c !important;
+    border-color: rgba(62, 59, 140, 0.28) !important;
+}
+
+html[data-theme-dark="0"] .r-root .historique-lot-header,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-header {
+    background: #eef0f4 !important;
+}
+
+html[data-theme-dark="0"] .r-root .historique-lot-stats .historique-stat strong,
+html[data-theme-dark="0"] .r-root .historique-lot-title h3,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-title h4,
+html[data-theme-dark="0"] .r-root .tracabilite-container .stat-value,
+html[data-theme-dark="0"] .r-root .tracabilite-container .date-value {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-root .historique-lot-title .historique-type-icon,
+html[data-theme-dark="0"] .r-root .historique-stat i,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-title h4 i {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-root .historique-lot-actions [class^="btn-"],
+html[data-theme-dark="0"] .r-root .historique-lot-actions .btn-view-details,
+html[data-theme-dark="0"] .r-root .historique-lot-actions .btn-edit-lot,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-action {
+    background: #eef0f4 !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root .historique-lot-actions [class^="btn-"]:hover,
+html[data-theme-dark="0"] .r-root .historique-lot-actions .btn-view-details:hover {
+    background: rgba(62, 59, 140, 0.1) !important;
+    border-color: rgba(62, 59, 140, 0.3) !important;
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-root .historique-lot-actions .btn-to-recover {
+    background: rgba(22, 163, 74, 0.12) !important;
+    color: #15803d !important;
+    border-color: rgba(22, 163, 74, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .historique-lot-actions .btn-recovered,
+html[data-theme-dark="0"] .r-root .badge-created {
+    background: rgba(13, 17, 23, 0.06) !important;
+    color: #4b5563 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .r-root #modal-lot-details .historique-lot-detail,
+html[data-theme-dark="0"] .r-root #modal-lot-details .historique-lot-detail__meta-item {
+    background: #eef0f4 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .r-root #modal-lot-details .historique-lot-detail__title,
+html[data-theme-dark="0"] .r-root #modal-lot-details .historique-lot-detail__meta-item .v {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-root #modal-lot-details .historique-lot-detail__meta-item .k,
+html[data-theme-dark="0"] .r-root #modal-lot-details .historique-lot-detail__health-row {
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .r-root #modal-commande-details .hist-cmd-link-modal {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-open-pdf-location-lot,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-open-pdf-location-disque,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-open-pdf-location-commande,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-open-pdf-location-don {
+    background: rgba(234, 88, 12, 0.12) !important;
+    color: #c2410c !important;
+    border-color: rgba(234, 88, 12, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-view-pdf,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-view-pdf-disque,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-view-pdf-commande,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-view-pdf-don,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-download-pdf,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-download-pdf-disque,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-download-pdf-commande,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-download-pdf-don,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions [class*="btn-view"],
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions [class*="btn-download"] {
+    background: rgba(62, 59, 140, 0.12) !important;
+    color: #3e3b8c !important;
+    border-color: rgba(62, 59, 140, 0.3) !important;
+}
+
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-send-email,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-send-email-disque {
+    background: rgba(22, 163, 74, 0.12) !important;
+    color: #15803d !important;
+    border-color: rgba(22, 163, 74, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-regenerate-pdf,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-regenerate-pdf-disque,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-regenerate-pdf-commande,
+html[data-theme-dark="0"] .r-root .tracabilite-container .lot-card-actions .btn-regenerate-pdf-don {
+    background: rgba(217, 119, 6, 0.12) !important;
+    color: #b45309 !important;
+    border-color: rgba(217, 119, 6, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .tracabilite-container .empty-state p,
+html[data-theme-dark="0"] .r-root .historique-container .empty-state p,
+html[data-theme-dark="0"] .r-root .inventaire-container .empty-state p {
+    color: #3e3b8c !important;
+}
+
+/* ========== Inventaire ========== */
+
+html[data-theme-dark="0"] .inventaire-container .inventaire-overview,
+html[data-theme-dark="0"] .inventaire-container .lot-card {
+    background: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .inventaire-overview__kicker,
+html[data-theme-dark="0"] .inventaire-container .lot-card__section-title {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .inventaire-overview__title,
+html[data-theme-dark="0"] .inventaire-container .lot-card-title,
+html[data-theme-dark="0"] .inventaire-container h3,
+html[data-theme-dark="0"] .inventaire-container h4 {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .inventaire-overview__hint {
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat,
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat {
+    color: #1a1a1a !important;
+    background: #eef0f4 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--pending,
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--pending {
+    background: rgba(234, 88, 12, 0.12) !important;
+    border-color: rgba(234, 88, 12, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--pending i,
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--pending strong {
+    color: #c2410c !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--recond {
+    background: rgba(22, 163, 74, 0.12) !important;
+    border-color: rgba(22, 163, 74, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--recond i,
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--recond strong {
+    color: #15803d !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--hs {
+    background: rgba(220, 38, 38, 0.1) !important;
+    border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--hs i,
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--hs strong {
+    color: #b91c1c !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--total {
+    background: rgba(62, 59, 140, 0.12) !important;
+    border-color: rgba(62, 59, 140, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--total i,
+html[data-theme-dark="0"] .r-root .inventaire-container .inventaire-stat--total strong {
+    color: #1e3a8a !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-table th,
+html[data-theme-dark="0"] .inventaire-container th,
+html[data-theme-dark="0"] .inventaire-container .lot-content .lot-table th {
+    background: #e8ebf0 !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-table td,
+html[data-theme-dark="0"] .inventaire-container .lot-content .lot-table td {
+    color: #1a1a1a !important;
+    border-bottom-color: rgba(13, 17, 23, 0.08) !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-content .lot-table tbody tr:nth-child(even) {
+    background: rgba(13, 17, 23, 0.03) !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-content .lot-table tbody tr:hover {
+    background: rgba(62, 59, 140, 0.08) !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--pending i,
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--pending strong {
+    color: #c2410c !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--recond i,
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--recond strong {
+    color: #15803d !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--hs i,
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--hs strong {
+    color: #b91c1c !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--total i,
+html[data-theme-dark="0"] .inventaire-container .inventaire-stat--total strong {
+    color: #1e3a8a !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .inventaire-lot-title h3,
+html[data-theme-dark="0"] .inventaire-container .expand-icon {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .inventaire-lot-title .expand-icon {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-meta,
+html[data-theme-dark="0"] .inventaire-container .lot-content,
+html[data-theme-dark="0"] .inventaire-container .pc-count {
+    color: #1a1a1a !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .lot-btn--secondary {
+    background: rgba(62, 59, 140, 0.1) !important;
+    color: #3e3b8c !important;
+    border: 1px solid rgba(62, 59, 140, 0.28) !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .lot-btn--pdf-location {
+    background: rgba(234, 88, 12, 0.12) !important;
+    color: #c2410c !important;
+    border-color: rgba(234, 88, 12, 0.35) !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .lot-btn--pdf-view {
+    background: rgba(62, 59, 140, 0.12) !important;
+    color: #3e3b8c !important;
+    border-color: rgba(62, 59, 140, 0.3) !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .lot-btn--primary,
+html[data-theme-dark="0"] .r-root #btn-refresh-lots,
+html[data-theme-dark="0"] #btn-refresh-lots {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+html[data-theme-dark="0"] .r-root .inventaire-container .lot-btn--primary:hover,
+html[data-theme-dark="0"] .r-root #btn-refresh-lots:hover,
+html[data-theme-dark="0"] #btn-refresh-lots:hover {
+    background: #2d3073 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .inventaire-modal .modal-content,
+html[data-theme-dark="0"] .inventaire-container .modal-content {
+    background: #ffffff !important;
+    border: 1px solid rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .modal-header {
+    background: linear-gradient(180deg, #f7f8fa 0%, #ffffff 100%) !important;
+    border-bottom: 1px solid rgba(13, 17, 23, 0.1) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .modal-header h2,
+html[data-theme-dark="0"] .inventaire-container .modal-header h2 i {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .modal-header h2 i {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .modal-footer {
+    background: #f4f5f7 !important;
+    border-top: 1px solid rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .modal-cancel-btn,
+html[data-theme-dark="0"] .inventaire-container .lot-btn--ghost,
+html[data-theme-dark="0"] .r-root #modal-edit-pc .modal-cancel-btn {
+    background: #eef0f4 !important;
+    color: #1a1a1a !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root #modal-edit-pc .pc-info-box {
+    background: rgba(62, 59, 140, 0.08) !important;
+}
+
+html[data-theme-dark="0"] .r-root #modal-edit-pc .pc-info-box .info-label,
+html[data-theme-dark="0"] .r-root #modal-edit-pc .pc-info-box .recep-info-label {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-root #modal-edit-pc .modal-submit-btn {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .r-root .lsblk-disk-row {
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    background: #eef0f4 !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-root .prets-container .lot-table td.col-sn.prets-td--blocked {
+    background: rgba(13, 17, 23, 0.04) !important;
+}
+
+html[data-theme-dark="0"] .r-root .prets-container .lot-table .prets-in-sn:disabled {
+    background: rgba(13, 17, 23, 0.06) !important;
+    color: #4b5563 !important;
+}
+
+/* ========== Notifications ========== */
+
+html[data-theme-dark="0"] .notification {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    box-shadow: 0 8px 24px rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .notification-action {
+    background: rgba(62, 59, 140, 0.1) !important;
+    color: #3e3b8c !important;
+    border-color: rgba(62, 59, 140, 0.25) !important;
+}
+
+/* ========== Chat / home / dossier ========== */
+
+html[data-theme-dark="0"] .chat-panel,
+html[data-theme-dark="0"] .chat-widget-panel,
+html[data-theme-dark="0"] #chat-panel {
+    background: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .home .time-block,
+html[data-theme-dark="0"] .home .block,
+html[data-theme-dark="0"] .action-block,
+html[data-theme-dark="0"] .dossier-page,
+html[data-theme-dark="0"] .dossier-container,
+html[data-theme-dark="0"] .dossier-card {
+    background: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+}
+
+/* ========== Modal.css générique (hardcodes restants) ========== */
+
+html[data-theme-dark="0"] .modal-content {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .modal-header {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .modal-body {
+    color: #1a1a1a !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .state-badge.state-Non-défini,
+html[data-theme-dark="0"] .inventaire-container .state-badge.state-non-defini {
+    background-color: rgba(13, 17, 23, 0.08) !important;
+    color: #4b5563 !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-content .btn-edit-pc {
+    background: #eef0f4 !important;
+    color: #0d1117 !important;
+    border-color: rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-content .btn-edit-pc:hover {
+    background: rgba(62, 59, 140, 0.12) !important;
+    border-color: rgba(62, 59, 140, 0.3) !important;
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-content .btn-remove-pc {
+    color: #b91c1c !important;
+    border-color: rgba(185, 28, 28, 0.35) !important;
+    background: rgba(185, 28, 28, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .inventaire-container .lot-content .btn-remove-pc:hover {
+    background: rgba(185, 28, 28, 0.18) !important;
+    color: #991b1b !important;
+}
+
+/* ========== Agenda event chips — garder la couleur inline, texte contrasté ========== */
+
+html[data-theme-dark="0"] .calendar-event-chip {
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.12) !important;
+    /* Ne pas forcer background — le JS pose un fond teinté soft */
+}
+
+html[data-theme-dark="0"] .calendar-event-chip-title {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .calendar-event-chip-time,
+html[data-theme-dark="0"] .calendar-event-chip-description {
+    color: #374151 !important;
+}
+
+html[data-theme-dark="0"] .calendar-loading {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .calendar-error {
+    color: #b91c1c !important;
+}
+
+html[data-theme-dark="0"] .calendar-events::-webkit-scrollbar-thumb {
+    background-color: rgba(13, 17, 23, 0.2) !important;
+}
+
+/* ========== Inventaire modale édition ========== */
+
+html[data-theme-dark="0"] #modal-edit-pc.inventaire-edit-modal .inventaire-edit-modal__content,
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-modal__body {
+    background: #ffffff !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-modal__header {
+    background: linear-gradient(180deg, #f7f8fa 0%, #ffffff 100%) !important;
+    border-bottom-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-modal__header h2 {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-modal__header h2 i,
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-section .recep-form-section__title,
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-meta .info-label {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-meta,
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-section {
+    background: #eef0f4 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-meta .info-value {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-modal__footer,
+html[data-theme-dark="0"] #modal-edit-pc .modal-footer {
+    background: #f4f5f7 !important;
+    border-top-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+/* ========== Lots modal (entrer.css) ========== */
+
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__content {
+    background: #ffffff !important;
+    border: 1px solid rgba(13, 17, 23, 0.12) !important;
+    color: #0d1117 !important;
+    box-shadow: 0 24px 48px rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__header {
+    background: #f7f8fa !important;
+    border-bottom-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__header h2,
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__body,
+html[data-theme-dark="0"] .r-root .lots-modal label {
+    color: #0d1117 !important;
+}
+
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__header h2 i {
+    color: #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] .r-root .lots-modal input,
+html[data-theme-dark="0"] .r-root .lots-modal select,
+html[data-theme-dark="0"] .r-root .lots-modal textarea {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+    border-color: rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__footer {
+    background: #f4f5f7 !important;
+    border-top-color: rgba(13, 17, 23, 0.1) !important;
+}
+
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__btn--cancel {
+    background: #eef0f4 !important;
+    color: #1a1a1a !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__btn--submit {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme-dark="0"] .r-root .lots-modal .lots-modal__btn--danger {
+    background: rgba(220, 38, 38, 0.1) !important;
+    color: #b91c1c !important;
+    border: 1px solid rgba(220, 38, 38, 0.35) !important;
+}
+
+/* Inventaire edit fields / footer buttons */
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-field input,
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-field select,
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-field textarea {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .lots-modal__btn--cancel {
+    background: #eef0f4 !important;
+    color: #1a1a1a !important;
+    border: 1px solid rgba(13, 17, 23, 0.14) !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .lots-modal__btn--submit {
+    background: #3e3b8c !important;
+    color: #ffffff !important;
+    border: 1px solid #3e3b8c !important;
+}
+
+html[data-theme-dark="0"] #modal-edit-pc .inventaire-edit-field label {
+    color: #3e3b8c !important;
+}

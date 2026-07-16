@@ -34,7 +34,10 @@
 /* Overrides dark réception (après pages + modal pour gagner la cascade) */
 @import url(./modules/receptions/recep-dark.css);
 
-/* ---------- Notifications toast (design sombre moderne) ---------- */
+/* Thème clair — après recep-dark pour écraser couleurs hardcodées */
+@import url(./default/theme-light.css);
+
+/* ---------- Notifications toast ---------- */
 .notification {
     position: fixed;
     top: var(--unit-4);
@@ -57,7 +60,7 @@
     transform: translateY(-8px);
     transition: opacity 0.25s ease, transform 0.25s ease;
     pointer-events: none;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-medium);
 }
 
 .notification.show {
@@ -167,4 +170,18 @@ textarea:focus-visible,
 [tabindex]:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+}
+
+/* Thème clair — toasts (après règles .notification du fichier) */
+html[data-theme-dark="0"] .notification {
+    background: #ffffff !important;
+    color: #0d1117 !important;
+    border-color: rgba(13, 17, 23, 0.12) !important;
+    box-shadow: 0 8px 24px rgba(13, 17, 23, 0.12) !important;
+}
+
+html[data-theme-dark="0"] .notification-action {
+    background: rgba(62, 59, 140, 0.1) !important;
+    color: #3e3b8c !important;
+    border-color: rgba(62, 59, 140, 0.25) !important;
 }

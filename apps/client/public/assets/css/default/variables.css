@@ -120,30 +120,50 @@
     --chat-modal-blur: 2px;
 }
 
-/* Mode clair (toggle paramètres) */
+/* Mode clair (toggle thème) — contraste fort partout */
 html[data-theme-dark="0"] {
-    --bg-base: #eef1f6;
+    --bg-base: #f4f5f7;
     --bg-elevated: #ffffff;
     --bg-surface: #ffffff;
-    --bg-surface-2: #f8fafc;
-    --text-primary: #0d0d0d;
-    --text-secondary: #4a5568;
-    --text-muted: #6b7280;
-    --border: rgba(13, 13, 13, 0.12);
-    --blanc: #f2f2f2;
-    --noir: #0d0d0d;
-    --text: #f2f2f2;
-    --text2: #0d0d0d;
-    --h1: #f2f2f2;
-    --h2: #0d0d0d;
-    --btn: #3E3B8C;
-    --btn-hover: #2D3073;
-    --btn-text: #f2f2f2;
-    --scrollbar-color: #F28241;
-    --shadow-small: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-    --shadow-medium: rgba(0, 0, 0, 0.25) 0px 14px 28px, rgba(0, 0, 0, 0.22) 0px 10px 10px;
-    --shadow-strong: rgba(0, 0, 0, 0.25) 0px 14px 28px;
-    --shadow-large: rgba(0, 0, 0, 0.25) 0px 54px 55px;
+    --bg-surface-2: #eef0f4;
+    --accent: #3e3b8c;
+    --text-primary: #0d1117;
+    --text-secondary: #1a1a1a;
+    --text-muted: #4b5563;
+    --border: rgba(13, 17, 23, 0.14);
+
+    /* Alias legacy — texte sombre sur surfaces claires */
+    --blanc: #ffffff;
+    --noir: #0d1117;
+    --text: #1a1a1a;
+    --text2: #0d1117;
+    --h1: #0d1117;
+    --h2: #0d1117;
+    --link: #b45309;
+    --btn: #3e3b8c;
+    --btn-hover: #2d3073;
+    --btn-text: #ffffff;
+    --scrollbar-color: #f28241;
+
+    --gris: var(--text-muted);
+    --gris-light: var(--border);
+    --gris-clair: var(--bg-surface-2);
+
+    --ssa-gris: var(--text-secondary);
+    --ssa-blanc: var(--bg-surface);
+    --ssa-vert: var(--accent);
+
+    --recep-page-bg: #f4f5f7;
+    --recep-panel-bg: #ffffff;
+    --recep-panel-bg-soft: #eef0f4;
+    --recep-panel-border: rgba(13, 17, 23, 0.12);
+    --recep-panel-shadow: 0 8px 24px rgba(13, 17, 23, 0.08);
+
+    --shadow-small: 0 2px 8px rgba(13, 17, 23, 0.08);
+    --shadow-medium: 0 8px 24px rgba(13, 17, 23, 0.1);
+    --shadow-strong: 0 12px 32px rgba(13, 17, 23, 0.12);
+    --shadow-large: 0 24px 48px rgba(13, 17, 23, 0.14);
+    --chat-modal-bg: rgba(13, 17, 23, 0.4);
 }
 
 * {
