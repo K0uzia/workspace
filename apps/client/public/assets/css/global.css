@@ -72,6 +72,38 @@
     background-color: var(--jaune);
     color: var(--noir);
 }
+.notification.has-action {
+    pointer-events: auto;
+}
+.notification-action {
+    flex-shrink: 0;
+    margin-left: var(--unit-2);
+    padding: 0.2rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: var(--radius-small, 4px);
+    background: transparent;
+    color: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.notification-action:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+.notification.warning .notification-action {
+    border-color: rgba(0, 0, 0, 0.25);
+}
+.notification.warning .notification-action:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+.notification--top-right {
+    left: auto;
+    right: var(--unit-4);
+    bottom: auto;
+    top: var(--unit-4);
+    transform: none;
+}
 
 /* Focus clavier (Tab) : contour discret au lieu du outline par défaut */
 :focus {

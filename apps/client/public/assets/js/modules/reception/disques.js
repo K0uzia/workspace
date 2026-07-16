@@ -397,10 +397,28 @@ export default class DisquesManager {
     removeDiskAt(index) {
         this.syncAllFromDom();
         if (index < 0 || index >= this.sessionDisks.length) return;
+
+        const removed = { ...this.sessionDisks[index] };
+        const hadSingleEmpty = this.sessionDisks.length === 1 && !(removed.serial || '').trim();
+
         this.sessionDisks.splice(index, 1);
-        if (!this.sessionDisks.length) this.sessionDisks.push(emptyDisk());
+        const addedPlaceholder = !this.sessionDisks.length;
+        if (addedPlaceholder) this.sessionDisks.push(emptyDisk());
         this.renderSessionTable();
         this.focusSerialInput();
+
+        if (hadSingleEmpty) return;
+
+        window.app?.showNotification?.('Ligne supprimée', 'success', {
+            onUndo: () => {
+                if (addedPlaceholder && this.sessionDisks.length === 1 && !(this.sessionDisks[0].serial || '').trim()) {
+                    this.sessionDisks.length = 0;
+                }
+                this.sessionDisks.splice(index, 0, removed);
+                this.renderSessionTable();
+                this.focusSerialInput();
+            }
+        });
     }
 
     addDisk(diskOrSerial, interfaceOrUndef, sizeOrUndef, fromLsblk = false) {

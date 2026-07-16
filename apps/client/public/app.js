@@ -1470,22 +1470,56 @@ class PageManager {
     }
 
     /**
-     * Affiche une notification toast (erreur, succès)
+     * Affiche une notification toast (erreur, succès, info, warning).
+     * @param {string} message
+     * @param {string} [type='info'] success | error | info | warning
+     * @param {object} [options]
+     * @param {number} [options.duration] ms (défaut 3000, 5000 si onUndo)
+     * @param {string} [options.undoLabel='Annuler']
+     * @param {() => void} [options.onUndo] callback annulation (toast ~5 s)
+     * @param {'bottom'|'top-right'} [options.position='bottom']
      */
-    showNotification(message, type = 'info') {
+    showNotification(message, type = 'info', options = {}) {
+        const duration = options.duration ?? (options.onUndo ? 5000 : 3000);
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
+        if (options.onUndo) notification.classList.add('has-action');
+        if (options.position === 'top-right') notification.classList.add('notification--top-right');
         notification.setAttribute('role', 'status');
+
         let icon = '<i class="fa-solid fa-circle-info"></i>';
         if (type === 'success') icon = '<i class="fa-solid fa-check-circle"></i>';
         else if (type === 'error') icon = '<i class="fa-solid fa-exclamation-circle"></i>';
-        notification.innerHTML = `${icon}<span>${String(message).replace(/</g, '&lt;')}</span>`;
-        document.body.appendChild(notification);
-        requestAnimationFrame(() => notification.classList.add('show'));
-        setTimeout(() => {
+        else if (type === 'warning') icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
+
+        notification.innerHTML = icon;
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = String(message);
+        notification.appendChild(messageSpan);
+
+        let hideTimer;
+        const dismiss = () => {
+            clearTimeout(hideTimer);
             notification.classList.add('hide');
             setTimeout(() => notification.remove(), 300);
-        }, 3000);
+        };
+
+        if (options.onUndo) {
+            const undoBtn = document.createElement('button');
+            undoBtn.type = 'button';
+            undoBtn.className = 'notification-action';
+            undoBtn.textContent = options.undoLabel || 'Annuler';
+            undoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                options.onUndo();
+                dismiss();
+            });
+            notification.appendChild(undoBtn);
+        }
+
+        document.body.appendChild(notification);
+        requestAnimationFrame(() => notification.classList.add('show'));
+        hideTimer = setTimeout(dismiss, duration);
     }
 
     updateLayout(pageName) {

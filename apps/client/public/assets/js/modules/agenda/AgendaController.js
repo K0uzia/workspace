@@ -151,10 +151,10 @@ export default class AgendaController {
             await AgendaStore.addEvent(event);
             this.modalManager.closeModal(this.createModal);
             await this.renderCalendar();
-            this.modalManager.showConfirmation('Succès', `L'événement "${event.title}" a été créé avec succès.`, 'success');
+            window.app?.showNotification?.(`L'événement « ${event.title} » a été créé avec succès.`, 'success');
         } catch (error) {
             logger.error('❌ Erreur création événement:', error);
-            this.modalManager.showConfirmation('Erreur', 'Une erreur est survenue lors de la création de l\'événement.', 'error');
+            window.app?.showNotification?.('Une erreur est survenue lors de la création de l\'événement.', 'error');
         }
     }
 
@@ -163,10 +163,10 @@ export default class AgendaController {
             await AgendaStore.updateEvent(id, updates);
             this.modalManager.closeModal(this.editModal);
             await this.renderCalendar();
-            this.modalManager.showConfirmation('Succès', `L'événement "${updates.title}" a été modifié avec succès.`, 'success');
+            window.app?.showNotification?.(`L'événement « ${updates.title} » a été modifié avec succès.`, 'success');
         } catch (error) {
             logger.error('❌ Erreur modification événement:', error);
-            this.modalManager.showConfirmation('Erreur', 'Une erreur est survenue lors de la modification de l\'événement.', 'error');
+            window.app?.showNotification?.('Une erreur est survenue lors de la modification de l\'événement.', 'error');
         }
     }
 
@@ -178,13 +178,13 @@ export default class AgendaController {
             if (success) {
                 this.modalManager.closeModal(this.deleteModal);
                 await this.renderCalendar();
-                this.modalManager.showConfirmation('Succès', 'L\'événement a été supprimé avec succès.', 'success');
+                window.app?.showNotification?.('L\'événement a été supprimé avec succès.', 'success');
             } else {
-                this.modalManager.showConfirmation('Erreur', 'L\'événement est introuvable.', 'error');
+                window.app?.showNotification?.('L\'événement est introuvable.', 'error');
             }
         } catch (error) {
             logger.error('❌ Erreur suppression:', error);
-            this.modalManager.showConfirmation('Erreur', 'Une erreur est survenue lors de la suppression.', 'error');
+            window.app?.showNotification?.('Une erreur est survenue lors de la suppression.', 'error');
         }
     }
 }

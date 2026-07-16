@@ -5,6 +5,7 @@
 
 import api from '../../config/api.js';
 import getLogger from '../../config/Logger.js';
+import { showAppNotification } from '../../config/notifications.js';
 import { loadLotsWithItems } from './lotsApi.js';
 import { getSessions, getSession, getSessionPdfUrl, updateSession } from './disquesApi.js';
 const logger = getLogger();
@@ -1926,24 +1927,8 @@ export default class TracabiliteManager {
     /**
      * Afficher une notification
      */
-    showNotification(message, type = 'info') {
-        logger.debug(`[${type.toUpperCase()}] ${message}`);
-        
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        
-        let icon = '';
-        if (type === 'success') icon = '<i class="fa-solid fa-check-circle"></i>';
-        else if (type === 'error') icon = '<i class="fa-solid fa-exclamation-circle"></i>';
-        else icon = '<i class="fa-solid fa-info-circle"></i>';
-        
-        notification.innerHTML = `${icon}<span>${message}</span>`;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.classList.add('hide');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+    showNotification(message, type = 'info', options) {
+        showAppNotification(message, type, options);
     }
 
     destroy() {

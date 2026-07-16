@@ -1443,15 +1443,134 @@ function broadcastUserCount() {
       }
     });
 
+    async function findOrCreateMarqueIdByName(name: string): Promise<number | null> {
+      const trimmed = String(name || '').trim();
+      if (!trimmed) return null;
+      const found = await query(
+        'SELECT id FROM marques WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1',
+        [trimmed]
+      );
+      if (found.rowCount && found.rowCount > 0) return found.rows[0].id;
+      try {
+        const created = await query('INSERT INTO marques (name) VALUES ($1) RETURNING id', [trimmed]);
+        return created.rows[0]?.id ?? null;
+      } catch (err: any) {
+        if (err.code === '23505') {
+          const again = await query(
+            'SELECT id FROM marques WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1',
+            [trimmed]
+          );
+          return again.rows[0]?.id ?? null;
+        }
+        throw err;
+      }
+    }
+
+    async function findOrCreateModeleIdByName(marqueId: number, name: string): Promise<number | null> {
+      const trimmed = String(name || '').trim();
+      if (!trimmed || !marqueId) return null;
+      const found = await query(
+        'SELECT id FROM modeles WHERE marque_id = $1 AND LOWER(TRIM(name)) = LOWER($2) LIMIT 1',
+        [marqueId, trimmed]
+      );
+      if (found.rowCount && found.rowCount > 0) return found.rows[0].id;
+      try {
+        const created = await query(
+          'INSERT INTO modeles (marque_id, name) VALUES ($1, $2) RETURNING id',
+          [marqueId, trimmed]
+        );
+        return created.rows[0]?.id ?? null;
+      } catch (err: any) {
+        if (err.code === '23505') {
+          const again = await query(
+            'SELECT id FROM modeles WHERE marque_id = $1 AND LOWER(TRIM(name)) = LOWER($2) LIMIT 1',
+            [marqueId, trimmed]
+          );
+          return again.rows[0]?.id ?? null;
+        }
+        throw err;
+      }
+    }
+
     // Update a lot item
     fastify.put('/api/lots/items/:id', async (request: FastifyRequest, reply: FastifyReply) => {
       const { id } = request.params as { id: string };
-      const { state, technician, recovered_at, os } = request.body as any;
+      const {
+        state,
+        technician,
+        recovered_at,
+        os,
+        serial_number,
+        type,
+        marque_id,
+        modele_id,
+        marque_name,
+        modele_name
+      } = request.body as any;
 
       try {
         const updates: string[] = [];
         const values: any[] = [];
         let paramIndex = 1;
+
+        if (serial_number !== undefined) {
+          updates.push(`serial_number = $${paramIndex++}`);
+          values.push(
+            serial_number === null || (typeof serial_number === 'string' && serial_number.trim() === '')
+              ? null
+              : String(serial_number).trim()
+          );
+        }
+
+        if (type !== undefined) {
+          updates.push(`type = $${paramIndex++}`);
+          values.push(
+            type === null || (typeof type === 'string' && type.trim() === '')
+              ? null
+              : String(type).trim()
+          );
+        }
+
+        let resolvedMarqueId: number | null | undefined = undefined;
+        if (marque_id !== undefined || marque_name !== undefined) {
+          if (marque_id !== undefined && marque_id !== null && marque_id !== '') {
+            const parsed = parseInt(String(marque_id), 10);
+            resolvedMarqueId = Number.isNaN(parsed) ? null : parsed;
+          } else if (marque_name !== undefined) {
+            const name = String(marque_name || '').trim();
+            resolvedMarqueId = name ? await findOrCreateMarqueIdByName(name) : null;
+          } else {
+            resolvedMarqueId = null;
+          }
+          updates.push(`marque_id = $${paramIndex++}`);
+          values.push(resolvedMarqueId);
+        }
+
+        let resolvedModeleId: number | null | undefined = undefined;
+        if (modele_id !== undefined || modele_name !== undefined) {
+          if (modele_id !== undefined && modele_id !== null && modele_id !== '') {
+            const parsed = parseInt(String(modele_id), 10);
+            resolvedModeleId = Number.isNaN(parsed) ? null : parsed;
+          } else if (modele_name !== undefined) {
+            const name = String(modele_name || '').trim();
+            if (name) {
+              let marqueForModele = resolvedMarqueId;
+              if (marqueForModele === undefined) {
+                const current = await query('SELECT marque_id FROM lot_items WHERE id = $1', [id]);
+                marqueForModele = current.rows[0]?.marque_id ?? null;
+              }
+              resolvedModeleId = marqueForModele
+                ? await findOrCreateModeleIdByName(marqueForModele, name)
+                : null;
+            } else {
+              resolvedModeleId = null;
+            }
+          } else {
+            resolvedModeleId = null;
+          }
+          updates.push(`modele_id = $${paramIndex++}`);
+          values.push(resolvedModeleId);
+        }
 
         if (state !== undefined) {
           if (state === null || (typeof state === 'string' && state.trim() === '')) {

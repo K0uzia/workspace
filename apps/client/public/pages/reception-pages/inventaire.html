@@ -42,26 +42,6 @@
         <div class="modal-body">
             <div class="recep-info-box pc-info-box">
                 <div class="recep-info-row info-row">
-                    <span class="recep-info-label info-label">Numéro de série</span>
-                    <span class="recep-info-value info-value" id="modal-pc-serial">-</span>
-                </div>
-                <div class="recep-info-row info-row">
-                    <span class="recep-info-label info-label">Marque</span>
-                    <span class="recep-info-value info-value" id="modal-pc-brand">-</span>
-                </div>
-                <div class="recep-info-row info-row">
-                    <span class="recep-info-label info-label">Modèle</span>
-                    <span class="recep-info-value info-value" id="modal-pc-model">-</span>
-                </div>
-                <div class="recep-info-row info-row">
-                    <span class="recep-info-label info-label">OS</span>
-                    <span class="recep-info-value info-value" id="modal-pc-os">-</span>
-                </div>
-                <div class="recep-info-row info-row">
-                    <span class="recep-info-label info-label">Type</span>
-                    <span class="recep-info-value info-value" id="modal-pc-type">-</span>
-                </div>
-                <div class="recep-info-row info-row">
                     <span class="recep-info-label info-label">Entrée</span>
                     <span class="recep-info-value info-value" id="modal-pc-entry">-</span>
                 </div>
@@ -71,6 +51,35 @@
                 </div>
             </div>
             <form id="form-edit-pc">
+                <div class="form-group">
+                    <label for="modal-pc-serial-input"><i class="fa-solid fa-barcode" aria-hidden="true"></i> Numéro de série</label>
+                    <input type="text" id="modal-pc-serial-input" name="serial_number" placeholder="S/N" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="modal-pc-type-select"><i class="fa-solid fa-tag" aria-hidden="true"></i> Type</label>
+                    <select id="modal-pc-type-select" name="type">
+                        <option value="">-- Type --</option>
+                        <option value="portable">Portable</option>
+                        <option value="fixe">Fixe</option>
+                        <option value="ecran">Écran</option>
+                        <option value="__autre__">Autre</option>
+                    </select>
+                    <input type="text" id="modal-pc-type-other" name="type_other" placeholder="Précisez le type..." style="display:none; margin-top: var(--unit-1);" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="modal-pc-marque-select"><i class="fa-solid fa-building" aria-hidden="true"></i> Marque</label>
+                    <select id="modal-pc-marque-select" name="marque">
+                        <option value="">-- Marque --</option>
+                    </select>
+                    <input type="text" id="modal-pc-marque-other" name="marque_other" placeholder="Précisez la marque..." style="display:none; margin-top: var(--unit-1);" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="modal-pc-modele-select"><i class="fa-solid fa-cube" aria-hidden="true"></i> Modèle</label>
+                    <select id="modal-pc-modele-select" name="modele">
+                        <option value="">-- Modèle --</option>
+                    </select>
+                    <input type="text" id="modal-pc-modele-other" name="modele_other" placeholder="Précisez le modèle..." style="display:none; margin-top: var(--unit-1);" autocomplete="off">
+                </div>
                 <div class="form-group">
                     <label for="modal-pc-state"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> État</label>
                     <select id="modal-pc-state" name="state" required>

@@ -6,6 +6,7 @@
 
 import api from '../../config/api.js';
 import getLogger from '../../config/Logger.js';
+import { showAppNotification } from '../../config/notifications.js';
 const logger = getLogger();
 
 
@@ -205,7 +206,6 @@ export default class GestionLotsManager {
             attachButton('btn-confirm-clear-lot', () => this.confirmCancelLot());
             attachButton('btn-apply-mass', () => this.applyMassValues());
             attachButton('btn-confirm-mass-apply', () => this.confirmMassApply());
-            attachButton('btn-confirm-delete-row', () => this.confirmDeleteRow());
 
             const selectMarque = document.getElementById('select-marque-for-modele');
             if (selectMarque) {
@@ -929,47 +929,25 @@ export default class GestionLotsManager {
     }
     
     /**
-     * Supprimer une ligne
+     * Supprimer une ligne (toast avec annulation, pas de modale)
      */
     deleteRow(row) {
-        this.rowToDelete = row;
-        const preview = document.getElementById('delete-row-preview');
-        if (preview) {
-            const sn = row.querySelector('[name="serial_number"]');
-            const typeSelect = row.querySelector('select[name="type"]');
-            const marqueSelect = row.querySelector('select[name="marque"]');
-            const modeleSelect = row.querySelector('select[name="modele"]');
-            const typeOther = row.querySelector('input[name="type_other"]');
-            const snVal = sn && sn.value ? sn.value.trim() : '';
-            const typeVal = typeSelect && typeSelect.selectedOptions[0] ? typeSelect.selectedOptions[0].text : '';
-            const typeDisplay = (typeSelect && typeSelect.value === 'autres' && typeOther && typeOther.value)
-                ? typeOther.value.trim() || typeVal
-                : typeVal;
-            const marqueVal = marqueSelect && marqueSelect.selectedOptions[0] ? marqueSelect.selectedOptions[0].text : '';
-            const modeleVal = modeleSelect && modeleSelect.selectedOptions[0] ? modeleSelect.selectedOptions[0].text : '';
-            const parts = [snVal && `S/N ${snVal}`, typeDisplay, marqueVal, modeleVal].filter(Boolean);
-            preview.textContent = parts.length ? parts.join(' · ') : 'Ligne sans détail';
-        }
-        this.modalManager.open('modal-confirm-delete');
-    }
-    
-    /**
-     * Confirmer la suppression d'une ligne
-     */
-    confirmDeleteRow() {
-        if (!this.rowToDelete || !this.rowToDelete.isConnected) {
-            this.rowToDelete = null;
-            this.modalManager.close('modal-confirm-delete');
-            return;
-        }
+        const tbody = document.getElementById('lot-table-body');
+        if (!tbody || !row?.isConnected) return;
 
-        this.rowToDelete.remove();
-        this.showNotification('Ligne supprimée', 'success');
+        const nextSibling = row.nextElementSibling;
+        row.remove();
         this.renumberRows();
-        this.modalManager.close('modal-confirm-delete');
-        this.rowToDelete = null;
-
         this.ensureScanRow();
+
+        this.showNotification('Ligne supprimée', 'success', {
+            onUndo: () => {
+                if (nextSibling) tbody.insertBefore(row, nextSibling);
+                else tbody.appendChild(row);
+                this.renumberRows();
+                this.ensureScanRow();
+            }
+        });
     }
 
     ensureScanRow() {
@@ -1095,29 +1073,8 @@ export default class GestionLotsManager {
 
 
 
-    /**
-     * Afficher une notification
-     */
-    showNotification(message, type = 'info') {
-        logger.debug(`[${type.toUpperCase()}] ${message}`);
-        
-        // Créer la notification visuelle
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        
-        let icon = '';
-        if (type === 'success') icon = '<i class="fa-solid fa-check-circle"></i>';
-        else if (type === 'error') icon = '<i class="fa-solid fa-exclamation-circle"></i>';
-        else icon = '<i class="fa-solid fa-info-circle"></i>';
-        
-        notification.innerHTML = `${icon}<span>${message}</span>`;
-        document.body.appendChild(notification);
-        
-        // Retirer après 3 secondes
-        setTimeout(() => {
-            notification.classList.add('hide');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+    showNotification(message, type = 'info', options) {
+        showAppNotification(message, type, options);
     }
 
     /**
@@ -1149,7 +1106,6 @@ export default class GestionLotsManager {
         });
         this.listeners = [];
 
-        this.rowToDelete = null;
         this.lots = [];
         this.currentRowNumber = 1;
 

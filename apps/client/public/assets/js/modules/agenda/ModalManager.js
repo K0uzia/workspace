@@ -391,7 +391,7 @@ export default class ModalManager {
         const description = document.getElementById('edit_description')?.value || '';
 
         if (typeof id === 'string' && id.startsWith('holiday:')) {
-            this.showConfirmation('Info', 'Cet événement est verrouillé et ne peut pas être modifié.', 'error');
+            window.app?.showNotification?.('Cet événement est verrouillé et ne peut pas être modifié.', 'warning');
             return;
         }
 
@@ -410,53 +410,6 @@ export default class ModalManager {
         };
 
         await this.onEditSubmit?.(id, updates);
-    }
-
-    showConfirmation(title, message, type = 'success') {
-        const modal = document.createElement('dialog');
-        modal.className = 'universal-modal confirmation-modal';
-        
-        const iconHTML = type === 'success' 
-            ? '<i class="fas fa-check"></i>' 
-            : '<i class="fas fa-exclamation-circle"></i>';
-        
-        const buttonClass = type === 'success' ? 'btn-primary' : 'btn-secondary';
-        const buttonText = type === 'success' ? 'Fermer' : 'Ok';
-        
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="modal-close-btn" aria-label="Fermer"><span>&times;</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="confirmation-icon ${type}">
-                        ${iconHTML}
-                    </div>
-                    <p>${title}</p>
-                    <p style="color: #666; margin-top: 0.5rem;">${message}</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn ${buttonClass}" data-close-confirmation>
-                        ${buttonText}
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        modal.showModal();
-        
-        const closeHandler = () => {
-            modal.close();
-            setTimeout(() => modal.remove(), 300);
-        };
-        
-        modal.querySelector('.modal-close-btn')?.addEventListener('click', closeHandler);
-        modal.querySelector('[data-close-confirmation]')?.addEventListener('click', closeHandler);
-        
-        if (type === 'success') {
-            setTimeout(closeHandler, 3000);
-        }
     }
 
     formatLocalISODate(date) {

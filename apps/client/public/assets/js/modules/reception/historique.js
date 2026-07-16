@@ -5,6 +5,7 @@
 
 import api from '../../config/api.js';
 import getLogger from '../../config/Logger.js';
+import { showAppNotification } from '../../config/notifications.js';
 import { loadLotsWithItems } from './lotsApi.js';
 import { getSessions, getSession, getSessionPdfUrl, updateSession } from './disquesApi.js';
 import { OS_OPTIONS, getOsIcon, getOsLabel, getOsOption } from './osOptions.js';
@@ -13,7 +14,7 @@ const logger = getLogger();
 
 const VALUE_AUTRE_DISQUES = '__autre__';
 const VALUE_AUTRE_GENERIC = '__autre__';
-const LOT_TYPE_OPTIONS = ['', 'portable', 'fixe', 'Autre'];
+const LOT_TYPE_OPTIONS = ['', 'portable', 'fixe', 'ecran', 'Autre'];
 const DON_TYPE_OPTIONS = ['', 'portable', 'fixe', 'Autre'];
 
 export default class HistoriqueManager {
@@ -374,20 +375,14 @@ export default class HistoriqueManager {
             ).length;
         }
         
-        // Le lot peut être récupéré s'il est terminé : soit tous les items ont état + technicien, soit le backend l'a marqué (status + finished_at)
+        // Le lot peut être récupéré uniquement si tous les items ont état + technicien
         const isFinishedFromItems = total > 0 && pending === 0 && items.length > 0 && items.every(item => 
             item.state && item.state.trim() !== '' && 
             item.technician && item.technician.trim() !== ''
         );
-        const isFinishedFromBackend = lot.status === 'finished' && lot.finished_at != null && lot.finished_at !== '';
-        const isFinished = isFinishedFromItems || isFinishedFromBackend;
-        const canRecover = (isFinishedFromItems && items.length > 0 && items.every(item => 
-            item.state && item.state.trim() !== '' && 
-            item.technician && item.technician.trim() !== ''
-        )) || isFinishedFromBackend;
+        const canRecover = isFinishedFromItems;
         
         logger.debug(`Lot ${lot.id} - canRecover:`, { 
-            isFinished, 
             canRecover, 
             total, 
             pending, 
@@ -430,6 +425,9 @@ export default class HistoriqueManager {
                         </button>
                         <button type="button" class="btn-edit-items" data-lot-id="${lot.id}" title="Modifier le matériel (état, technicien par PC)">
                             <i class="fa-solid fa-list-check" aria-hidden="true"></i> Éditer matériel
+                        </button>
+                        <button type="button" class="btn-regenerate-lot-pdf" data-lot-id="${lot.id}" title="Régénérer le PDF avec les données actuelles">
+                            <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Régénérer PDF
                         </button>
                         <button type="button" class="${recoveryButtonClass}" data-lot-id="${lot.id}" ${recoveryButtonDisabled ? 'disabled' : ''} title="${!canRecover && !isRecovered ? 'Tous les items doivent avoir un état et un technicien' : 'Marquer le lot comme récupéré'}">
                             ${recoveryButtonText}
@@ -558,6 +556,7 @@ export default class HistoriqueManager {
         if (!value) return '';
         if (value === 'pc portable') return 'portable';
         if (value === 'pc fixe') return 'fixe';
+        if (value === 'écran') return 'ecran';
         return value;
     }
 
@@ -708,6 +707,13 @@ export default class HistoriqueManager {
                 e.stopPropagation();
                 const lotId = btn.dataset.lotId;
                 this.editLotItems(lotId);
+            });
+        });
+
+        document.querySelectorAll('.btn-regenerate-lot-pdf').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.regenerateLotPdf(btn.dataset.lotId);
             });
         });
 
@@ -1870,6 +1876,16 @@ export default class HistoriqueManager {
         const lot = this.lots.find(l => l.id == lotId);
         if (!lot) return;
 
+        const items = Array.isArray(lot.items) ? lot.items : [];
+        const canRecover = items.length > 0 && items.every(item =>
+            item.state && item.state.trim() !== '' &&
+            item.technician && item.technician.trim() !== ''
+        );
+        if (!canRecover) {
+            this.showNotification('Tous les PC doivent avoir un état et un technicien avant la récupération', 'warning');
+            return;
+        }
+
         // Désactiver le bouton immédiatement
         const button = document.querySelector(`.btn-to-recover[data-lot-id="${lotId}"]`);
         if (button) {
@@ -1982,7 +1998,9 @@ export default class HistoriqueManager {
                 return `
                 <tr data-item-id="${item.id}">
                     <td><span class="item-number">${idx + 1}</span></td>
-                    <td><span class="item-text">${item.serial_number || '-'}</span></td>
+                    <td>
+                        <input type="text" class="item-serial-input" data-item-id="${item.id}" value="${this.escapeAttr(item.serial_number || '')}" placeholder="S/N">
+                    </td>
                     <td>
                         <select class="item-type-select" data-item-id="${item.id}">
                             ${LOT_TYPE_OPTIONS.map(opt => {
@@ -2117,6 +2135,7 @@ export default class HistoriqueManager {
             const osSelect = row.querySelector('.item-os-select');
 
             if (itemId && technicianInput) {
+                const serialInput = row.querySelector('.item-serial-input');
                 const otherStateInput = row.querySelector('.item-state-other-input');
                 const stateSelectValue = stateSelect.value.trim();
                 const customState = (otherStateInput?.value || '').trim();
@@ -2132,6 +2151,7 @@ export default class HistoriqueManager {
                 
                 updates.push({
                     itemId,
+                    serial_number: String(serialInput?.value || '').trim() || null,
                     state: state,
                     technician: technician || null,
                     os: os || 'linux',
@@ -2170,10 +2190,12 @@ export default class HistoriqueManager {
             return;
         }
 
-        // Valider que tous les items ont un état et un technicien
-        const invalidUpdates = updates.filter(u => !u.state || u.state.trim() === '' || !u.technician || u.technician.trim() === '');
+        // Valider que tous les items ont un état, un technicien et un S/N
+        const invalidUpdates = updates.filter(u =>
+            !u.serial_number || !u.state || u.state.trim() === '' || !u.technician || u.technician.trim() === ''
+        );
         if (invalidUpdates.length > 0) {
-            this.showNotification('Tous les items doivent avoir un état et un technicien', 'warning');
+            this.showNotification('Tous les items doivent avoir un S/N, un état et un technicien', 'warning');
             return;
         }
 
@@ -2182,7 +2204,7 @@ export default class HistoriqueManager {
             const serverUrl = api.getServerUrl();
             const endpointPath = '/api/lots/items/:id'.replace(':id', update.itemId);
             const fullUrl = `${serverUrl}${endpointPath}`;
-            logger.debug('💾 Mise à jour item:', JSON.stringify({ itemId: update.itemId, state: update.state, technician: update.technician, os: update.os, fullUrl }, null, 2));
+            logger.debug('💾 Mise à jour item:', JSON.stringify({ itemId: update.itemId, serial_number: update.serial_number, state: update.state, technician: update.technician, os: update.os, fullUrl }, null, 2));
             const response = await fetch(fullUrl, {
                 method: 'PUT',
                 headers: {
@@ -2190,6 +2212,7 @@ export default class HistoriqueManager {
                     'Authorization': `Bearer ${localStorage.getItem('workspace_jwt') || ''}`
                 },
                 body: JSON.stringify({
+                    serial_number: update.serial_number,
                     state: update.state,
                     technician: update.technician || null,
                     os: update.os || 'linux',
@@ -2245,6 +2268,85 @@ export default class HistoriqueManager {
     }
 
     /**
+     * Régénérer le PDF d'un lot terminé avec les données actuelles.
+     */
+    async regenerateLotPdf(lotId) {
+        if (!window.electron?.invoke) {
+            this.showNotification('Génération PDF disponible uniquement dans l\'application Electron', 'warning');
+            return;
+        }
+        const lot = this.lots.find(l => l.id == lotId);
+        if (!lot) return;
+
+        const btn = document.querySelector(`.btn-regenerate-lot-pdf[data-lot-id="${lotId}"]`);
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Génération...';
+        }
+
+        try {
+            const basePath = '/mnt/team/#TEAM/#TRAÇABILITÉ';
+            const dateForFile = lot.finished_at
+                ? String(lot.finished_at).slice(0, 10)
+                : new Date().toISOString().slice(0, 10);
+            const serverUrl = api.getServerUrl();
+            const res = await fetch(`${serverUrl}/api/lots/${lotId}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('workspace_jwt') || ''}` }
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const fullLot = data.item || data;
+            if (fullLot && !fullLot.items && data.items) fullLot.items = data.items;
+            if (!fullLot?.items?.length) throw new Error('Lot sans items');
+
+            const lotName = (fullLot.lot_name || fullLot.name) ? String(fullLot.lot_name || fullLot.name).trim() : `Lot_${lotId}`;
+            const result = await window.electron.invoke('generate-lot-pdf', {
+                lotId: String(lotId),
+                lotName,
+                date: dateForFile,
+                items: fullLot.items,
+                created_at: fullLot.created_at,
+                finished_at: fullLot.finished_at,
+                recovered_at: fullLot.recovered_at,
+                basePath
+            });
+            if (!result?.success || !result.pdf_path) {
+                throw new Error(result?.error || 'Échec génération PDF');
+            }
+
+            const readResult = await window.electron.invoke('read-file-as-base64', { path: result.pdf_path });
+            if (readResult?.success && readResult.base64) {
+                await fetch(`${serverUrl}/api/lots/${lotId}/pdf`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('workspace_jwt') || ''}`
+                    },
+                    body: JSON.stringify({
+                        pdf_base64: readResult.base64,
+                        lot_name: lotName,
+                        date: dateForFile
+                    })
+                });
+            }
+
+            const year = dateForFile.slice(0, 4);
+            const monthNum = parseInt(dateForFile.slice(5, 7), 10);
+            const moisNoms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+            const monthName = monthNum >= 1 && monthNum <= 12 ? moisNoms[monthNum - 1] : dateForFile.slice(5, 7);
+            this.showNotification(`PDF régénéré dans ${basePath}/${year}/${monthName}/`, 'success');
+        } catch (err) {
+            logger.error('regenerateLotPdf:', err);
+            this.showNotification('Erreur lors de la régénération du PDF', 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Régénérer PDF';
+            }
+        }
+    }
+
+    /**
      * Formater une date
      */
     formatDate(dateStr) {
@@ -2271,24 +2373,8 @@ export default class HistoriqueManager {
     /**
      * Afficher une notification
      */
-    showNotification(message, type = 'info') {
-        logger.debug(`[${type.toUpperCase()}] ${message}`);
-        
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        
-        let icon = '';
-        if (type === 'success') icon = '<i class="fa-solid fa-check-circle"></i>';
-        else if (type === 'error') icon = '<i class="fa-solid fa-exclamation-circle"></i>';
-        else icon = '<i class="fa-solid fa-info-circle"></i>';
-        
-        notification.innerHTML = `${icon}<span>${message}</span>`;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.classList.add('hide');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+    showNotification(message, type = 'info', options) {
+        showAppNotification(message, type, options);
     }
 
     destroy() {

@@ -267,6 +267,11 @@
     transition: width 0.3s ease;
 }
 
+.inventaire-container .inventaire-lot-header .btn-generate-pdf-interim {
+    margin-top: 0.5rem;
+    align-self: flex-start;
+}
+
 /* ---------- Tableau (même visuel que entrer, avec colonne OS) ---------- */
 .inventaire-container .lot-content .lot-table-wrap {
     overflow: auto;
