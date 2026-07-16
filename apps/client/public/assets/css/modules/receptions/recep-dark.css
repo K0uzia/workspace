@@ -378,6 +378,24 @@
     color: #0d1420 !important;
 }
 
+.r-root .universal-modal .lots-modal__btn--danger {
+    background: rgba(248, 113, 113, 0.14) !important;
+    border: 1px solid rgba(248, 113, 113, 0.4) !important;
+    color: #fecaca !important;
+    border-radius: 8px;
+    min-height: 40px;
+    padding: 0 var(--unit-4);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+.r-root .universal-modal .lots-modal__btn--danger:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.24) !important;
+    border-color: rgba(248, 113, 113, 0.55) !important;
+    color: #fecaca !important;
+}
+
 .r-root .universal-modal .edit-items-table th,
 .r-root .universal-modal .details-table th,
 .r-root .universal-modal .recep-table th {

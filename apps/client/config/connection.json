@@ -49,11 +49,15 @@
       "create": "/api/lots",
       "get": "/api/lots/:id",
       "update": "/api/lots/:id",
+      "delete": "/api/lots/:id",
       "pdf": "/api/lots/:id/pdf",
       "email": "/api/lots/:id/email",
       "items": {
         "get": "/api/lots/items/:id",
-        "update": "/api/lots/items/:id"
+        "update": "/api/lots/items/:id",
+        "create": "/api/lots/:id/items",
+        "delete": "/api/lots/items/:id",
+        "restore": "/api/lots/items/:id/restore"
       },
       "reorder": "/api/lots/reorder"
     },

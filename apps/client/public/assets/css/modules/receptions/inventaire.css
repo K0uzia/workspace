@@ -376,6 +376,43 @@
     margin-bottom: var(--unit-2);
 }
 
+.inventaire-container .inventaire-lot-toolbar .lot-btn--danger {
+    color: #b91c1c;
+    background: rgba(248, 113, 113, 0.12);
+    border: 1px solid rgba(220, 38, 38, 0.35);
+    font-weight: 600;
+}
+
+.inventaire-container .inventaire-lot-toolbar .lot-btn--danger:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.22);
+    border-color: rgba(220, 38, 38, 0.5);
+    color: #991b1b;
+}
+
+#modal-confirm-delete-lot .inventaire-confirm-modal__text {
+    margin: 0;
+    line-height: 1.5;
+    color: inherit;
+}
+
+#modal-confirm-delete-lot .lots-modal__btn--danger {
+    background: rgba(220, 38, 38, 0.14);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+#modal-confirm-delete-lot .lots-modal__btn--danger:hover:not(:disabled) {
+    background: rgba(220, 38, 38, 0.24);
+    border-color: rgba(220, 38, 38, 0.55);
+    color: #991b1b;
+}
+
+#modal-confirm-delete-lot .lots-modal__btn--danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .inventaire-container .lot-content .lot-table-wrap {
     overflow-x: auto;
     overflow-y: auto;

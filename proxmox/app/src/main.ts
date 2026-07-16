@@ -1161,12 +1161,15 @@ function broadcastUserCount() {
         `;
         let whereClause = '';
         const queryParams: any[] = [];
+        const notDeleted = "(l.deleted_at IS NULL)";
         if (statusFilter === 'active') {
-          whereClause = " WHERE (l.status IS NULL OR l.status != 'finished')";
+          whereClause = ` WHERE ${notDeleted} AND (l.status IS NULL OR l.status NOT IN ('finished', 'cancelled'))`;
         } else if (statusFilter === 'finished') {
-          whereClause = " WHERE l.status = 'finished'";
+          whereClause = ` WHERE ${notDeleted} AND l.status = 'finished'`;
+        } else {
+          // status=all or no filter: return all non-deleted lots
+          whereClause = ` WHERE ${notDeleted}`;
         }
-        // status=all or no filter: return all lots
         const orderSql = ' ORDER BY l.received_at DESC';
         const result = await query(selectSql + whereClause + orderSql, queryParams);
         const lots = (result.rows as any[]).map((row: any) => ({
@@ -1301,12 +1304,12 @@ function broadcastUserCount() {
             l.id, l.name, l.status, l.item_count, l.description, 
             l.received_at, l.created_at, l.updated_at, l.finished_at, l.recovered_at, l.pdf_path
           FROM lots l
-          WHERE l.id = $1
+          WHERE l.id = $1 AND (l.deleted_at IS NULL)
         `, [id]);
 
         if (lotResult.rowCount === 0) {
           reply.statusCode = 404;
-          return { error: 'Lot not found' };
+          return { error: 'Lot not found', message: 'Lot introuvable.' };
         }
 
         const lot = lotResult.rows[0];
@@ -1689,7 +1692,7 @@ function broadcastUserCount() {
         );
         if (lotResult.rowCount === 0) {
           reply.statusCode = 404;
-          return { error: 'Lot not found' };
+          return { error: 'Lot not found', message: 'Lot introuvable.' };
         }
         const lot = lotResult.rows[0];
         if (lot.status === 'finished') {
@@ -1804,7 +1807,7 @@ function broadcastUserCount() {
         );
         if (current.rowCount === 0) {
           reply.statusCode = 404;
-          return { error: 'Lot item not found' };
+          return { error: 'Lot item not found', message: 'Matériel introuvable.' };
         }
         const item = current.rows[0];
         if (item.lot_status === 'finished') {
@@ -1848,7 +1851,7 @@ function broadcastUserCount() {
         );
         if (current.rowCount === 0) {
           reply.statusCode = 404;
-          return { error: 'Lot item not found' };
+          return { error: 'Lot item not found', message: 'Matériel introuvable.' };
         }
         const item = current.rows[0];
         if (item.lot_status === 'finished') {
@@ -1876,6 +1879,51 @@ function broadcastUserCount() {
         };
       } catch (error: any) {
         fastify.log.error({ err: error }, 'POST /api/lots/items/:id/restore error');
+        reply.statusCode = 500;
+        return { error: 'Database error', message: error.message || 'Unknown error' };
+      }
+    });
+
+    // Soft-delete d'un lot entier (annulation d'un lot en cours) + soft-delete de ses items
+    fastify.delete('/api/lots/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+
+      try {
+        const lotResult = await query(
+          `SELECT id, status FROM lots WHERE id = $1 AND (deleted_at IS NULL)`,
+          [id]
+        );
+        if (lotResult.rowCount === 0) {
+          reply.statusCode = 404;
+          return { error: 'Lot not found', message: 'Lot introuvable.' };
+        }
+        const lot = lotResult.rows[0];
+        if (lot.status === 'finished') {
+          reply.statusCode = 400;
+          return {
+            error: 'Lot finished',
+            message: 'Impossible de supprimer un lot terminé. Utilisez l\'administration si nécessaire.'
+          };
+        }
+
+        await query(
+          `UPDATE lot_items SET deleted_at = NOW(), updated_at = NOW()
+           WHERE lot_id = $1 AND (deleted_at IS NULL)`,
+          [id]
+        );
+        await query(
+          `UPDATE lots SET deleted_at = NOW(), status = 'cancelled', item_count = 0, updated_at = NOW()
+           WHERE id = $1`,
+          [id]
+        );
+
+        return {
+          success: true,
+          message: 'Lot supprimé.',
+          lot: { id: Number(id), deleted: true, status: 'cancelled' }
+        };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'DELETE /api/lots/:id error');
         reply.statusCode = 500;
         return { error: 'Database error', message: error.message || 'Unknown error' };
       }
@@ -3566,6 +3614,9 @@ function broadcastUserCount() {
 ║   POST   /api/agenda/events       - Create event                          ║
 ║   GET    /api/lots                - List reception lots                   ║
 ║   POST   /api/lots                - Create lot                            ║
+║   POST   /api/lots/:id/items      - Add item to lot                       ║
+║   DELETE /api/lots/items/:id      - Soft-delete lot item                  ║
+║   DELETE /api/lots/:id            - Cancel / soft-delete lot              ║
 ║                                                                            ║
 ║ 💻 MANAGEMENT COMMANDS (on host)                                          ║
 ║   proxmox status                  - Show service status                   ║

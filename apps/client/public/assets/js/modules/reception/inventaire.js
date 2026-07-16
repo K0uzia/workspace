@@ -6,7 +6,7 @@
 import api from '../../config/api.js';
 import getLogger from '../../config/Logger.js';
 import { showAppNotification } from '../../config/notifications.js';
-import { loadLotsWithItems, addLotItem, removeLotItem, restoreLotItem } from './lotsApi.js';
+import { loadLotsWithItems, addLotItem, removeLotItem, restoreLotItem, deleteLot } from './lotsApi.js';
 import { getOsIcon, getOsLabel, getOsOption } from './osOptions.js';
 const logger = getLogger();
 
@@ -18,6 +18,7 @@ export default class InventaireManager {
         this.modalManager = modalManager;
         this.currentEditingItemId = null;
         this.currentEditingLotId = null;
+        this.pendingDeleteLotId = null;
         this.modalMode = 'edit'; // 'edit' | 'add'
         this.lots = [];
         this.marques = [];
@@ -261,6 +262,9 @@ export default class InventaireManager {
                         <button type="button" class="btn-add-pc-to-lot lot-btn lot-btn--secondary" data-lot-id="${lot.id}" title="Ajouter un PC / matériel à ce lot">
                             <i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter du matériel
                         </button>
+                        <button type="button" class="btn-delete-lot lot-btn lot-btn--danger" data-lot-id="${lot.id}" title="Supprimer entièrement ce lot en cours">
+                            <i class="fa-solid fa-trash" aria-hidden="true"></i> Supprimer le lot
+                        </button>
                     </div>
                     <div class="lot-table-wrap">
                         <table class="lot-table">
@@ -336,7 +340,7 @@ export default class InventaireManager {
      */
     attachLotEventListeners() {
         const isPdfAction = (el) => el.closest(
-            '.btn-edit-pc, .btn-remove-pc, .btn-add-pc-to-lot, .btn-generate-pdf-interim, .btn-open-pdf-location-lot, .btn-view-pdf-lot'
+            '.btn-edit-pc, .btn-remove-pc, .btn-add-pc-to-lot, .btn-delete-lot, .btn-generate-pdf-interim, .btn-open-pdf-location-lot, .btn-view-pdf-lot'
         );
 
         // Toggle lot expansion
@@ -378,6 +382,13 @@ export default class InventaireManager {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openAddPCModal(btn.dataset.lotId);
+            });
+        });
+
+        document.querySelectorAll('.btn-delete-lot').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openDeleteLotModal(btn.dataset.lotId);
             });
         });
 
@@ -767,6 +778,74 @@ export default class InventaireManager {
                 e.stopPropagation();
                 this.savePCEdit();
             });
+        }
+
+        const confirmDeleteLotBtn = document.getElementById('btn-confirm-delete-lot');
+        if (confirmDeleteLotBtn && !confirmDeleteLotBtn.dataset.bound) {
+            confirmDeleteLotBtn.dataset.bound = '1';
+            confirmDeleteLotBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await this.confirmDeleteLot();
+            });
+        }
+    }
+
+    /**
+     * Ouvre la confirmation de suppression d'un lot entier.
+     */
+    openDeleteLotModal(lotId) {
+        const lot = this.lots.find(l => String(l.id) === String(lotId));
+        if (!lot) {
+            this.showNotification('Lot introuvable', 'error');
+            return;
+        }
+        this.pendingDeleteLotId = lotId;
+        const textEl = document.getElementById('modal-confirm-delete-lot-text');
+        if (textEl) {
+            const name = lot.lot_name || lot.name;
+            const label = name ? `« ${name} » (lot #${lot.id})` : `le lot #${lot.id}`;
+            const itemCount = Array.isArray(lot.items) ? lot.items.length : (lot.item_count || 0);
+            textEl.innerHTML =
+                `Voulez-vous vraiment supprimer ${this.escapeHtml(label)}&nbsp;? ` +
+                `Cette action est <strong>irréversible</strong> et retirera ` +
+                `${itemCount} matériel(s) associé(s).`;
+        }
+        if (this.modalManager) {
+            this.modalManager.open('modal-confirm-delete-lot');
+        } else {
+            const dialog = document.getElementById('modal-confirm-delete-lot');
+            if (dialog?.showModal) dialog.showModal();
+        }
+    }
+
+    /**
+     * Confirme et exécute la suppression du lot en cours.
+     */
+    async confirmDeleteLot() {
+        const lotId = this.pendingDeleteLotId;
+        if (!lotId) {
+            this.showNotification('Lot non identifié', 'error');
+            return;
+        }
+        const btn = document.getElementById('btn-confirm-delete-lot');
+        if (btn) btn.disabled = true;
+        try {
+            await deleteLot(lotId);
+            this.pendingDeleteLotId = null;
+            if (this.modalManager) {
+                this.modalManager.close('modal-confirm-delete-lot');
+            } else {
+                document.getElementById('modal-confirm-delete-lot')?.close?.();
+            }
+            this.lots = (this.lots || []).filter(l => String(l.id) !== String(lotId));
+            this.renderLots();
+            this.showNotification('Lot supprimé', 'success');
+        } catch (err) {
+            logger.error('Delete lot failed:', err);
+            this.showNotification(err?.message || 'Erreur lors de la suppression du lot', 'error');
+        } finally {
+            if (btn) btn.disabled = false;
         }
     }
 
@@ -1306,5 +1385,6 @@ export default class InventaireManager {
         this.lots = [];
         this.currentEditingItemId = null;
         this.currentEditingLotId = null;
+        this.pendingDeleteLotId = null;
     }
 }

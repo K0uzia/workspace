@@ -122,3 +122,23 @@
         </div>
     </div>
 </dialog>
+
+<dialog class="universal-modal lots-modal inventaire-confirm-modal" id="modal-confirm-delete-lot" data-modal-id="modal-confirm-delete-lot">
+    <div class="modal-content lots-modal__content inventaire-confirm-modal__content">
+        <div class="modal-header lots-modal__header">
+            <h2 id="modal-confirm-delete-lot-title"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Supprimer le lot</h2>
+            <button type="button" class="modal-close-btn lots-modal__close" data-modal-close="modal-confirm-delete-lot" title="Fermer" aria-label="Fermer"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+        </div>
+        <div class="modal-body lots-modal__body">
+            <p class="inventaire-confirm-modal__text" id="modal-confirm-delete-lot-text">
+                Voulez-vous vraiment supprimer ce lot en cours&nbsp;? Cette action est <strong>irréversible</strong> et retirera tout le matériel associé.
+            </p>
+        </div>
+        <div class="modal-footer lots-modal__footer">
+            <button type="button" class="lots-modal__btn lots-modal__btn--cancel" data-modal-close="modal-confirm-delete-lot" title="Annuler">Annuler</button>
+            <button type="button" class="lots-modal__btn lots-modal__btn--danger" id="btn-confirm-delete-lot" title="Supprimer définitivement le lot">
+                <i class="fa-solid fa-trash" aria-hidden="true"></i> Supprimer le lot
+            </button>
+        </div>
+    </div>
+</dialog>

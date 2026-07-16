@@ -154,3 +154,25 @@ export async function restoreLotItem(itemId) {
     }
     return response.json();
 }
+
+/**
+ * Soft-supprime un lot entier (annulation d'un lot en cours).
+ * @param {string|number} lotId
+ * @returns {Promise<object>}
+ */
+export async function deleteLot(lotId) {
+    const serverUrl = api.getServerUrl();
+    const response = await fetch(`${serverUrl}/api/lots/${lotId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+    });
+    if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+            const err = await response.json();
+            message = err.message || err.error || message;
+        } catch (_) { /* ignore */ }
+        throw new Error(message);
+    }
+    return response.json();
+}

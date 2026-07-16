@@ -103,6 +103,8 @@ export async function initializeDatabase(): Promise<void> {
     // Migrations pour colonnes ajoutées après coup (bases existantes)
     const migrations = [
       'ALTER TABLE lots ADD COLUMN IF NOT EXISTS pdf_path VARCHAR(1024)',
+      'ALTER TABLE lots ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP',
+      'ALTER TABLE lot_items ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP',
       `CREATE TABLE IF NOT EXISTS disques_sessions (
         id SERIAL PRIMARY KEY,
         date DATE NOT NULL,

@@ -135,7 +135,8 @@ CREATE TABLE IF NOT EXISTS lots (
   recovered_at TIMESTAMP,
   pdf_path VARCHAR(1024),
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  deleted_at TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_lots_user_id ON lots(user_id);
@@ -157,7 +158,8 @@ CREATE TABLE IF NOT EXISTS lot_items (
   technician VARCHAR(255),
   state_changed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  deleted_at TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_lot_items_lot_id ON lot_items(lot_id);
@@ -219,7 +221,8 @@ ALTER TABLE IF EXISTS lots
   ADD COLUMN IF NOT EXISTS received_at TIMESTAMP DEFAULT NOW(),
   ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP,
   ADD COLUMN IF NOT EXISTS recovered_at TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
 
 ALTER TABLE IF EXISTS lot_items
   ALTER COLUMN serial_number DROP NOT NULL,
